@@ -19,12 +19,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final tabs = ['Dikemas', 'Dikirim', 'Diterima'];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.bg,
       body: CustomScrollView(
         slivers: [
           // AppBar
           SliverAppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.bg,
             elevation: 0,
             pinned: true,
             leading: IconButton(
@@ -45,7 +45,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           SliverToBoxAdapter(
             child: Container(
-              color: Colors.white,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFFDF3E7), Color(0xFFFFFFFF)],
+                  stops: [0.0, 0.55],
+                ),
+              ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
                 child: Column(

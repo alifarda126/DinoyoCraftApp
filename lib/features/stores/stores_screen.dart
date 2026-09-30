@@ -88,6 +88,7 @@ class _StoresScreenState extends State<StoresScreen> {
               crossAxisCount: 2,
               mainAxisSpacing: 14,
               crossAxisSpacing: 12,
+              // Tinggi fixed — gambar pakai AspectRatio agar konsisten
               childAspectRatio: 0.78,
             ),
             delegate: SliverChildBuilderDelegate(
@@ -103,13 +104,16 @@ class _StoresScreenState extends State<StoresScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
+                      // Gambar: AspectRatio fixed → tinggi selalu proporsional
+                      AspectRatio(
+                        aspectRatio: 1.15,
                         child: Image.asset(
                           store.image,
                           width: double.infinity,
                           fit: BoxFit.cover,
                         ),
                       ),
+                      // Area teks: tinggi menyesuaikan, tapi dibatasi
                       Padding(
                         padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
                         child: Column(
@@ -128,7 +132,7 @@ class _StoresScreenState extends State<StoresScreen> {
                             const SizedBox(height: 4),
                             Text(
                               store.location,
-                              maxLines: 2,
+                              maxLines: 1, // fix ke 1 baris agar konsisten
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
