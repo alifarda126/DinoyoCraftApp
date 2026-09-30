@@ -104,9 +104,8 @@ class _StoresScreenState extends State<StoresScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Gambar: AspectRatio fixed → tinggi selalu proporsional
-                      AspectRatio(
-                        aspectRatio: 1.15,
+                      // Gambar: Expanded → mengisi sisa tinggi cell
+                      Expanded(
                         child: Image.asset(
                           store.image,
                           width: double.infinity,
