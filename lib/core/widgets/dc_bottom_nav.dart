@@ -26,14 +26,15 @@ class DcBottomNav extends StatelessWidget {
   ];
 
   // Tinggi bar konten (tanpa safe area)
-  static const double _barHeight = 64.0;
-  // Ruang ekstra di atas agar icon yang pop-up tidak terpotong
-  static const double _overflowTop = 18.0;
+  static const double _barHeight = 68.0;
+  // Ruang ekstra di atas agar icon pop-up tidak terpotong
+  static const double _overflowTop = 20.0;
 
   @override
   Widget build(BuildContext context) {
     final rawBottom = MediaQuery.paddingOf(context).bottom;
-    final bottomPad = rawBottom.clamp(0.0, 8.0);
+    // Beri ruang gesture navigation bar Android (max 20px)
+    final bottomPad = rawBottom.clamp(0.0, 20.0);
     final totalHeight = _barHeight + bottomPad + _overflowTop;
 
     return SizedBox(
@@ -113,17 +114,25 @@ class _NavItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // TweenAnimationBuilder pakai Transform.translate → animasi pop
+    // TANPA mempengaruhi layout (tidak overflow)
     return Column(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        // AnimatedSlide → pop ke atas saat active
-        AnimatedSlide(
-          duration: const Duration(milliseconds: 260),
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: active ? -12.0 : 0.0),
+          duration: const Duration(milliseconds: 280),
           curve: Curves.easeOutBack,
-          offset: active ? const Offset(0, -0.30) : Offset.zero,
+          builder: (ctx, dy, child) {
+            return Transform.translate(
+              offset: Offset(0, dy),
+              child: child,
+            );
+          },
           child: _IconBubble(active: active, item: item),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
         AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 200),
           style: GoogleFonts.plusJakartaSans(
@@ -133,7 +142,7 @@ class _NavItemWidget extends StatelessWidget {
           ),
           child: Text(item.label),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
       ],
     );
   }

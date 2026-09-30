@@ -123,6 +123,8 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    // viewPadding.bottom = gesture navigation bar height (Android)
+    final gestureNavBar = MediaQuery.viewPaddingOf(context).bottom;
     final screenH = MediaQuery.sizeOf(context).height;
 
     return Container(
@@ -298,7 +300,13 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
               ],
             ),
             padding: EdgeInsets.fromLTRB(
-                12, 10, 12, 10 + bottomInset.clamp(0.0, 300.0)),
+                12,
+                10,
+                12,
+                // Keyboard inset ATAU gesture nav bar (whichever is taller)
+                10 + (bottomInset > 0
+                    ? bottomInset.clamp(0.0, 400.0)
+                    : gestureNavBar.clamp(0.0, 48.0))),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

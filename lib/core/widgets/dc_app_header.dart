@@ -63,8 +63,8 @@ class _IconBtn extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         child: SvgPicture.asset(
           asset,
-          width: 22,
-          height: 22,
+          width: 26,
+          height: 26,
           colorFilter: const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
         ),
       ),
