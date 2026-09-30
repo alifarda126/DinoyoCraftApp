@@ -25,8 +25,8 @@ class DcBottomNav extends StatelessWidget {
     _NavItem('Bantuan', AppAssets.navBantuan, Icons.help_outline),
   ];
 
-  // Tinggi bar konten (tanpa safe area)
-  static const double _barHeight = 68.0;
+  // Tinggi bar konten (tanpa safe area) — cukup untuk icon+label+padding
+  static const double _barHeight = 76.0;
   // Ruang ekstra di atas agar icon pop-up tidak terpotong
   static const double _overflowTop = 20.0;
 
@@ -114,14 +114,12 @@ class _NavItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TweenAnimationBuilder pakai Transform.translate → animasi pop
-    // TANPA mempengaruhi layout (tidak overflow)
     return Column(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: active ? -12.0 : 0.0),
+          tween: Tween(begin: 0, end: active ? -10.0 : 0.0),
           duration: const Duration(milliseconds: 280),
           curve: Curves.easeOutBack,
           builder: (ctx, dy, child) {
@@ -142,7 +140,6 @@ class _NavItemWidget extends StatelessWidget {
           ),
           child: Text(item.label),
         ),
-        const SizedBox(height: 6),
       ],
     );
   }

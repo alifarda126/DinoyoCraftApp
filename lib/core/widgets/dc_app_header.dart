@@ -33,11 +33,13 @@ class DcAppHeader extends StatelessWidget {
             if (showActions) ...[
               _IconBtn(
                 asset: AppAssets.iconSearch,
+                iconSize: 32, // viewBox 40×40 → perlu lebih besar agar visual sama
                 onTap: () => context.go('/products'),
               ),
               const SizedBox(width: 4),
               _IconBtn(
                 asset: AppAssets.iconProfile,
+                iconSize: 26,
                 onTap: () => context.push('/profile'),
               ),
             ],
@@ -49,10 +51,15 @@ class DcAppHeader extends StatelessWidget {
 }
 
 class _IconBtn extends StatelessWidget {
-  const _IconBtn({required this.asset, required this.onTap});
+  const _IconBtn({
+    required this.asset,
+    required this.onTap,
+    this.iconSize = 26,
+  });
 
   final String asset;
   final VoidCallback onTap;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
@@ -60,11 +67,12 @@ class _IconBtn extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(6),
         child: SvgPicture.asset(
           asset,
-          width: 26,
-          height: 26,
+          width: iconSize,
+          height: iconSize,
+          fit: BoxFit.contain,
           colorFilter: const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
         ),
       ),
