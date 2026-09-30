@@ -25,8 +25,11 @@ class DcBottomNav extends StatelessWidget {
     _NavItem('Bantuan', AppAssets.navBantuan, Icons.help_outline),
   ];
 
-  // Tinggi bar konten (tanpa safe area) — cukup untuk icon+label+padding
+  // Tinggi bar konten (items layer) — cukup untuk icon+label
   static const double _barHeight = 76.0;
+  // Tinggi background glass — lebih pendek dari items,
+  // agar icon active yang pop ke atas bisa "mencuat" keluar dari background
+  static const double _bgHeight = 58.0;
   // Ruang ekstra di atas agar icon pop-up tidak terpotong
   static const double _overflowTop = 20.0;
 
@@ -48,7 +51,9 @@ class DcBottomNav extends StatelessWidget {
             left: 0,
             right: 0,
             bottom: 0,
-            height: _barHeight + bottomPad,
+          // Background lebih pendek (_bgHeight) dari items layer (_barHeight)
+          // → icon active yang pop ke atas akan mencuat keluar dari background
+          height: _bgHeight + bottomPad,
             child: ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(22)),
