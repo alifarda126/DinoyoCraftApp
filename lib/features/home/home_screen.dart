@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return CustomScrollView(
       slivers: [
-        const SliverToBoxAdapter(child: DcAppHeader()),
+        const SliverPinnedDcHeader(),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),

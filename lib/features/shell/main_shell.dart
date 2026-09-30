@@ -64,13 +64,21 @@ class _MainShellState extends State<MainShell> {
               child: GestureDetector(
                 onPanUpdate: (details) {
                   setState(() {
-                    // Hitung posisi baru
                     double nx = _fabPos!.dx + details.delta.dx;
                     double ny = _fabPos!.dy + details.delta.dy;
-                    // Clamp ke batas layar
                     nx = nx.clamp(_edgePad, screenW - _fabSize - _edgePad);
                     ny = ny.clamp(topBound, bottomBound);
                     _fabPos = Offset(nx, ny);
+                  });
+                },
+                onPanEnd: (_) {
+                  // Snap ke sisi kiri atau kanan yang terdekat
+                  final center = _fabPos!.dx + _fabSize / 2;
+                  final snapX = center < screenW / 2
+                      ? _edgePad                          // kiri
+                      : screenW - _fabSize - _edgePad;    // kanan
+                  setState(() {
+                    _fabPos = Offset(snapX, _fabPos!.dy);
                   });
                 },
                 onTap: () => showClayBotPopup(context),

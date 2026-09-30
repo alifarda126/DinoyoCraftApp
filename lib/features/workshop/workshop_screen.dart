@@ -22,10 +22,13 @@ class WorkshopScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 100),
-      children: [
-        const DcAppHeader(),
+    return CustomScrollView(
+      slivers: [
+        const SliverPinnedDcHeader(),
+        SliverPadding(
+          padding: const EdgeInsets.only(bottom: 100),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
           child: Column(
@@ -129,6 +132,9 @@ class WorkshopScreen extends StatelessWidget {
                 onPressed: () => _openWhatsApp(context),
               ),
             ],
+          ),
+        ),
+            ]),
           ),
         ),
       ],

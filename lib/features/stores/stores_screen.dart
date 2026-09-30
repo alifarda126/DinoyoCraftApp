@@ -23,7 +23,7 @@ class _StoresScreenState extends State<StoresScreen> {
 
     return CustomScrollView(
       slivers: [
-        const SliverToBoxAdapter(child: DcAppHeader()),
+        const SliverPinnedDcHeader(),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
