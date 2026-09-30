@@ -80,35 +80,45 @@ class _IconBtn extends StatelessWidget {
   }
 }
 
-// ─── Pinned sliver header — pakai ini di CustomScrollView/ListView ────────────
-// Konten di-scroll ke bawah, header tetap di atas sebagai pembatas.
+// ─── Pinned sliver header — pakai ini di CustomScrollView ────────────────────
 class SliverPinnedDcHeader extends StatelessWidget {
   const SliverPinnedDcHeader({super.key, this.showActions = true});
 
   final bool showActions;
 
+  static const double _contentH = 56.0;
+
   @override
   Widget build(BuildContext context) {
+    // Ambil topPad di sini (ada context) lalu teruskan ke delegate
+    final topPad = MediaQuery.paddingOf(context).top;
     return SliverPersistentHeader(
       pinned: true,
-      delegate: _DcHeaderDelegate(showActions: showActions),
+      delegate: _DcHeaderDelegate(
+        showActions: showActions,
+        topPad: topPad,
+        contentH: _contentH,
+      ),
     );
   }
 }
 
 class _DcHeaderDelegate extends SliverPersistentHeaderDelegate {
-  const _DcHeaderDelegate({this.showActions = true});
+  const _DcHeaderDelegate({
+    required this.topPad,
+    required this.contentH,
+    this.showActions = true,
+  });
 
+  final double topPad;
+  final double contentH;
   final bool showActions;
 
-  // Tinggi header: SafeArea top + konten 52px
-  double get _headerH =>
-      52.0; // dipakai sebagai basis; SafeArea ditangani di dalam widget
-
+  // maxExtent HARUS menyertakan topPad agar header tidak terpotong
   @override
-  double get maxExtent => _headerH;
+  double get maxExtent => topPad + contentH;
   @override
-  double get minExtent => _headerH;
+  double get minExtent => topPad + contentH;
 
   @override
   Widget build(
@@ -116,15 +126,15 @@ class _DcHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final topPad = MediaQuery.paddingOf(context).top;
     return Container(
-      // Solid white background → konten scroll tidak tembus
-      color: Colors.white,
-      height: topPad + _headerH,
+      color: Colors.white, // solid white → konten scroll tidak tembus
       child: DcAppHeader(showActions: showActions),
     );
   }
 
   @override
-  bool shouldRebuild(_DcHeaderDelegate old) => old.showActions != showActions;
+  bool shouldRebuild(_DcHeaderDelegate old) =>
+      old.showActions != showActions ||
+      old.topPad != topPad ||
+      old.contentH != contentH;
 }
