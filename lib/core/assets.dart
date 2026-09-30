@@ -35,6 +35,7 @@ abstract final class AppAssets {
   static const String iconSearch = 'assets/icons/icon_search.svg';
   static const String iconProfile = 'assets/icons/icon_profile.svg';
   static const String iconChat = 'assets/icons/icon_chat.svg';
+  static const String iconBot = 'assets/icons/icon_bot.svg';
   static const String iconFlame = 'assets/icons/icon_flame.svg';
   static const String iconStar = 'assets/icons/icon_star.svg';
   static const String iconPlus = 'assets/icons/icon_plus.svg';

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 
 import '../assets.dart';
 import '../theme/app_colors.dart';
+import '../../features/chatbot/chatbot_screen.dart';
 
 class ChatFab extends StatelessWidget {
   const ChatFab({super.key});
@@ -11,7 +11,7 @@ class ChatFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
-      onPressed: () => context.push('/chatbot'),
+      onPressed: () => showClayBotPopup(context),
       backgroundColor: AppColors.black,
       elevation: 4,
       shape: const CircleBorder(),

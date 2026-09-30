@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -18,11 +17,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _category = 'Semua';
-  String _query = '';
 
   @override
   Widget build(BuildContext context) {
-    final picks = MockData.filterProducts(category: _category, query: _query)
+    final picks = MockData.filterProducts(category: _category)
         .take(4)
         .toList();
 
@@ -35,38 +33,19 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Location label
                 Text(
-                  'Halo, pencinta keramik',
+                  'Sentra Keramik Dinoyo, Kota Malang',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_rounded,
-                      size: 16,
-                      color: AppColors.ink,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        'Kampung Keramik Dinoyo, Malang',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
+                // Hero headline — sesuai Proto_Final/Beranda.png
                 Text(
-                  'Tanah liat Dinoyo,\ncerita di setiap goresan.',
+                  'Tanah liat Dinoyo, dari roda\npemutar langsung ke\ntanganmu.',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -76,104 +55,58 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // Sub-headline — sesuai Proto_Final/Beranda.png
                 Text(
-                  'Temukan keramik handmade dari pengrajin lokal pilihan.',
+                  'Temukan karya keramik lokal dan pengalaman kreatif dari pengrajin Dinoyo.',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
-                    height: 1.45,
+                    height: 1.5,
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  onChanged: (v) => setState(() => _query = v),
-                  textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    hintText: 'Cari vas, cangkir, studio...',
-                    hintStyle: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      color: AppColors.textMuted,
-                    ),
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: SvgPicture.asset(
-                        AppAssets.iconSearch,
-                        width: 20,
-                        height: 20,
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.textMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                    filled: true,
-                    fillColor: AppColors.inputBg,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(
-                        color: AppColors.ink,
-                        width: 1.1,
-                      ),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
                 const SizedBox(height: 18),
+                // Promo banner
                 ClipRRect(
                   borderRadius: BorderRadius.circular(18),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          AppAssets.promoBanner,
-                          fit: BoxFit.cover,
-                        ),
-                        Positioned(
-                          left: 14,
-                          bottom: 14,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.black.withValues(alpha: 0.82),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              'Diskon hingga 30%',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Image.asset(
+                      AppAssets.promoBanner,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
                 const SizedBox(height: 22),
-                Text(
-                  'Jelajahi Kategori',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
-                  ),
+                // Jelajahi Kategori row — dengan "Lihat Semua"
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Jelajahi Kategori',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/products'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        minimumSize: const Size(44, 36),
+                      ),
+                      child: Text(
+                        'Lihat Semua',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 SizedBox(
                   height: 40,
                   child: ListView.separated(
@@ -208,6 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
+                // Pilihan Untukmu row
                 Row(
                   children: [
                     Text(
@@ -236,6 +170,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+                Text(
+                  'Karya keramik favorit dari pengrajin lokal.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -245,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
               child: Text(
-                'Tidak ada produk yang cocok. Coba kata kunci lain.',
+                'Tidak ada produk yang cocok.',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   color: AppColors.textSecondary,

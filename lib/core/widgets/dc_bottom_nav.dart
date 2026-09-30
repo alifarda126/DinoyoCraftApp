@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,66 +25,174 @@ class DcBottomNav extends StatelessWidget {
     _NavItem('Bantuan', AppAssets.navBantuan, Icons.help_outline),
   ];
 
+  // Tinggi bar konten (tanpa safe area)
+  static const double _barHeight = 64.0;
+  // Ruang ekstra di atas agar icon yang pop-up tidak terpotong
+  static const double _overflowTop = 18.0;
+
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: 72,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: List.generate(_items.length, (index) {
-            final item = _items[index];
-            final active = index == currentIndex;
-            return Expanded(
-              child: InkWell(
-                onTap: () => onTap(index),
-                borderRadius: BorderRadius.circular(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: active ? 48 : 40,
-                      height: active ? 48 : 40,
-                      decoration: BoxDecoration(
-                        color: active ? AppColors.black : Colors.transparent,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: _NavIcon(
-                        asset: item.asset,
-                        fallback: item.fallback,
-                        active: active,
+    final rawBottom = MediaQuery.paddingOf(context).bottom;
+    final bottomPad = rawBottom.clamp(0.0, 8.0);
+    final totalHeight = _barHeight + bottomPad + _overflowTop;
+
+    return SizedBox(
+      height: totalHeight,
+      child: Stack(
+        // Stack bebas overflow ke atas — icon tidak terpotong
+        clipBehavior: Clip.none,
+        children: [
+          // ── Layer 1: glass background (di-clip, tidak overflow) ──────────
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: _barHeight + bottomPad,
+            child: ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(22)),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.60),
+                    borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(22)),
+                    border: Border(
+                      top: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        width: 1.2,
                       ),
                     ),
-                    if (!active) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        item.label,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textMuted,
-                        ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, -4),
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
-            );
-          }),
+            ),
+          ),
+
+          // ── Layer 2: nav items (TIDAK di-clip, boleh overflow ke atas) ──
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: bottomPad,
+            height: _barHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(_items.length, (index) {
+                final item = _items[index];
+                final active = index == currentIndex;
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => onTap(index),
+                    behavior: HitTestBehavior.opaque,
+                    child: _NavItemWidget(item: item, active: active),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Per-item widget ──────────────────────────────────────────────────────────
+class _NavItemWidget extends StatelessWidget {
+  const _NavItemWidget({required this.item, required this.active});
+
+  final _NavItem item;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        // AnimatedSlide → pop ke atas saat active
+        AnimatedSlide(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutBack,
+          offset: active ? const Offset(0, -0.30) : Offset.zero,
+          child: _IconBubble(active: active, item: item),
         ),
+        const SizedBox(height: 3),
+        AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 10,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            color: active ? AppColors.ink : AppColors.textMuted,
+          ),
+          child: Text(item.label),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+}
+
+// ─── Icon bubble: circle hitam + stroke putih tipis ──────────────────────────
+class _IconBubble extends StatelessWidget {
+  const _IconBubble({required this.active, required this.item});
+
+  final bool active;
+  final _NavItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!active) {
+      // Inactive: ikon biasa tanpa background
+      return SizedBox(
+        width: 40,
+        height: 40,
+        child: Center(child: _icon(false)),
+      );
+    }
+
+    // Active: outer ring putih tipis (1.5px) + inner circle hitam lebih besar
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        // Stroke putih tipis (1.5px) di luar circle hitam
+        border: Border.all(color: Colors.white, width: 1.5),
+        color: Colors.transparent,
+      ),
+      // inner circle hitam mengisi hampir penuh (margin 1.5px ikut border)
+      child: Container(
+        margin: const EdgeInsets.all(1.5),
+        decoration: const BoxDecoration(
+          color: AppColors.black,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: _icon(true),
+      ),
+    );
+  }
+
+  Widget _icon(bool active) {
+    return SvgPicture.asset(
+      item.asset,
+      width: 20,
+      height: 20,
+      colorFilter: ColorFilter.mode(
+        active ? AppColors.white : AppColors.textMuted,
+        BlendMode.srcIn,
+      ),
+      placeholderBuilder: (ctx) => Icon(
+        item.fallback,
+        size: 20,
+        color: active ? AppColors.white : AppColors.textMuted,
       ),
     );
   }
@@ -94,28 +204,4 @@ class _NavItem {
   final String label;
   final String asset;
   final IconData fallback;
-}
-
-class _NavIcon extends StatelessWidget {
-  const _NavIcon({
-    required this.asset,
-    required this.fallback,
-    required this.active,
-  });
-
-  final String asset;
-  final IconData fallback;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColors.white : AppColors.textMuted;
-    return SvgPicture.asset(
-      asset,
-      width: 22,
-      height: 22,
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-      placeholderBuilder: (_) => Icon(fallback, size: 22, color: color),
-    );
-  }
 }
