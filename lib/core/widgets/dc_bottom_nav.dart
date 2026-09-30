@@ -37,7 +37,8 @@ class DcBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final rawBottom = MediaQuery.paddingOf(context).bottom;
     // Beri ruang gesture navigation bar Android (max 20px)
-    final bottomPad = rawBottom.clamp(0.0, 20.0);
+    // clamp 28px → navbar lebih naik dari gesture navigation bar Android
+    final bottomPad = rawBottom.clamp(8.0, 28.0);
     final totalHeight = _barHeight + bottomPad + _overflowTop;
 
     return SizedBox(
