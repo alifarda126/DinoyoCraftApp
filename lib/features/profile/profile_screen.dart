@@ -19,12 +19,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final tabs = ['Dikemas', 'Dikirim', 'Diterima'];
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
           // AppBar
           SliverAppBar(
-            backgroundColor: AppColors.bg,
+            backgroundColor: Colors.white,
             elevation: 0,
             pinned: true,
             leading: IconButton(
@@ -45,14 +45,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           SliverToBoxAdapter(
             child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFFFDF3E7), Color(0xFFFFFFFF)],
-                  stops: [0.0, 0.55],
-                ),
-              ),
+              color: Colors.white,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
                 child: Column(
@@ -81,7 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 14),
                     Center(
                       child: Text(
-                        'Mochammad Al Mizan Ya Hafidl',
+                        'Customer',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 18,
@@ -93,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 4),
                     Center(
                       child: Text(
-                        '@mizanyf',
+                        '@customer',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
                           color: AppColors.textSecondary,

@@ -16,7 +16,7 @@ class DcAppHeader extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 16, 8),
+        padding: const EdgeInsets.fromLTRB(20, 4, 16, 4),
         child: Row(
           children: [
             Image.asset(AppAssets.logoBlack, width: 36, height: 36),
@@ -86,7 +86,7 @@ class SliverPinnedDcHeader extends StatelessWidget {
 
   final bool showActions;
 
-  static const double _contentH = 56.0;
+  static const double _contentH = 48.0;
 
   @override
   Widget build(BuildContext context) {
