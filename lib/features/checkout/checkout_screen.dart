@@ -118,15 +118,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             AppAssets.iconBack,
             width: 22,
             height: 22,
-            colorFilter:
-                const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
+            colorFilter: const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
           ),
         ),
         actions: [
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.help_outline_rounded,
-                color: AppColors.ink, size: 22),
+            icon: const Icon(
+              Icons.help_outline_rounded,
+              color: AppColors.ink,
+              size: 22,
+            ),
           ),
         ],
       ),
@@ -163,7 +165,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       Row(
                         children: [
                           Text(
-                            'Mochammad Al Mizan',
+                            'Customer',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -173,7 +175,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.black,
                               borderRadius: BorderRadius.circular(4),
@@ -190,8 +194,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           const Spacer(),
                           TextButton.icon(
                             onPressed: () {},
-                            icon: const Icon(Icons.edit_outlined,
-                                size: 13, color: AppColors.textSecondary),
+                            icon: const Icon(
+                              Icons.edit_outlined,
+                              size: 13,
+                              color: AppColors.textSecondary,
+                            ),
                             label: Text(
                               'Ubah Alamat',
                               style: GoogleFonts.plusJakartaSans(
@@ -200,19 +207,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               ),
                             ),
                             style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 28)),
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(0, 28),
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.phone_outlined,
-                              size: 13, color: AppColors.textSecondary),
+                          const Icon(
+                            Icons.phone_outlined,
+                            size: 13,
+                            color: AppColors.textSecondary,
+                          ),
                           const SizedBox(width: 4),
                           Text(
-                            '0859-777-588-138',
+                            '0812-3456-7890',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.textSecondary,
@@ -224,12 +235,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.location_on_outlined,
-                              size: 13, color: AppColors.textSecondary),
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 13,
+                            color: AppColors.textSecondary,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              'Jl. Sawiji Sari No.14, Kel. Mulyorejo, Kec. Sukun, Kota Malang, Jawa Timur 65147',
+                              'Jl. Veteran No.1, RT/RW. 04/02, Kel. Ketawanggede, Kec. Lowokwaru, Kota Malang, Jawa Timur 65145',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 height: 1.5,
@@ -242,8 +256,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       const SizedBox(height: 10),
                       OutlinedButton.icon(
                         onPressed: () {},
-                        icon: const Icon(Icons.add, size: 14,
-                            color: AppColors.ink),
+                        icon: const Icon(
+                          Icons.add,
+                          size: 14,
+                          color: AppColors.ink,
+                        ),
                         label: Text(
                           'Tambah Alamat Baru',
                           style: GoogleFonts.plusJakartaSans(
@@ -254,11 +271,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(
-                              color: AppColors.border, width: 1),
+                            color: AppColors.border,
+                            width: 1,
+                          ),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                         ),
                       ),
                     ],
@@ -269,7 +291,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 // ─── Produk yang Dibeli ─────────────────────────────────
                 _SectionHeader(
                   icon: Icons.shopping_bag_outlined,
-                  title: 'Produk yang Dibeli (${_qtys.fold(0, (s, q) => s + q)})',
+                  title:
+                      'Produk yang Dibeli (${_qtys.fold(0, (s, q) => s + q)})',
                   trailing: Text(
                     '${MockData.mockCart.length} Penjual Terpilih',
                     style: GoogleFonts.plusJakartaSans(
@@ -296,8 +319,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 width: 68,
                                 height: 68,
                                 color: AppColors.inputBg,
-                                child: const Icon(Icons.image_outlined,
-                                    color: AppColors.textMuted),
+                                child: const Icon(
+                                  Icons.image_outlined,
+                                  color: AppColors.textMuted,
+                                ),
                               ),
                             ),
                           ),
@@ -317,9 +342,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 const SizedBox(height: 2),
                                 Row(
                                   children: [
-                                    const Icon(Icons.store_outlined,
-                                        size: 12,
-                                        color: AppColors.textSecondary),
+                                    const Icon(
+                                      Icons.store_outlined,
+                                      size: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
                                     const SizedBox(width: 3),
                                     Expanded(
                                       child: Text(
@@ -336,7 +363,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 const SizedBox(height: 6),
                                 Text(
                                   MockData.formatPrice(
-                                      item.product.price * _qtys[i]),
+                                    item.product.price * _qtys[i],
+                                  ),
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w800,
@@ -357,7 +385,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10),
+                                  horizontal: 10,
+                                ),
                                 child: Text(
                                   '${_qtys[i]}',
                                   style: GoogleFonts.plusJakartaSans(
@@ -465,8 +494,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       color: AppColors.ink,
                     ),
                     decoration: InputDecoration(
-                      hintText:
-                          'Contoh: Tolong bungkus dengan bubble wrap tebal dan kardus aman.',
+                      hintText: 'Contoh: Tolong bungkus dengan bubble wrap tebal dan kardus aman.',
                       hintStyle: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         color: AppColors.textMuted,
@@ -553,10 +581,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: DcButton(
-                        label: 'Bayar Sekarang',
-                        onPressed: _pay,
-                      ),
+                      child: DcButton(label: 'Bayar Sekarang', onPressed: _pay),
                     ),
                   ],
                 ),
@@ -608,7 +633,7 @@ class _SectionHeader extends StatelessWidget {
               color: AppColors.ink,
             ),
           ),
-          if (trailing != null) ...[ const Spacer(), trailing! ],
+          if (trailing != null) ...[const Spacer(), trailing!],
         ],
       ),
     );
@@ -653,7 +678,8 @@ class _QtyBtn extends StatelessWidget {
         height: 28,
         decoration: BoxDecoration(
           border: Border.all(
-              color: onTap == null ? AppColors.border : AppColors.ink),
+            color: onTap == null ? AppColors.border : AppColors.ink,
+          ),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Icon(
@@ -801,11 +827,13 @@ class _PaymentCard extends StatelessWidget {
                     color: AppColors.ink,
                   ),
                 ),
-                if (badge != null) ...[ 
+                if (badge != null) ...[
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.black,
                       borderRadius: BorderRadius.circular(4),
@@ -821,8 +849,11 @@ class _PaymentCard extends StatelessWidget {
                   ),
                 ],
                 const Spacer(),
-                const Icon(Icons.keyboard_arrow_down_rounded,
-                    size: 18, color: AppColors.textMuted),
+                const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: AppColors.textMuted,
+                ),
               ],
             ),
             Padding(
@@ -845,7 +876,9 @@ class _PaymentCard extends StatelessWidget {
                 children: tags.map((tag) {
                   return Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.inputBg,
                       borderRadius: BorderRadius.circular(6),
