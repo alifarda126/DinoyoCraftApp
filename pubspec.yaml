@@ -19,9 +19,21 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
     - assets/icons/
+
+flutter_launcher_icons:
+  # iOS - pakai image dengan background putih sudah di-embed
+  ios: true
+  image_path: "assets/images/logo_icon_zoomed.png"
+  remove_alpha_ios: true
+  # Android - adaptive icon: background putih, foreground logo transparan
+  # Android launcher otomatis memotong menjadi bulat/circle
+  android: "launcher_icon"
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/images/logo_adaptive_fg.png"

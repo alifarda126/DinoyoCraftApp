@@ -22,7 +22,7 @@ class ProductCard extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () => context.push('/checkout'),
+              onTap: () => context.push('/product/${product.id}'),
               borderRadius: BorderRadius.circular(16),
               child: Stack(
                 children: [

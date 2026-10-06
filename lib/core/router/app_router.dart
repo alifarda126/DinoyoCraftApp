@@ -8,12 +8,17 @@ import '../../features/auth/otp_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/chatbot/chatbot_screen.dart';
 import '../../features/checkout/checkout_screen.dart';
+import '../../features/cart/cart_screen.dart';
 import '../../features/help/help_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/products/products_screen.dart';
+import '../../features/product/product_detail_screen.dart';
 import '../../features/profile/profile_screen.dart';
+import '../../features/profile/account_settings_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/stores/stores_screen.dart';
+import '../../features/stores/store_detail_screen.dart';
+import '../../features/notification/notifications_screen.dart';
 import '../../features/workshop/workshop_screen.dart';
 
 final GlobalKey<NavigatorState> _rootKey = GlobalKey<NavigatorState>();
@@ -22,14 +27,8 @@ final GoRouter appRouter = GoRouter(
   navigatorKey: _rootKey,
   initialLocation: '/',
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const OnboardingScreen(),
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
+    GoRoute(path: '/', builder: (context, state) => const OnboardingScreen()),
+    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(
       path: '/register',
       builder: (context, state) => const RegisterScreen(),
@@ -103,6 +102,37 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/checkout',
       builder: (context, state) => const CheckoutScreen(),
+    ),
+    GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
+    GoRoute(
+      path: '/product/:id',
+      builder: (context, state) =>
+          ProductDetailScreen(productId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/store/:index',
+      builder: (context, state) => StoreDetailScreen(
+        storeIndex: int.tryParse(state.pathParameters['index'] ?? '') ?? 0,
+      ),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationsScreen(),
+    ),
+    GoRoute(
+      path: '/profile/edit',
+      builder: (context, state) =>
+          const AccountSettingsScreen(type: AccountScreenType.profile),
+    ),
+    GoRoute(
+      path: '/addresses',
+      builder: (context, state) =>
+          const AccountSettingsScreen(type: AccountScreenType.address),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) =>
+          const AccountSettingsScreen(type: AccountScreenType.settings),
     ),
     GoRoute(
       path: '/chatbot',
