@@ -4,6 +4,7 @@ abstract final class AppAssets {
   static const String logoWhite = 'assets/images/logo_white.png';
   static const String logoApp = 'assets/images/logo_app.png';
   static const String logoBlack = 'assets/images/logo_black.png';
+  static const String logoIconCircle = 'assets/images/logo_icon_circle.png';
   static const String promoBanner = 'assets/images/promo_banner.png';
   static const String productVas = 'assets/images/product_vas.jpg';
   static const String productCangkir = 'assets/images/product_cangkir.jpg';
