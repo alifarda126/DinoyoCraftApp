@@ -4,7 +4,6 @@ Marketplace & discovery keramik lokal Kampung Keramik Dinoyo (Malang).
 Aplikasi Flutter MVP dari desain high-fi Figma.
 
 **Design source:** [Figma — DinoyoCraft](https://www.figma.com/design/8Zi0L9aiDqJFwbrPsQsJx2/DinoyoCraft)  
-**PRD:** [`docs/PRD.md`](docs/PRD.md)
 
 ## Fitur MVP
 
@@ -66,9 +65,3 @@ docs/PRD.md
 flutter analyze
 flutter test
 ```
-
-## Catatan asset / Figma
-
-- Asset disimpan lokal di `assets/images` & `assets/icons` (terdaftar di `pubspec.yaml`).
-- Beberapa foto produk resolusinya masih rendah atau diganti dengan foto keramik yang cocok secara visual (kuota Figma MCP Starter terbatas).
-- Untuk re-export asset asli dari Figma: buka node layar di file `8Zi0L9aiDqJFwbrPsQsJx2`, export, lalu ganti file di folder assets dengan nama yang sama.
