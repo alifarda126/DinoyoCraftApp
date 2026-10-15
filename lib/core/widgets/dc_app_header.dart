@@ -4,16 +4,24 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../assets.dart';
+import '../../data/mock_data.dart';
+import '../../features/cart/cart_screen.dart';
+import '../../features/notification/notifications_screen.dart';
 import '../theme/app_colors.dart';
 
 class DcAppHeader extends StatelessWidget {
-  const DcAppHeader({super.key, this.showActions = true});
+  const DcAppHeader({
+    super.key,
+    this.showActions = true,
+    this.showBorder = false,
+  });
 
   final bool showActions;
+  final bool showBorder;
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    Widget content = SafeArea(
       bottom: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 4, 16, 4),
@@ -32,21 +40,46 @@ class DcAppHeader extends StatelessWidget {
             const Spacer(),
             if (showActions) ...[
               _IconBtn(
-                asset: AppAssets.iconSearch,
-                iconSize: 32, // viewBox 40×40 → perlu lebih besar agar visual sama
-                onTap: () => context.go('/products'),
+                asset: AppAssets.iconNotification,
+                iconSize: 22,
+                showDot: true,
+                onTap: () => showNotificationsModal(context),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 10),
               _IconBtn(
-                asset: AppAssets.iconProfile,
-                iconSize: 26,
-                onTap: () => context.push('/profile'),
+                asset: AppAssets.iconCart,
+                iconSize: 22,
+                badge: '${MockData.mockCart.length}',
+                onTap: () => showCartModal(context),
+              ),
+              const SizedBox(width: 10),
+              _IconBtn(
+                asset: AppAssets.iconChat,
+                // Ukuran 18.5 agar visual balance & optical weight sama persis
+                // dengan icon lonceng notifikasi (18.3px) dan keranjang (18.9px)
+                iconSize: 18.5,
+                showDot: true,
+                onTap: () => context.push('/messages'),
               ),
             ],
           ],
         ),
       ),
     );
+
+    if (showBorder) {
+      content = Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            bottom: BorderSide(color: Color(0xFFEAEAEA)),
+          ),
+        ),
+        child: content,
+      );
+    }
+
+    return content;
   }
 }
 
@@ -54,26 +87,78 @@ class _IconBtn extends StatelessWidget {
   const _IconBtn({
     required this.asset,
     required this.onTap,
-    this.iconSize = 26,
+    this.iconSize = 22,
+    this.showDot = false,
+    this.badge,
   });
 
   final String asset;
   final VoidCallback onTap;
   final double iconSize;
+  final bool showDot;
+  final String? badge;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
-      child: Padding(
-        padding: const EdgeInsets.all(6),
-        child: SvgPicture.asset(
-          asset,
-          width: iconSize,
-          height: iconSize,
-          fit: BoxFit.contain,
-          colorFilter: const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
+      child: SizedBox(
+        width: 32,
+        height: 32,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Center(
+              child: SvgPicture.asset(
+                asset,
+                width: iconSize,
+                height: iconSize,
+                fit: BoxFit.contain,
+                colorFilter: const ColorFilter.mode(
+                  AppColors.ink,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+            if (showDot)
+              Positioned(
+                top: 1,
+                right: 1,
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: AppColors.black,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.2),
+                  ),
+                ),
+              ),
+            if (badge != null)
+              Positioned(
+                top: -3,
+                right: -4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  constraints: const BoxConstraints(minWidth: 15),
+                  decoration: BoxDecoration(
+                    color: AppColors.black,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: Colors.white, width: 1.2),
+                  ),
+                  child: Text(
+                    badge!,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -126,9 +211,15 @@ class _DcHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(
-      color: Colors.white, // solid white → konten scroll tidak tembus
-      child: DcAppHeader(showActions: showActions),
+    // Tinggi child DIPAKSA sama dengan extent delegate. Bila child lebih
+    // pendek, layoutExtent (48) melebihi paintExtent → SliverGeometry tidak
+    // valid → seluruh viewport gagal layout dan layar jadi blank.
+    return SizedBox(
+      height: topPad + contentH,
+      child: Material(
+        color: Colors.white, // solid white → konten scroll tidak tembus
+        child: DcAppHeader(showActions: showActions),
+      ),
     );
   }
 

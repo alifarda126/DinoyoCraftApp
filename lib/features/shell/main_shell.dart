@@ -3,8 +3,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/dc_bottom_nav.dart';
 import '../../features/chatbot/chatbot_screen.dart';
-import '../../core/assets.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key, required this.navigationShell});
@@ -119,12 +117,10 @@ class _DraggableFabButton extends StatelessWidget {
           ],
         ),
         child: Center(
-          child: SvgPicture.asset(
-            AppAssets.iconChat,
-            width: 24,
-            height: 24,
-            colorFilter:
-                const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          child: Icon(
+            Icons.headset_mic_rounded,
+            size: 28,
+            color: Colors.white,
           ),
         ),
       ),

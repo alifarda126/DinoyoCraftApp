@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/assets.dart';
@@ -21,8 +22,12 @@ class _StoresScreenState extends State<StoresScreen> {
   Widget build(BuildContext context) {
     final stores = MockData.filterStores(_query);
 
-    return CustomScrollView(
-      slivers: [
+    return Scaffold(
+      // Scaffold diperlukan sebagai ancestor Material untuk TextField/InkWell;
+      // tanpa ini halaman melempar error rendering.
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
         const SliverPinnedDcHeader(),
         SliverToBoxAdapter(
           child: Padding(
@@ -91,14 +96,20 @@ class _StoresScreenState extends State<StoresScreen> {
               // Tinggi fixed — gambar pakai AspectRatio agar konsisten
               childAspectRatio: 0.78,
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final store = stores[index];
-                return Container(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final store = stores[index];
+              return InkWell(
+                // Index route harus mengacu ke list penuh, bukan hasil filter,
+                // agar detail toko yang terbuka selalu sesuai kartu yang diklik.
+                onTap: () => context.push('/store/${MockData.stores.indexOf(store)}'),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
                   decoration: BoxDecoration(
                     color: AppColors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.6),
+                    ),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Column(
@@ -161,13 +172,13 @@ class _StoresScreenState extends State<StoresScreen> {
                       ),
                     ],
                   ),
-                );
-              },
-              childCount: stores.length,
-            ),
+                ),
+              );
+            }, childCount: stores.length),
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 }

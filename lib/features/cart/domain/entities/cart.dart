@@ -1,0 +1,2 @@
+﻿// Cart entity
+class Cart {}

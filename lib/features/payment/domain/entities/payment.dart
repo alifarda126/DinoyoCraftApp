@@ -1,0 +1,2 @@
+﻿// Payment entity
+class Payment {}

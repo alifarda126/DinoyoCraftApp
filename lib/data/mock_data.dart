@@ -208,10 +208,25 @@ abstract final class MockData {
     ),
   ];
 
-  static List<CartItem> get mockCart => [
-        CartItem(product: products[0], qty: 1),
-        CartItem(product: products[1], qty: 2),
-      ];
+  // Keranjang sesi: mutable agar aksi "Tambah ke Keranjang" tersimpan
+  // dan badge di header ikut bertambah.
+  static final List<CartItem> mockCart = [
+    CartItem(product: products[0], qty: 1),
+    CartItem(product: products[1], qty: 2),
+  ];
+
+  /// Tambah produk ke keranjang; qty di-merge bila produk sudah ada.
+  static void addToCart(Product product, int qty) {
+    final index = mockCart.indexWhere((item) => item.product.id == product.id);
+    if (index >= 0) {
+      mockCart[index] = CartItem(
+        product: product,
+        qty: mockCart[index].qty + qty,
+      );
+    } else {
+      mockCart.add(CartItem(product: product, qty: qty));
+    }
+  }
 
   static String formatPrice(int price) {
     final digits = price.toString();

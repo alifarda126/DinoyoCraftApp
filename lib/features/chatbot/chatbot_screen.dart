@@ -11,11 +11,13 @@ class _ChatMessage {
     required this.text,
     required this.isBot,
     this.time = '',
+    this.imagePath,
   });
 
   final String text;
   final bool isBot;
   final String time;
+  final String? imagePath;
 }
 
 String _nowTime() {
@@ -106,6 +108,146 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
     });
     _input.clear();
     _scrollToBottom();
+  }
+
+  /// Kirim foto produk (dari sheet lampiran) sebagai bubble gambar.
+  void _sendImage(String assetPath) {
+    setState(() {
+      _showQuickReplies = false;
+      _messages.add(_ChatMessage(
+        text: '',
+        isBot: false,
+        time: _nowTime(),
+        imagePath: assetPath,
+      ));
+    });
+    _scrollToBottom();
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (!mounted) return;
+      setState(() {
+        _messages.add(_ChatMessage(
+          text: 'Terima kasih, foto produknya sudah kami terima! '
+              'Ada yang ingin ditanyakan tentang produk pada gambar ini?',
+          isBot: true,
+          time: _nowTime(),
+        ));
+      });
+      _scrollToBottom();
+    });
+  }
+
+  void _openAttachmentSheet() {
+    const assets = [
+      AppAssets.productVas,
+      AppAssets.productMangkuk,
+      AppAssets.productPiring,
+    ];
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Kirim Foto Produk',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Pilih foto dari galeri contoh (demo).',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 92,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: assets.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 10),
+                  itemBuilder: (context, i) => GestureDetector(
+                    onTap: () {
+                      Navigator.of(sheetCtx).pop();
+                      _sendImage(assets[i]);
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        assets[i],
+                        width: 92,
+                        height: 92,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openEmojiSheet() {
+    const emojis = [
+      '😊', '😂', '😍', '🥰', '😎', '👍', '🙏',
+      '🔥', '✨', '❤️', '🤩', '😁', '🫙', '🏺',
+    ];
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: GridView.builder(
+            shrinkWrap: true,
+            itemCount: emojis.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+            ),
+            itemBuilder: (context, i) => GestureDetector(
+              onTap: () {
+                final selection = _input.selection;
+                final text = _input.text;
+                final pos = selection.baseOffset >= 0 &&
+                        selection.baseOffset <= text.length
+                    ? selection.baseOffset
+                    : text.length;
+                final newText = text.replaceRange(pos, pos, emojis[i]);
+                _input.value = TextEditingValue(
+                  text: newText,
+                  selection: TextSelection.collapsed(
+                    offset: pos + emojis[i].length,
+                  ),
+                );
+              },
+              child: Center(
+                child: Text(emojis[i], style: const TextStyle(fontSize: 24)),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _scrollToBottom() {
@@ -313,15 +455,23 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                 Row(
                   children: [
                     // + attachment button
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5F5F5),
-                        shape: BoxShape.circle,
+                    GestureDetector(
+                      onTap: _openAttachmentSheet,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F5F5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: SvgPicture.asset(
+                            AppAssets.iconBerkas,
+                            width: 20,
+                            height: 20,
+                          ),
+                        ),
                       ),
-                      child: const Icon(Icons.add_rounded,
-                          size: 20, color: AppColors.ink),
                     ),
                     const SizedBox(width: 10),
                     // text field
@@ -347,6 +497,21 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                             ),
                             border: InputBorder.none,
                             isDense: true,
+                            suffixIcon: GestureDetector(
+                              onTap: _openEmojiSheet,
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 4.0),
+                                child: SvgPicture.asset(
+                                  AppAssets.iconEmoji,
+                                  width: 20,
+                                  height: 20,
+                                ),
+                              ),
+                            ),
+                            suffixIconConstraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
                             contentPadding:
                                 const EdgeInsets.symmetric(vertical: 12),
                           ),
@@ -365,10 +530,12 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                           color: AppColors.black,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.arrow_upward_rounded,
-                          color: Colors.white,
-                          size: 20,
+                        child: Center(
+                          child: SvgPicture.asset(
+                            AppAssets.iconKirimPesan,
+                            width: 16,
+                            height: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -460,27 +627,38 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
-                    decoration: const BoxDecoration(
-                      color: AppColors.black,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                        bottomLeft: Radius.circular(16),
-                        bottomRight: Radius.circular(4),
+                  if (msg.imagePath != null)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.asset(
+                        msg.imagePath!,
+                        width: 200,
+                        height: 140,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      decoration: const BoxDecoration(
+                        color: AppColors.black,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                          bottomLeft: Radius.circular(16),
+                          bottomRight: Radius.circular(4),
+                        ),
+                      ),
+                      child: Text(
+                        msg.text,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          height: 1.45,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      msg.text,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        height: 1.45,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 4),
                   Text(
                     msg.time,
@@ -511,7 +689,12 @@ class ChatbotScreen extends StatelessWidget {
       body: Builder(
         builder: (ctx) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            showClayBotPopup(ctx);
+            showClayBotPopup(ctx).then((_) {
+              // Kembali ke halaman sebelumnya agar tidak terjebak layar kosong.
+              if (ctx.mounted && Navigator.of(ctx).canPop()) {
+                Navigator.of(ctx).pop();
+              }
+            });
           });
           return const SizedBox.shrink();
         },

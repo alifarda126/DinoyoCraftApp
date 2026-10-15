@@ -1,0 +1,2 @@
+﻿// Checkout entity
+class Checkout {}

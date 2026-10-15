@@ -1,0 +1,2 @@
+﻿// Auth entity
+class Auth {}

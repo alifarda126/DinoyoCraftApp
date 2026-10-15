@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,6 +18,37 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _category = 'Semua';
+
+  // ── Banner carousel ──────────────────────────────────────────────────────
+  static const _banners = [
+    AppAssets.bannerDiskon,
+    AppAssets.bannerPromo,
+    AppAssets.bannerTradisi,
+  ];
+  final _pageCtrl = PageController();
+  int _bannerPage = 0;
+  Timer? _bannerTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      final next = (_bannerPage + 1) % _banners.length;
+      _pageCtrl.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerTimer?.cancel();
+    _pageCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,14 +97,64 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                // Promo banner
+                // ── Promo Banner Carousel ──────────────────────────────────
                 ClipRRect(
                   borderRadius: BorderRadius.circular(18),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
-                    child: Image.asset(
-                      AppAssets.promoBanner,
-                      fit: BoxFit.cover,
+                    child: Stack(
+                      children: [
+                        PageView.builder(
+                          controller: _pageCtrl,
+                          itemCount: _banners.length,
+                          onPageChanged: (i) =>
+                              setState(() => _bannerPage = i),
+                          itemBuilder: (context, i) => GestureDetector(
+                            onTap: () => context.go('/products'),
+                            child: Image.asset(
+                              _banners[i],
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            ),
+                          ),
+                        ),
+                        // Dot indicator
+                        Positioned(
+                          bottom: 10,
+                          left: 0,
+                          right: 0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(
+                              _banners.length,
+                              (i) => GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => _pageCtrl.animateToPage(
+                                  i,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 3),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 250),
+                                    width: _bannerPage == i ? 20 : 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: _bannerPage == i
+                                          ? Colors.white
+                                          : Colors.white
+                                              .withValues(alpha: 0.55),
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

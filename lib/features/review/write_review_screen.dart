@@ -1,0 +1,647 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../core/assets.dart';
+import '../../core/theme/app_colors.dart';
+
+class WriteReviewScreen extends StatefulWidget {
+  const WriteReviewScreen({
+    super.key,
+    this.orderId = '#DNC-001',
+    this.productName = 'Vas Keramik Minimalis',
+    this.variant = 'Varian: Sand White Glossy 1x',
+    this.studioName = 'Dinoyo Ceramic Studio',
+    this.productImage = AppAssets.productVas,
+    this.receivedDate = 'Diterima 12 Feb 2025',
+  });
+
+  final String orderId;
+  final String productName;
+  final String variant;
+  final String studioName;
+  final String productImage;
+  final String receivedDate;
+
+  @override
+  State<WriteReviewScreen> createState() => _WriteReviewScreenState();
+}
+
+class _WriteReviewScreenState extends State<WriteReviewScreen> {
+  static const Color _amber = Color(0xFFF59E0B);
+
+  static const List<String> _ratingLabels = [
+    'Mengecewakan',
+    'Kurang Baik',
+    'Cukup Baik',
+    'Baik',
+    'Sangat Memuaskan',
+  ];
+
+  static const List<String> _likeOptions = [
+    'Finishing Halus',
+    'Packing Kayu Aman',
+    'Warna Sesuai Foto',
+    'Kualitas Tebal & Kokoh',
+    'Detail Rapi',
+  ];
+
+  static const List<(String, String)> _attributes = [
+    ('Kualitas Bahan & Glaze', 'Ketahanan lapisan dan kilau glasir'),
+    ('Ketepatan dengan Deskripsi', 'Dimensi, warna, dan tekstur kerajinan'),
+    ('Keamanan Kemasan & Ekspedisi', 'Bubble wrap tebal & proteksi benturan'),
+  ];
+
+  static const List<String> _mockPhotos = [
+    AppAssets.productCangkir,
+    AppAssets.productMangkuk,
+    AppAssets.productVasModern,
+  ];
+
+  int _rating = 0;
+  final Set<int> _likes = {};
+  final List<int> _attributeRatings = [0, 0, 0];
+  final TextEditingController _reviewController = TextEditingController(
+    text:
+        'Glasirnya sangat rapi dan tekstur tanah liat Dinoyonya terasa kokoh '
+        'serta otentik. Pengemasan kayu sangat aman sampai di rumah tanpa '
+        'retak sedikitpun. Recommended!',
+  );
+  final List<String> _photos = [];
+
+  bool get _canSubmit => _rating > 0 && _reviewController.text.trim().isNotEmpty;
+
+  void _submit() {
+    if (!_canSubmit) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.black,
+        content: Text(
+          'Ulasan berhasil dikirim. Terima kasih!',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            color: AppColors.white,
+          ),
+        ),
+      ),
+    );
+    Navigator.of(context).pop();
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            SizedBox(
+              height: 54,
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => context.pop(),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 19,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Beri Ulasan Produk',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
+                children: [
+                  _buildProductCard(),
+                  const SizedBox(height: 14),
+                  _buildRatingCard(),
+                  const SizedBox(height: 14),
+                  _buildAttributesCard(),
+                  const SizedBox(height: 14),
+                  _buildWrittenReviewCard(),
+                ],
+              ),
+            ),
+            _buildSubmitBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Product info card ──────────────────────────────────────────────────
+  Widget _buildProductCard() {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderAlt),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              widget.productImage,
+              width: 64,
+              height: 64,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      widget.orderId,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      widget.receivedDate,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  widget.productName,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                ),
+                Text(
+                  widget.variant,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.storefront_rounded,
+                      size: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      widget.studioName,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Overall rating card ────────────────────────────────────────────────
+  Widget _buildRatingCard() {
+    final hasRating = _rating > 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderAlt),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Bagaimana kualitas keramik ini?',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Sentuh bintang untuk memberikan penilaian keseluruhan',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) {
+              final filled = i < _rating;
+              return GestureDetector(
+                onTap: () => setState(() => _rating = i + 1),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Icon(
+                    filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                    size: 40,
+                    color: filled ? _amber : AppColors.border,
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 12),
+          if (hasRating) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.inputBg,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: AppColors.borderAlt),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: _amber,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${_ratingLabels[_rating - 1]} $_rating/5 ★',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Pilih hal yang paling kamu sukai:',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final (i, option) in _likeOptions.indexed)
+                _buildLikeChip(i, option),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLikeChip(int index, String label) {
+    final selected = _likes.contains(index);
+    return OutlinedButton(
+      onPressed: () => setState(() {
+        selected ? _likes.remove(index) : _likes.add(index);
+      }),
+      style: OutlinedButton.styleFrom(
+        backgroundColor: selected ? AppColors.black : AppColors.white,
+        side: BorderSide(
+          color: selected ? AppColors.black : AppColors.borderAlt,
+        ),
+        shape: const StadiumBorder(),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        minimumSize: const Size(0, 34),
+      ),
+      child: Text(
+        '${selected ? '✓' : '+'} $label',
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: selected ? AppColors.white : AppColors.ink,
+        ),
+      ),
+    );
+  }
+
+  // ── Attribute ratings card ─────────────────────────────────────────────
+  Widget _buildAttributesCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderAlt),
+      ),
+      child: Column(
+        children: [
+          for (final (i, (title, desc)) in _attributes.indexed) ...[
+            if (i > 0)
+              const Divider(
+                height: 1,
+                color: Color(0x99CFC4C5),
+              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          desc,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(5, (star) {
+                      final filled = star < _attributeRatings[i];
+                      return GestureDetector(
+                        onTap: () => setState(
+                          () => _attributeRatings[i] =
+                              _attributeRatings[i] == star + 1 ? star : star + 1,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 2),
+                          child: Icon(
+                            filled
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            size: 19,
+                            color: filled ? _amber : AppColors.border,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── Written review card ────────────────────────────────────────────────
+  Widget _buildWrittenReviewCard() {
+    final length = _reviewController.text.length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderAlt),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _reviewController,
+            maxLength: 500,
+            maxLines: 5,
+            onChanged: (_) => setState(() {}),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              height: 1.55,
+              color: AppColors.ink,
+            ),
+            decoration: InputDecoration(
+              hintText:
+                  'Ceritakan pengalamanmu dengan produk keramik ini...',
+              hintStyle: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                color: AppColors.textMuted,
+              ),
+              filled: true,
+              fillColor: AppColors.inputBg,
+              counterText: '',
+              contentPadding: const EdgeInsets.all(13),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.borderAlt),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.borderAlt),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.ink),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '$length/500',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Tambahkan Foto Produk',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              if (_photos.length < _mockPhotos.length)
+                GestureDetector(
+                  onTap: () => setState(() {
+                    _photos.add(_mockPhotos[_photos.length]);
+                  }),
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: AppColors.inputBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.borderAlt,
+                        width: 2,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.photo_camera_outlined,
+                          size: 20,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tambah',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              for (final photo in _photos) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => setState(() => _photos.remove(photo)),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          photo,
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: AppColors.black,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            size: 12,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Sticky submit bar ──────────────────────────────────────────────────
+  Widget _buildSubmitBar() {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        12 + MediaQuery.paddingOf(context).bottom,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x1A000000),
+            blurRadius: 6,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: FilledButton(
+          onPressed: _canSubmit ? _submit : null,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.black,
+            disabledBackgroundColor: AppColors.border,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(
+            'Kirim Ulasan',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

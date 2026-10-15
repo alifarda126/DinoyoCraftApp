@@ -1,0 +1,2 @@
+﻿// Auth model
+class AuthModel {}

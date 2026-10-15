@@ -6,6 +6,8 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/onboarding_screen.dart';
 import '../../features/auth/otp_screen.dart';
 import '../../features/auth/register_screen.dart';
+import '../../features/chat/chat_list_screen.dart';
+import '../../features/chat/chat_room_screen.dart';
 import '../../features/chatbot/chatbot_screen.dart';
 import '../../features/checkout/checkout_screen.dart';
 import '../../features/cart/cart_screen.dart';
@@ -15,6 +17,9 @@ import '../../features/products/products_screen.dart';
 import '../../features/product/product_detail_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/profile/account_settings_screen.dart';
+import '../../features/profile/delete_account_screen.dart';
+import '../../features/review/reviews_screen.dart';
+import '../../features/review/write_review_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/stores/stores_screen.dart';
 import '../../features/stores/store_detail_screen.dart';
@@ -85,19 +90,20 @@ final GoRouter appRouter = GoRouter(
             ),
           ],
         ),
+        // ← Tab ke-5: Profil (sebelumnya Bantuan)
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/help',
-              builder: (context, state) => const HelpScreen(),
+              path: '/profile',
+              builder: (context, state) => const ProfileScreen(),
             ),
           ],
         ),
       ],
     ),
     GoRoute(
-      path: '/profile',
-      builder: (context, state) => const ProfileScreen(),
+      path: '/help',
+      builder: (context, state) => const HelpScreen(),
     ),
     GoRoute(
       path: '/checkout',
@@ -137,6 +143,30 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/chatbot',
       builder: (context, state) => const ChatbotScreen(),
+    ),
+    GoRoute(
+      path: '/messages',
+      builder: (context, state) => const ChatListScreen(),
+    ),
+    GoRoute(
+      path: '/chat-room',
+      builder: (context, state) => ChatRoomScreen(
+        storeName: state.uri.queryParameters['store'] ?? 'Dinoyo Ceramic Studio',
+      ),
+    ),
+    GoRoute(
+      path: '/reviews',
+      builder: (context, state) => ReviewsScreen(
+        storeName: state.uri.queryParameters['store'] ?? 'Dinoyo Ceramic Studio',
+      ),
+    ),
+    GoRoute(
+      path: '/review/write',
+      builder: (context, state) => const WriteReviewScreen(),
+    ),
+    GoRoute(
+      path: '/hapus-akun',
+      builder: (context, state) => const DeleteAccountScreen(),
     ),
   ],
 );

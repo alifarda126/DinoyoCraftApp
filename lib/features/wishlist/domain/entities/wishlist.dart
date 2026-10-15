@@ -1,0 +1,2 @@
+﻿// Wishlist entity
+class Wishlist {}

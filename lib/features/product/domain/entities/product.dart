@@ -1,0 +1,2 @@
+﻿// Product entity
+class Product {}

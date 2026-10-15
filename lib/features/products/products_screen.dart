@@ -41,8 +41,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget build(BuildContext context) {
     final items = MockData.filterProducts(category: _category, query: _query);
 
-    return CustomScrollView(
-      slivers: [
+    return Scaffold(
+      // Scaffold diperlukan sebagai ancestor Material untuk TextField;
+      // tanpa ini halaman melempar error rendering.
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
         const SliverPinnedDcHeader(),
         SliverToBoxAdapter(
           child: Padding(
@@ -136,7 +140,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 }
