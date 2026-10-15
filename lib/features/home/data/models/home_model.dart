@@ -1,0 +1,2 @@
+﻿// Home model
+class HomeModel {}

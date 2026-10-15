@@ -1,3 +1,5 @@
+import 'dart:ui' show PathMetric;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -5,9 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/widgets/dc_button.dart';
 import '../../data/mock_data.dart';
 
+/// Halaman Checkout — disesuaikan dengan desain CO.png.
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
 
@@ -19,6 +21,40 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String _shipping = 'Regular';
   String _payment = 'QRIS';
   final TextEditingController _noteCtrl = TextEditingController();
+
+  // Daftar alamat tersimpan (index 0 = alamat utama)
+  final List<_Address> _addresses = [
+    _Address(
+      name: 'Mochammad Al Mizan',
+      phone: '0859-777-588-138',
+      address:
+          'Jl. Sawiji Sari No.14, Kel. Mulyorejo, Kec. Sukun, Kota Malang, Jawa Timur 65147',
+    ),
+  ];
+  int _selected = 0;
+
+  _Address get _currentAddress => _addresses[_selected];
+
+  /// Badge kecil berisi label alamat (RUMAH/KANTOR/...) di kartu alamat.
+  Widget _labelBadge(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.inputBg,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.3,
+          color: AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
 
   // Local mutable cart quantities
   late final List<int> _qtys;
@@ -58,6 +94,303 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   int get _total => _subtotal + _shippingFee + _serviceFee;
 
+  String _shippingLabel() {
+    switch (_shipping) {
+      case 'Hemat':
+        return 'Hemat';
+      case 'Express':
+        return 'Express';
+      default:
+        return 'Reguler';
+    }
+  }
+
+  // ═══ Alamat: tambah / ubah / pilih ═════════════════════════════════════
+  Future<_Address?> _showAddressForm({_Address? existing}) {
+    return showModalBottomSheet<_Address>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x73000000),
+      builder: (_) => _AddressForm(existing: existing),
+    );
+  }
+
+  Future<void> _addAddress() async {
+    final result = await _showAddressForm();
+    if (result == null || !mounted) return;
+    _applyNewAddress(result);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Alamat baru ditambahkan')),
+    );
+  }
+
+  /// Simpan hasil form: alamat utama masuk ke indeks 0, lainnya di akhir.
+  void _applyNewAddress(_Address result) {
+    setState(() {
+      if (result.isPrimary) {
+        _addresses.insert(0, result);
+        _selected = 0;
+      } else {
+        _addresses.add(result);
+        _selected = _addresses.length - 1;
+      }
+    });
+  }
+
+  Future<void> _showAddressPicker() {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          return SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.8,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Pilih Alamat Pengiriman',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          icon: const Icon(Icons.close_rounded, size: 22),
+                          color: AppColors.ink,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _addresses.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (_, i) {
+                          final a = _addresses[i];
+                          final sel = i == _selected;
+                          return InkWell(
+                            onTap: () {
+                              setState(() => _selected = i);
+                              Navigator.of(ctx).pop();
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: sel
+                                      ? AppColors.black
+                                      : AppColors.border,
+                                  width: sel ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: Icon(
+                                      sel
+                                          ? Icons.radio_button_checked
+                                          : Icons.radio_button_off,
+                                      size: 20,
+                                      color: sel
+                                          ? AppColors.black
+                                          : AppColors.textMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                a.name,
+                                                overflow: TextOverflow.ellipsis,
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.ink,
+                                                ),
+                                              ),
+                                            ),
+                                            if (i == 0) ...[
+                                              const SizedBox(width: 8),
+                                              const _Badge('UTAMA'),
+                                            ],
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.only(
+                                                left: 8,
+                                              ),
+                                              child: _labelBadge(a.label),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          a.phone,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          a.address,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 12,
+                                            height: 1.45,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () async {
+                                      final edited = await _showAddressForm(
+                                        existing: a,
+                                      );
+                                      if (edited == null || !mounted) return;
+                                      setState(() {
+                                        _addresses[i] = edited;
+                                        if (edited.isPrimary && i != 0) {
+                                          _addresses.removeAt(i);
+                                          _addresses.insert(0, edited);
+                                          if (_selected == i) {
+                                            _selected = 0;
+                                          } else if (i < _selected) {
+                                            _selected++;
+                                          }
+                                        }
+                                      });
+                                      setSheet(() {});
+                                    },
+                                    icon: const Icon(
+                                      Icons.edit_outlined,
+                                      size: 18,
+                                    ),
+                                    color: AppColors.ink,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 46,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final result = await _showAddressForm();
+                          if (result == null || !mounted) return;
+                          _applyNewAddress(result);
+                          if (ctx.mounted) Navigator.of(ctx).pop();
+                        },
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(
+                          'Tambah Alamat Baru',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.ink,
+                          shape: const StadiumBorder(),
+                          side: const BorderSide(
+                            color: AppColors.ink,
+                            width: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Konfirmasi hapus produk saat qty tinggal 1 dan tombol minus ditekan.
+  Future<void> _confirmRemoveItem(int index) async {
+    final product = MockData.mockCart[index].product;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Hapus Produk?',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink,
+          ),
+        ),
+        content: Text(
+          'Apakah kamu yakin ingin menghapus "${product.name}" '
+          'dari pesanan?',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            height: 1.5,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() {
+      MockData.mockCart.removeAt(index);
+      _qtys.removeAt(index);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('"${product.name}" dihapus dari pesanan')),
+    );
+  }
+
   Future<void> _pay() async {
     await showDialog<void>(
       context: context,
@@ -95,68 +428,73 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  // ═══ AppBar: ← Checkout ........ (?) ═══════════════════════════════════
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: false,
+      titleSpacing: 0,
+      leading: IconButton(
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/home');
+          }
+        },
+        icon: SvgPicture.asset(
+          AppAssets.iconBack,
+          width: 22,
+          height: 22,
+          colorFilter: const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
+        ),
+      ),
+      title: Text(
+        'Checkout',
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: AppColors.ink,
+        ),
+      ),
+      actions: [
+        IconButton(
+          onPressed: () => context.push('/help'),
+          icon: const Icon(
+            Icons.help_outline_rounded,
+            color: AppColors.textMuted,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 8),
+      ],
+      bottom: const PreferredSize(
+        preferredSize: Size.fromHeight(1),
+        child: Divider(height: 1, thickness: 1, color: AppColors.border),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final totalQty = _qtys.fold<int>(0, (s, q) => s + q);
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        elevation: 0,
-        title: Text(
-          'Checkout',
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-        ),
-        leading: IconButton(
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/home');
-            }
-          },
-          icon: SvgPicture.asset(
-            AppAssets.iconBack,
-            width: 22,
-            height: 22,
-            colorFilter: const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.help_outline_rounded,
-              color: AppColors.ink,
-              size: 22,
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.white,
+      appBar: _buildAppBar(),
       body: Column(
         children: [
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
               children: [
                 // ─── Alamat Pengiriman ──────────────────────────────────
                 _SectionHeader(
                   icon: Icons.location_on_outlined,
                   title: 'Alamat Pengiriman',
-                  trailing: TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(40, 28),
-                    ),
-                    child: Text(
-                      'Mode Kosong',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
                 ),
                 _Card(
                   child: Column(
@@ -164,51 +502,53 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            'Customer',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.ink,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.black,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+                          Flexible(
                             child: Text(
-                              'UTAMA',
+                              _currentAddress.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.ink,
                               ),
                             ),
+                          ),
+                          if (_selected == 0) ...[
+                            const SizedBox(width: 8),
+                            const _Badge('UTAMA'),
+                          ],
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: _labelBadge(_currentAddress.label),
                           ),
                           const Spacer(),
-                          TextButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(
-                              Icons.edit_outlined,
-                              size: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                            label: Text(
-                              'Ubah Alamat',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
+                          InkWell(
+                            onTap: _showAddressPicker,
+                            borderRadius: BorderRadius.circular(6),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 6,
                               ),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 28),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.edit_outlined,
+                                    size: 14,
+                                    color: AppColors.ink,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Ubah Alamat',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -218,12 +558,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         children: [
                           const Icon(
                             Icons.phone_outlined,
-                            size: 13,
+                            size: 14,
                             color: AppColors.textSecondary,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 6),
                           Text(
-                            '0812-3456-7890',
+                            _currentAddress.phone,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.textSecondary,
@@ -231,21 +571,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            size: 13,
-                            color: AppColors.textSecondary,
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2),
+                            child: Icon(
+                              Icons.location_on_outlined,
+                              size: 14,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              'Jl. Veteran No.1, RT/RW. 04/02, Kel. Ketawanggede, Kec. Lowokwaru, Kota Malang, Jawa Timur 65145',
+                              _currentAddress.address,
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
+                                fontSize: 13,
                                 height: 1.5,
                                 color: AppColors.textSecondary,
                               ),
@@ -253,46 +596,53 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      OutlinedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(
-                          Icons.add,
-                          size: 14,
-                          color: AppColors.ink,
-                        ),
-                        label: Text(
-                          'Tambah Alamat Baru',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: AppColors.border,
-                            width: 1,
-                          ),
-                          shape: RoundedRectangleBorder(
+                      const SizedBox(height: 12),
+                      _DashedBorder(
+                        radius: 8,
+                        color: AppColors.textMuted,
+                        child: Material(
+                          color: AppColors.inputBg,
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            onTap: _addAddress,
                             borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.add,
+                                    size: 14,
+                                    color: AppColors.ink,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Tambah Alamat Baru',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 22),
 
                 // ─── Produk yang Dibeli ─────────────────────────────────
                 _SectionHeader(
-                  icon: Icons.shopping_bag_outlined,
-                  title:
-                      'Produk yang Dibeli (${_qtys.fold(0, (s, q) => s + q)})',
+                  icon: Icons.inventory_2_outlined,
+                  title: 'Produk yang Dibeli ($totalQty)',
                   trailing: Text(
                     '${MockData.mockCart.length} Penjual Terpilih',
                     style: GoogleFonts.plusJakartaSans(
@@ -301,6 +651,41 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   ),
                 ),
+                if (MockData.mockCart.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.inputBg,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.shopping_cart_outlined,
+                          size: 40,
+                          color: AppColors.textMuted,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Keranjangmu kosong',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tambahkan produk dari halaman Keranjang.',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ...List.generate(MockData.mockCart.length, (i) {
                   final item = MockData.mockCart[i];
                   return Padding(
@@ -312,12 +697,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             borderRadius: BorderRadius.circular(10),
                             child: Image.asset(
                               item.product.image,
-                              width: 68,
-                              height: 68,
+                              width: 80,
+                              height: 80,
                               fit: BoxFit.cover,
                               errorBuilder: (ctx, err, stack) => Container(
-                                width: 68,
-                                height: 68,
+                                width: 80,
+                                height: 80,
                                 color: AppColors.inputBg,
                                 child: const Icon(
                                   Icons.image_outlined,
@@ -326,91 +711,82 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   item.product.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
                                     color: AppColors.ink,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: 3),
                                 Row(
                                   children: [
                                     const Icon(
-                                      Icons.store_outlined,
-                                      size: 12,
+                                      Icons.storefront_outlined,
+                                      size: 13,
                                       color: AppColors.textSecondary,
                                     ),
-                                    const SizedBox(width: 3),
+                                    const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
                                         item.product.studio,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 11,
+                                          fontSize: 12,
                                           color: AppColors.textSecondary,
                                         ),
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  MockData.formatPrice(
-                                    item.product.price * _qtys[i],
-                                  ),
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.ink,
-                                  ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        MockData.formatPrice(
+                                          item.product.price,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.ink,
+                                        ),
+                                      ),
+                                    ),
+                                    _QtyStepper(
+                                      qty: _qtys[i],
+                                      onMinus: _qtys[i] > 1
+                                          ? () => setState(() => _qtys[i]--)
+                                          : () => _confirmRemoveItem(i),
+                                      onPlus: () =>
+                                          setState(() => _qtys[i]++),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ),
-                          // Qty controls
-                          Row(
-                            children: [
-                              _QtyBtn(
-                                icon: Icons.remove,
-                                onTap: _qtys[i] > 1
-                                    ? () => setState(() => _qtys[i]--)
-                                    : null,
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                ),
-                                child: Text(
-                                  '${_qtys[i]}',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.ink,
-                                  ),
-                                ),
-                              ),
-                              _QtyBtn(
-                                icon: Icons.add,
-                                onTap: () => setState(() => _qtys[i]++),
-                              ),
-                            ],
                           ),
                         ],
                       ),
                     ),
                   );
                 }),
-                const SizedBox(height: 6),
+                const SizedBox(height: 12),
 
                 // ─── Metode Pengiriman ──────────────────────────────────
-                _SectionHeader(
+                const _SectionHeader(
                   icon: Icons.local_shipping_outlined,
                   title: 'Metode Pengiriman',
                 ),
@@ -435,15 +811,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   selected: _shipping == 'Express',
                   onTap: () => setState(() => _shipping = 'Express'),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
                 // ─── Metode Pembayaran ──────────────────────────────────
-                _SectionHeader(
-                  icon: Icons.payment_outlined,
+                const _SectionHeader(
+                  icon: Icons.account_balance_wallet_outlined,
                   title: 'Metode Pembayaran',
                 ),
                 _PaymentCard(
-                  id: 'QRIS',
+                  icon: Icons.qr_code_scanner_rounded,
                   title: 'QRIS Instant',
                   subtitle:
                       'Bayar instan bebas biaya admin dengan scan kode QRIS.',
@@ -452,9 +828,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   selected: _payment == 'QRIS',
                   onTap: () => setState(() => _payment = 'QRIS'),
                 ),
-                const SizedBox(height: 8),
                 _PaymentCard(
-                  id: 'VA',
+                  icon: Icons.account_balance_outlined,
                   title: 'Virtual Account',
                   subtitle:
                       'Verifikasi otomatis 24 jam tanpa perlu bukti transfer.',
@@ -462,9 +837,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   selected: _payment == 'VA',
                   onTap: () => setState(() => _payment = 'VA'),
                 ),
-                const SizedBox(height: 8),
                 _PaymentCard(
-                  id: 'E-Wallet',
+                  icon: Icons.smartphone_rounded,
                   title: 'E-Wallet',
                   subtitle:
                       'Terhubung langsung ke akun dompet digital favorit kamu.',
@@ -472,18 +846,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   selected: _payment == 'E-Wallet',
                   onTap: () => setState(() => _payment = 'E-Wallet'),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
                 // ─── Catatan untuk Penjual ──────────────────────────────
-                _SectionHeader(
+                const _SectionHeader(
                   icon: Icons.notes_rounded,
                   title: 'Catatan untuk Penjual (Opsional)',
+                  titleSize: 14,
                 ),
                 Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppColors.inputBg,
-                    borderRadius: BorderRadius.circular(14),
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: TextField(
                     controller: _noteCtrl,
@@ -494,65 +873,79 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       color: AppColors.ink,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Contoh: Tolong bungkus dengan bubble wrap tebal dan kardus aman.',
+                      hintText:
+                          'Contoh: Tolong bungkus dengan bubble wrap tebal dan kardus aman.',
                       hintStyle: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
+                        height: 1.5,
                         color: AppColors.textMuted,
                       ),
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 26),
 
                 // ─── Ringkasan Pembayaran ───────────────────────────────
                 Text(
                   'Ringkasan Pembayaran',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                   ),
                 ),
                 const SizedBox(height: 12),
-                _RowLine('Subtotal Produk', MockData.formatPrice(_subtotal)),
-                _RowLine(
-                  'Biaya Pengiriman (${_shippingLabel()})',
-                  MockData.formatPrice(_shippingFee),
+                _Card(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+                  child: Column(
+                    children: [
+                      _RowLine(
+                        'Subtotal Produk',
+                        MockData.formatPrice(_subtotal),
+                      ),
+                      _RowLine(
+                        'Biaya Pengiriman (${_shippingLabel()})',
+                        MockData.formatPrice(_shippingFee),
+                      ),
+                      _RowLine(
+                        'Biaya Layanan',
+                        MockData.formatPrice(_serviceFee),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: AppColors.border,
+                        ),
+                      ),
+                      _RowLine(
+                        'Total Pembayaran',
+                        MockData.formatPrice(_total),
+                        bold: true,
+                      ),
+                    ],
+                  ),
                 ),
-                _RowLine('Biaya Layanan', MockData.formatPrice(_serviceFee)),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Divider(height: 1, color: AppColors.border),
-                ),
-                _RowLine(
-                  'Total Pembayaran',
-                  MockData.formatPrice(_total),
-                  bold: true,
-                ),
-                const SizedBox(height: 12),
               ],
             ),
           ),
 
           // ─── Sticky footer ─────────────────────────────────────────────
-          DecoratedBox(
-            decoration: BoxDecoration(
+          Container(
+            decoration: const BoxDecoration(
               color: AppColors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 16,
-                  offset: const Offset(0, -4),
-                ),
-              ],
+              border: Border(top: BorderSide(color: AppColors.border)),
             ),
             child: SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Row(
                   children: [
                     Expanded(
@@ -561,7 +954,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Total bayar',
+                            'Total Tagihan',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.textSecondary,
@@ -571,7 +964,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           Text(
                             MockData.formatPrice(_total),
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 18,
+                              fontSize: 20,
                               fontWeight: FontWeight.w800,
                               color: AppColors.ink,
                             ),
@@ -580,8 +973,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
-                      child: DcButton(label: 'Bayar Sekarang', onPressed: _pay),
+                    SizedBox(
+                      width: 162,
+                      height: 50,
+                      child: FilledButton(
+                        onPressed: MockData.mockCart.isEmpty ? null : _pay,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.black,
+                          foregroundColor: AppColors.white,
+                          elevation: 0,
+                          shape: const StadiumBorder(),
+                        ),
+                        child: Text(
+                          'Bayar Sekarang',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -592,17 +1003,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ),
     );
   }
-
-  String _shippingLabel() {
-    switch (_shipping) {
-      case 'Hemat':
-        return 'Hemat';
-      case 'Express':
-        return 'Express';
-      default:
-        return 'Reguler';
-    }
-  }
 }
 
 // ─── Section header ────────────────────────────────────────────────────────────
@@ -611,26 +1011,31 @@ class _SectionHeader extends StatelessWidget {
     required this.icon,
     required this.title,
     this.trailing,
+    this.titleSize = 16,
   });
 
   final IconData icon;
   final String title;
   final Widget? trailing;
+  final double titleSize;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.ink),
+          Icon(icon, size: 20, color: AppColors.ink),
           const SizedBox(width: 6),
-          Text(
-            title,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink,
+          Flexible(
+            child: Text(
+              title,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: titleSize,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink,
+              ),
             ),
           ),
           if (trailing != null) ...[const Spacer(), trailing!],
@@ -640,53 +1045,162 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ─── White card ───────────────────────────────────────────────────────────────
+// ─── Card (border abu-abu, putih) ─────────────────────────────────────────────
 class _Card extends StatelessWidget {
-  const _Card({required this.child});
+  const _Card({
+    required this.child,
+    this.padding = const EdgeInsets.all(14),
+  });
 
   final Widget child;
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: padding,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEEEEEE)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
       ),
       child: child,
     );
   }
 }
 
-// ─── Qty button ───────────────────────────────────────────────────────────────
-class _QtyBtn extends StatelessWidget {
-  const _QtyBtn({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback? onTap;
+// ─── Badge hitam (UTAMA / DIREKOMENDASIKAN) ───────────────────────────────────
+class _Badge extends StatelessWidget {
+  const _Badge(this.text);
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: onTap == null ? AppColors.border : AppColors.ink,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.black,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.3,
+          color: AppColors.white,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Border putus-putus ───────────────────────────────────────────────────────
+class _DashedBorder extends StatelessWidget {
+  const _DashedBorder({
+    required this.child,
+    required this.radius,
+    required this.color,
+  });
+
+  final Widget child;
+  final double radius;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      foregroundPainter: _DashedPainter(radius: radius, color: color),
+      child: child,
+    );
+  }
+}
+
+class _DashedPainter extends CustomPainter {
+  _DashedPainter({required this.radius, required this.color});
+
+  final double radius;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Offset.zero & size,
+          Radius.circular(radius),
+        ),
+      );
+    for (final PathMetric metric in path.computeMetrics()) {
+      double dist = 0;
+      while (dist < metric.length) {
+        canvas.drawPath(metric.extractPath(dist, dist + 4), paint);
+        dist += 7; // 4 garis + 3 jarak
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedPainter old) =>
+      old.color != color || old.radius != radius;
+}
+
+// ─── Qty stepper:  [ -  1  + ] ────────────────────────────────────────────────
+class _QtyStepper extends StatelessWidget {
+  const _QtyStepper({
+    required this.qty,
+    required this.onMinus,
+    required this.onPlus,
+  });
+
+  final int qty;
+  final VoidCallback? onMinus;
+  final VoidCallback onPlus;
+
+  Widget _btn(IconData icon, VoidCallback? onTap) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(6),
+    child: SizedBox(
+      width: 28,
+      height: 30,
+      child: Icon(
+        icon,
+        size: 14,
+        color: onTap == null ? AppColors.textMuted : AppColors.ink,
+      ),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _btn(Icons.remove, onMinus),
+          SizedBox(
+            width: 24,
+            child: Text(
+              '$qty',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink,
+              ),
+            ),
           ),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Icon(
-          icon,
-          size: 14,
-          color: onTap == null ? AppColors.textMuted : AppColors.ink,
-        ),
+          _btn(Icons.add, onPlus),
+        ],
       ),
     );
   }
@@ -711,17 +1225,17 @@ class _ShippingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? AppColors.black : const Color(0xFFEEEEEE),
+              color: selected ? AppColors.black : AppColors.border,
               width: selected ? 1.5 : 1,
             ),
           ),
@@ -729,7 +1243,7 @@ class _ShippingTile extends StatelessWidget {
             children: [
               Icon(
                 selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                size: 20,
+                size: 22,
                 color: selected ? AppColors.black : AppColors.textMuted,
               ),
               const SizedBox(width: 12),
@@ -740,15 +1254,16 @@ class _ShippingTile extends StatelessWidget {
                     Text(
                       title,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
+                        fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -758,8 +1273,8 @@ class _ShippingTile extends StatelessWidget {
               Text(
                 price,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.ink,
                 ),
               ),
@@ -774,7 +1289,7 @@ class _ShippingTile extends StatelessWidget {
 // ─── Payment card ─────────────────────────────────────────────────────────────
 class _PaymentCard extends StatelessWidget {
   const _PaymentCard({
-    required this.id,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.tags,
@@ -783,7 +1298,7 @@ class _PaymentCard extends StatelessWidget {
     this.badge,
   });
 
-  final String id;
+  final IconData icon;
   final String title;
   final String subtitle;
   final List<String> tags;
@@ -793,110 +1308,184 @@ class _PaymentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? AppColors.black : const Color(0xFFEEEEEE),
-            width: selected ? 1.5 : 1,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? AppColors.black : AppColors.border,
+              width: selected ? 1.5 : 1,
+            ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  selected
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_off,
-                  size: 20,
-                  color: selected ? AppColors.black : AppColors.textMuted,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    selected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
+                    size: 22,
+                    color: selected ? AppColors.black : AppColors.textMuted,
                   ),
-                ),
-                if (badge != null) ...[
+                  const SizedBox(width: 12),
+                  Icon(icon, size: 18, color: AppColors.ink),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.black,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+                  Flexible(
                     child: Text(
-                      badge!,
+                      title,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.white,
-                      ),
-                    ),
-                  ),
-                ],
-                const Spacer(),
-                const Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  size: 18,
-                  color: AppColors.textMuted,
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 30, top: 4),
-              child: Text(
-                subtitle,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  height: 1.4,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.only(left: 30),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: tags.map((tag) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.inputBg,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      tag,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                       ),
                     ),
-                  );
-                }).toList(),
+                  ),
+                  const Spacer(),
+                  if (badge != null) ...[
+                    _Badge(badge!),
+                    const SizedBox(width: 8),
+                  ],
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: AppColors.textMuted,
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 34, top: 6, right: 4),
+                child: Text(
+                  subtitle,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    height: 1.45,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.only(left: 34),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: tags.map((t) => _BrandChip(t)).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Chip merek pembayaran (QRIS, GoPay, OVO, ...) ────────────────────────────
+class _BrandChip extends StatelessWidget {
+  const _BrandChip(this.tag);
+  final String tag;
+
+  static const _blue = Color(0xFF005EAA);
+
+  @override
+  Widget build(BuildContext context) {
+    Color textColor = AppColors.ink;
+    Color? dot;
+    var bold = false;
+
+    switch (tag) {
+      case 'QRIS':
+        textColor = const Color(0xFF000000);
+        bold = true;
+        break;
+      case 'GoPay':
+        dot = textColor = const Color(0xFF00AED6);
+        break;
+      case 'OVO':
+        dot = textColor = const Color(0xFF4C2A86);
+        break;
+      case 'ShopeePay':
+        dot = textColor = const Color(0xFFEE4D2D);
+        break;
+      case 'DANA':
+        dot = textColor = const Color(0xFF118EEA);
+        break;
+      case 'BCA':
+        textColor = _blue;
+        bold = true;
+        break;
+      case 'Mandiri':
+        dot = const Color(0xFFF5A623);
+        textColor = const Color(0xFF002D62);
+        bold = true;
+        break;
+      case 'BRI':
+        textColor = const Color(0xFF085EA8);
+        bold = true;
+        break;
+    }
+
+    final style = GoogleFonts.plusJakartaSans(
+      fontSize: 10,
+      fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+      color: textColor,
+    );
+
+    Widget label;
+    if (tag == 'BNI 46') {
+      label = Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: 'BNI ',
+              style: style.copyWith(
+                color: const Color(0xFFF15A24),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            TextSpan(
+              text: '46',
+              style: style.copyWith(
+                color: const Color(0xFF006666),
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],
         ),
+      );
+    } else {
+      label = Text(tag, style: style);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (dot != null) ...[
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 4),
+          ],
+          label,
+        ],
       ),
     );
   }
@@ -912,18 +1501,447 @@ class _RowLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = GoogleFonts.plusJakartaSans(
+    final labelStyle = GoogleFonts.plusJakartaSans(
       fontSize: bold ? 15 : 13,
-      fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+      fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+      color: bold ? AppColors.ink : AppColors.textSecondary,
+    );
+    final valueStyle = GoogleFonts.plusJakartaSans(
+      fontSize: bold ? 20 : 13,
+      fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
       color: AppColors.ink,
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(child: Text(label, style: labelStyle)),
+          Text(value, style: valueStyle),
+        ],
+      ),
+    );
+  }
+}
+
+
+// ─── Model alamat ─────────────────────────────────────────────────────────────
+class _Address {
+  _Address({
+    required this.name,
+    required this.phone,
+    required this.address,
+    this.label = 'Rumah',
+    this.note = '',
+    this.verifiedPin = true,
+    this.isPrimary = false,
+  });
+
+  String name;
+  String phone;
+  String address;
+  String label;
+  String note;
+  bool verifiedPin;
+  bool isPrimary;
+}
+
+// ─── Form tambah / ubah alamat — gaya senada halaman Kelola Alamat ───────────
+class _AddressForm extends StatefulWidget {
+  const _AddressForm({this.existing});
+
+  final _Address? existing;
+
+  @override
+  State<_AddressForm> createState() => _AddressFormState();
+}
+
+class _AddressFormState extends State<_AddressForm> {
+  static const List<String> _labelOptions = [
+    'Rumah',
+    'Kantor',
+    'Apartemen',
+    'Studio',
+    'Lainnya',
+  ];
+
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _name;
+  late final TextEditingController _phone;
+  late final TextEditingController _address;
+  late final TextEditingController _note;
+  late String _label;
+  late bool _verifiedPin;
+  late bool _isPrimary;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.existing?.name ?? '');
+    _phone = TextEditingController(text: widget.existing?.phone ?? '');
+    _address = TextEditingController(text: widget.existing?.address ?? '');
+    _note = TextEditingController(text: widget.existing?.note ?? '');
+    _label = widget.existing?.label ?? 'Rumah';
+    _verifiedPin = widget.existing?.verifiedPin ?? true;
+    _isPrimary = widget.existing?.isPrimary ?? false;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _phone.dispose();
+    _address.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    Navigator.of(context).pop(
+      _Address(
+        name: _name.text.trim(),
+        phone: _phone.text.trim(),
+        address: _address.text.trim(),
+        label: _label,
+        note: _note.text.trim(),
+        verifiedPin: _verifiedPin,
+        isPrimary: _isPrimary,
+      ),
+    );
+  }
+
+  InputDecoration _dec(String hint, IconData icon) {
+    OutlineInputBorder border(Color c, [double w = 1]) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(color: c, width: w),
+    );
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: GoogleFonts.plusJakartaSans(
+        fontSize: 13,
+        color: AppColors.textMuted,
+      ),
+      prefixIcon: Icon(icon, size: 18, color: AppColors.textSecondary),
+      filled: true,
+      fillColor: AppColors.white,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      enabledBorder: border(AppColors.border),
+      focusedBorder: border(AppColors.ink, 1.2),
+      errorBorder: border(Colors.red.shade400),
+      focusedErrorBorder: border(Colors.red.shade400, 1.5),
+      errorStyle: GoogleFonts.plusJakartaSans(fontSize: 11),
+    );
+  }
+
+  Widget _sectionLabel(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      text,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textSecondary,
+      ),
+    ),
+  );
+
+  /// Kartu baris toggle — senada dengan halaman Kelola Alamat.
+  Widget _toggleCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: style)),
-          Text(value, style: style),
+          Icon(icon, size: 20, color: AppColors.ink),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            activeThumbColor: AppColors.white,
+            activeTrackColor: AppColors.black,
+            inactiveThumbColor: AppColors.white,
+            inactiveTrackColor: const Color(0xFFE4E2E2),
+            trackOutlineColor: const WidgetStatePropertyAll<Color?>(
+              Colors.transparent,
+            ),
+            onChanged: onChanged,
+          ),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEdit = widget.existing != null;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.borderAlt,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              // Header: judul + tombol tutup
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 12, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isEdit
+                                ? 'Ubah Alamat Pengiriman'
+                                : 'Tambah Alamat Baru',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Pastikan rincian alamat tepat untuk kurir keramik',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 22),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFEEEEEE)),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+                  children: [
+                    // Label Alamat
+                    _sectionLabel('LABEL ALAMAT'),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: _labelOptions.map((opt) {
+                        final isSelected = _label == opt;
+                        return ChoiceChip(
+                          label: Text(opt),
+                          labelPadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          selected: isSelected,
+                          selectedColor: AppColors.black,
+                          backgroundColor: AppColors.inputBg,
+                          labelStyle: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: isSelected ? AppColors.white : AppColors.ink,
+                          ),
+                          shape: const StadiumBorder(),
+                          side: BorderSide(
+                            color: isSelected
+                                ? AppColors.black
+                                : AppColors.borderAlt,
+                          ),
+                          onSelected: (_) => setState(() => _label = opt),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Nama Penerima
+                    _sectionLabel('NAMA PENERIMA'),
+                    TextFormField(
+                      controller: _name,
+                      textCapitalization: TextCapitalization.words,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        color: AppColors.ink,
+                      ),
+                      decoration: _dec(
+                        'Masukkan nama lengkap penerima',
+                        Icons.person_outline_rounded,
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Nama wajib diisi'
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Nomor Telepon / WhatsApp
+                    _sectionLabel('NOMOR TELEPON / WHATSAPP'),
+                    TextFormField(
+                      controller: _phone,
+                      keyboardType: TextInputType.phone,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        color: AppColors.ink,
+                      ),
+                      decoration: _dec(
+                        '+62 8xx-xxxx-xxxx',
+                        Icons.phone_outlined,
+                      ),
+                      validator: (v) {
+                        final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
+                        if (digits.isEmpty) return 'Nomor telepon wajib diisi';
+                        if (digits.length < 9) {
+                          return 'Nomor telepon tidak valid';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Alamat Lengkap
+                    _sectionLabel('ALAMAT LENGKAP'),
+                    TextFormField(
+                      controller: _address,
+                      minLines: 3,
+                      maxLines: 4,
+                      keyboardType: TextInputType.multiline,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        color: AppColors.ink,
+                      ),
+                      decoration: _dec(
+                        'Nama jalan, nomor rumah, RT/RW, kelurahan, '
+                        'kecamatan, kota & kode pos',
+                        Icons.location_on_outlined,
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Alamat wajib diisi'
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Catatan untuk Kurir
+                    _sectionLabel('CATATAN UNTUK KURIR (OPSIONAL)'),
+                    TextFormField(
+                      controller: _note,
+                      minLines: 2,
+                      maxLines: 3,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        color: AppColors.ink,
+                      ),
+                      decoration: _dec(
+                        'cth: Pagar hitam depan studio keramik, titip satpam',
+                        Icons.note_outlined,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Toggle: Titik Peta GPS
+                    _toggleCard(
+                      icon: Icons.pin_drop_outlined,
+                      title: 'Verifikasi Titik Peta GPS',
+                      subtitle: 'Mempermudah kurir melacak alamat akurat',
+                      value: _verifiedPin,
+                      onChanged: (v) => setState(() => _verifiedPin = v),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Toggle: Jadikan Alamat Utama
+                    _toggleCard(
+                      icon: Icons.star_outline_rounded,
+                      title: 'Jadikan Alamat Utama',
+                      subtitle: 'Alamat prioritas saat checkout belanjaan',
+                      value: _isPrimary,
+                      onChanged: (v) => setState(() => _isPrimary = v),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Submit
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: FilledButton(
+                        onPressed: _save,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.black,
+                          foregroundColor: AppColors.white,
+                          elevation: 0,
+                          shape: const StadiumBorder(),
+                        ),
+                        child: Text(
+                          isEdit ? 'Simpan Perubahan' : 'Simpan Alamat Baru',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

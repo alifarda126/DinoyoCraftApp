@@ -1,0 +1,1841 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../core/assets.dart';
+import '../../core/theme/app_colors.dart';
+
+class PengaturanScreen extends StatefulWidget {
+  const PengaturanScreen({super.key});
+
+  @override
+  State<PengaturanScreen> createState() => _PengaturanScreenState();
+}
+
+class _PengaturanScreenState extends State<PengaturanScreen> {
+  // ── State Pengaturan ───────────────────────────────────────────────────────
+  bool _twoFactor = true;
+  static const String _userEmail = 'mizan.artisan@gmail.com';
+  static const String _maskedEmail = 'miz***@gmail.com';
+  bool _orderNotification = true;
+  bool _whatsAppNotification = true;
+  String _lastPasswordChanged = 'Terakhir diubah 3 bulan lalu';
+  String _selectedLanguage = 'Bahasa Indonesia';
+  String _selectedLanguageCode = 'ID';
+  String _selectedTheme = 'Terang (Light Mode)';
+  String _cacheSize = '24.5 MB file sementara';
+  bool _isCacheCleaned = false;
+  bool _hasOtherDevices = true;
+
+  IconData get _currentThemeIcon {
+    if (_selectedTheme.startsWith('Terang')) {
+      return Icons.light_mode_outlined;
+    } else if (_selectedTheme.startsWith('Gelap')) {
+      return Icons.dark_mode_outlined;
+    } else {
+      return Icons.brightness_auto_outlined;
+    }
+  }
+
+  void _showFeedback(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.black,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        content: Text(
+          message,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: AppColors.white,
+          ),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // ── Helper Modal Bottom Sheet Wrapper ─────────────────────────────────────
+  Future<T?> _showAppBottomSheet<T>({
+    required Widget Function(BuildContext) builder,
+  }) {
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x73000000),
+      builder: builder,
+    );
+  }
+
+  // ── 1. Ubah Kata Sandi ────────────────────────────────────────────────────
+  Future<void> _navigateToNewPassword() async {
+    final res = await context.push<bool>('/new-password');
+    if (res == true && mounted) {
+      setState(() {
+        _lastPasswordChanged = 'Baru saja diubah';
+      });
+    }
+  }
+
+
+  // ── 2. Autentikasi 2 Langkah (2FA) ─────────────────────────────────────────
+  void _toggleTwoFactor() {
+    if (_twoFactor) {
+      // Tampilkan dialog konfirmasi nonaktifkan
+      showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          title: Text(
+            'Nonaktifkan 2FA?',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppColors.ink,
+            ),
+          ),
+          content: Text(
+            'Tingkat keamanan akun Anda akan berkurang dan tidak memerlukan kode verifikasi OTP via email saat masuk di perangkat baru.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              height: 1.5,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: Text(
+                'Batal',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogCtx);
+                setState(() => _twoFactor = false);
+                _showFeedback('Autentikasi 2 Langkah dinonaktifkan.');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFBA1A1A),
+                foregroundColor: AppColors.white,
+                shape: const StadiumBorder(),
+                elevation: 0,
+              ),
+              child: Text(
+                'Nonaktifkan',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Buka bottom sheet untuk aktifkan via Email
+      _showAppBottomSheet<void>(
+        builder: (sheetContext) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.borderAlt,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.inputBg,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.mark_email_read_outlined,
+                          color: AppColors.ink,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Aktifkan 2FA via Email',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        onPressed: () => Navigator.pop(sheetContext),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Setiap kali Anda masuk di perangkat baru, DinoyoCraft akan mengirimkan kode verifikasi 6 digit ke alamat email terdaftar Anda.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.inputBg,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.borderAlt),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.email_outlined,
+                            size: 20,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Email Terdaftar',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _userEmail,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4EDDA),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'Terverifikasi',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF155724),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF9F9F9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          size: 18,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Pastikan Anda selalu memiliki akses ke kotak masuk email ini untuk menerima kode OTP masuk.',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        setState(() => _twoFactor = true);
+                        _showFeedback(
+                          'Autentikasi 2 Langkah via Email berhasil diaktifkan.',
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.black,
+                        foregroundColor: AppColors.white,
+                        shape: const StadiumBorder(),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Aktifkan via Email Sekarang',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  // ── 3. Perangkat Terhubung ────────────────────────────────────────────────
+  void _openConnectedDevicesModal() {
+    _showAppBottomSheet<void>(
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.borderAlt,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Perangkat Terhubung',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Daftar perangkat yang aktif mengakses akun Anda',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () => Navigator.pop(sheetContext),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Perangkat 1: Smartphone ini
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.inputBg,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.borderAlt),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.phone_android_rounded,
+                              size: 22,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Smartphone Ini',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.ink,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFD4EDDA),
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Aktif',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF155724),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Malang, Indonesia • DinoyoCraft App v1.0.0',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_hasOtherDevices) ...[
+                      const SizedBox(height: 10),
+                      // Perangkat 2: Laptop / Browser
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.borderAlt),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.inputBg,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.laptop_chromebook_rounded,
+                                size: 22,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Chrome di Windows 11',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'Surabaya, Indonesia • Aktif kemarin',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            OutlinedButton(
+                              onPressed: () {
+                                setSheetState(() => _hasOtherDevices = false);
+                                setState(() => _hasOtherDevices = false);
+                                _showFeedback(
+                                  'Berhasil keluar dari sesi Chrome di Windows.',
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFBA1A1A),
+                                side: const BorderSide(
+                                  color: Color(0xFFBA1A1A),
+                                ),
+                                shape: const StadiumBorder(),
+                                minimumSize: const Size(0, 32),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
+                              ),
+                              child: Text(
+                                'Keluar',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            setSheetState(() => _hasOtherDevices = false);
+                            setState(() => _hasOtherDevices = false);
+                            Navigator.pop(sheetContext);
+                            _showFeedback(
+                              'Berhasil keluar dari semua perangkat lain.',
+                            );
+                          },
+                          icon: const Icon(Icons.logout_rounded, size: 18),
+                          label: Text(
+                            'Keluar dari Semua Perangkat Lain',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFBA1A1A),
+                            side: const BorderSide(color: Color(0xFFBA1A1A)),
+                            shape: const StadiumBorder(),
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 16),
+                      Center(
+                        child: Text(
+                          'Hanya perangkat ini yang sedang aktif.',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ── 4. Bahasa Aplikasi ────────────────────────────────────────────────────
+  void _openLanguageModal() {
+    final languages = [
+      {
+        'name': 'Bahasa Indonesia',
+        'code': 'ID',
+        'desc': 'Bahasa default sistem aplikasi',
+      },
+      {
+        'name': 'English',
+        'code': 'EN',
+        'desc': 'International English localization',
+      },
+      {'name': 'Basa Jawa', 'code': 'JV', 'desc': 'Basa daerah Jawa Timur'},
+    ];
+
+    _showAppBottomSheet<void>(
+      builder: (sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.borderAlt,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Pilih Bahasa Aplikasi',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Bahasa tampilan menu & pemberitahuan',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(sheetContext),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                for (final lang in languages) ...[
+                  _buildRadioOptionTile(
+                    icon: Icons.language_outlined,
+                    title: lang['name']!,
+                    subtitle: lang['desc'],
+                    pillText: lang['code']!,
+                    isSelected: _selectedLanguage == lang['name'],
+                    onTap: () {
+                      setState(() {
+                        _selectedLanguage = lang['name']!;
+                        _selectedLanguageCode = lang['code']!;
+                      });
+                      Navigator.pop(sheetContext);
+                      _showFeedback(
+                        'Bahasa aplikasi diubah ke $_selectedLanguage.',
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── 5. Tema Tampilan ──────────────────────────────────────────────────────
+  void _openThemeModal() {
+    final themes = [
+      {
+        'name': 'Terang (Light Mode)',
+        'icon': Icons.light_mode_outlined,
+        'desc': 'Tampilan terang bersih khas keramik Dinoyo',
+      },
+      {
+        'name': 'Gelap (Dark Mode)',
+        'icon': Icons.dark_mode_outlined,
+        'desc': 'Nuansa gelap nyaman untuk penggunaan malam hari',
+      },
+      {
+        'name': 'Mengikuti Sistem',
+        'icon': Icons.brightness_auto_outlined,
+        'desc': 'Menyesuaikan mode tampilan sistem perangkat Anda',
+      },
+    ];
+
+    _showAppBottomSheet<void>(
+      builder: (sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.borderAlt,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Pilih Tema Tampilan',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Sesuaikan kenyamanan visual Anda',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(sheetContext),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                for (final th in themes) ...[
+                  _buildRadioOptionTile(
+                    icon: th['icon'] as IconData,
+                    title: th['name'] as String,
+                    subtitle: th['desc'] as String,
+                    isSelected: _selectedTheme == th['name'],
+                    onTap: () {
+                      setState(() {
+                        _selectedTheme = th['name'] as String;
+                      });
+                      Navigator.pop(sheetContext);
+                      _showFeedback('Tema diubah ke $_selectedTheme.');
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── 6. Bersihkan Cache ────────────────────────────────────────────────────
+  void _clearCache() {
+    if (_isCacheCleaned) {
+      _showFeedback('Cache aplikasi sudah bersih (0 B).');
+      return;
+    }
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          'Bersihkan Cache?',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink,
+          ),
+        ),
+        content: Text(
+          'File sementara sebesar 24.5 MB berupa pratinjau gambar keramik dan data offline akan dihapus. Ini tidak akan menghapus data akun Anda.',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            height: 1.5,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(
+              'Batal',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              setState(() {
+                _cacheSize = '0 B file sementara';
+                _isCacheCleaned = true;
+              });
+              _showFeedback('Cache sebesar 24.5 MB berhasil dibersihkan.');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.black,
+              foregroundColor: AppColors.white,
+              shape: const StadiumBorder(),
+              elevation: 0,
+            ),
+            child: Text(
+              'Bersihkan',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 7. Kebijakan Privasi Modal ────────────────────────────────────────────
+  void _openPrivacyPolicyModal() {
+    _showLegalSheet(
+      title: 'Kebijakan Privasi',
+      subtitle: 'Terakhir diperbarui: 1 Oktober 2026',
+      icon: Icons.privacy_tip_outlined,
+      sections: const [
+        _LegalSection(
+          number: '1',
+          heading: 'Komitmen Perlindungan Privasi',
+          body:
+              'DinoyoCraft berkomitmen menjaga dan menghormati privasi seluruh pengguna, pembeli, serta mitra perajin keramik di kawasan Dinoyo Malang. Data Anda dikelola secara aman sesuai peraturan perlindungan data yang berlaku di Indonesia.',
+        ),
+        _LegalSection(
+          number: '2',
+          heading: 'Data yang Dikumpulkan',
+          body:
+              'Kami mengumpulkan informasi yang Anda berikan secara sukarela, seperti nama lengkap, nomor WhatsApp, alamat tujuan pengiriman pesanan tembikar, serta riwayat interaksi dan transaksi pesanan.',
+        ),
+        _LegalSection(
+          number: '3',
+          heading: 'Penggunaan Informasi',
+          body:
+              'Data Anda digunakan secara eksklusif untuk memproses pesanan kerajinan keramik, koordinasi kurir ekspedisi dengan packing aman, pembaruan nomor resi, serta layanan pelanggan.',
+        ),
+        _LegalSection(
+          number: '4',
+          heading: 'Keamanan Transaksi & Akun',
+          body:
+              'Semua kata sandi dienkripsi dengan standar hash industri. Kami tidak pernah membagikan atau menjual data pribadi Anda kepada pihak ketiga manapun untuk kepentingan komersial.',
+        ),
+        _LegalSection(
+          number: '5',
+          heading: 'Hak Pengguna',
+          body:
+              'Anda berhak memperbarui data diri, mengatur preferensi notifikasi, atau meminta penutupan dan penghapusan akun kapan saja melalui menu Kelola Pengaturan.',
+        ),
+      ],
+    );
+  }
+
+  // ── 8. Syarat & Ketentuan Penggunaan ──────────────────────────────────────
+  void _openTermsModal() {
+    _showLegalSheet(
+      title: 'Syarat & Ketentuan Penggunaan',
+      subtitle: 'Ketentuan berbelanja & bertransaksi di DinoyoCraft',
+      icon: Icons.description_outlined,
+      sections: const [
+        _LegalSection(
+          number: '1',
+          heading: 'Ketentuan Akun',
+          body:
+              'Pengguna wajib memberikan informasi yang akurat saat membuat akun dan bertanggung jawab penuh menjaga kerahasiaan kata sandi serta aktivitas yang terjadi pada akun tersebut.',
+        ),
+        _LegalSection(
+          number: '2',
+          heading: 'Pemesanan & Pembayaran',
+          body:
+              'Seluruh harga tertera dalam mata uang Rupiah (IDR). Pesanan akan diproses oleh pengrajin Dinoyo setelah pembayaran terverifikasi secara resmi melalui metode transfer atau e-wallet yang tersedia.',
+        ),
+        _LegalSection(
+          number: '3',
+          heading: 'Karakteristik Produk Keramik Hand-made',
+          body:
+              'Produk keramik Dinoyo merupakan karya seni kerajinan tangan. Sedikit perbedaan dalam corak glasir, dimensi (toleransi 1-2 cm), atau tekstur adalah ciri khas keaslian tembikar lokal dan bukan cacat produksi.',
+        ),
+        _LegalSection(
+          number: '4',
+          heading: 'Pengiriman & Pembatalan',
+          body:
+              'Setiap produk dikemas menggunakan standar pengemasan barang pecah belah. Pembatalan pesanan hanya dapat disetujui jika toko perajin belum memulai proses produksi khusus atau pengemasan paket.',
+        ),
+        _LegalSection(
+          number: '5',
+          heading: 'Hak Kekayaan Intelektual',
+          body:
+              'Seluruh foto katalog, logo, identitas merek, dan desain karya kerajinan keramik di platform ini dilindungi oleh hak kekayaan intelektual milik perajin sentra keramik Dinoyo.',
+        ),
+      ],
+    );
+  }
+
+  // ── 9. Kebijakan Garansi Barang Pecah Belah ────────────────────────────────
+  void _openWarrantyModal() {
+    _showLegalSheet(
+      title: 'Garansi Barang Pecah Belah',
+      subtitle: '100% Proteksi Pengiriman Keramik DinoyoCraft',
+      icon: Icons.gavel_outlined,
+      svgPath: AppAssets.iconGaransi,
+      extraAction: OutlinedButton.icon(
+        onPressed: () {
+          Navigator.pop(context);
+          context.push('/help');
+        },
+        icon: const Icon(Icons.help_outline_rounded, size: 16),
+        label: Text(
+          'Pusat Bantuan & Klaim',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.ink,
+          side: const BorderSide(color: AppColors.borderAlt),
+          shape: const StadiumBorder(),
+          minimumSize: const Size(double.infinity, 48),
+        ),
+      ),
+      sections: const [
+        _LegalSection(
+          number: '1',
+          heading: 'Jaminan Proteksi 100% Tanpa Risiko',
+          body:
+              'Kami memahami kerentanan barang tembikar dan keramik. Setiap pesanan kerajinan di DinoyoCraft dilindungi garansi penggantian penuh jika terjadi kerusakan atau pecah selama proses pengantaran ekspedisi.',
+        ),
+        _LegalSection(
+          number: '2',
+          heading: 'Syarat Wajib Video Unboxing',
+          body:
+              'Untuk memvalidasi klaim asuransi ekspedisi, pembeli wajib merekam video unboxing secara utuh tanpa jeda (no pause/no edit) sejak paket masih tersegel rapi hingga isi barang diperiksa.',
+        ),
+        _LegalSection(
+          number: '3',
+          heading: 'Batas Waktu Pengajuan Klaim',
+          body:
+              'Permohonan klaim garansi harus diajukan maksimal 1 x 24 jam setelah status resi menunjukkan paket telah berhasil diterima oleh penerima.',
+        ),
+        _LegalSection(
+          number: '4',
+          heading: 'Pilihan Solusi Penggantian',
+          body:
+              'Pembeli dapat memilih antara: (a) Pengiriman unit keramik baru secara gratis tanpa biaya ongkir tambahan, ATAU (b) Pengembalian dana penuh (100% refund) sesuai nominal pesanan.',
+        ),
+      ],
+    );
+  }
+
+  // Helper untuk sheet legal / informasi
+  void _showLegalSheet({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    String? svgPath,
+    required List<_LegalSection> sections,
+    Widget? extraAction,
+  }) {
+    _showAppBottomSheet<void>(
+      builder: (sheetContext) {
+        return Container(
+          height: MediaQuery.of(sheetContext).size.height * 0.82,
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 12, bottom: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.borderAlt,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.inputBg,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: svgPath != null
+                            ? Padding(
+                                padding: const EdgeInsets.all(9),
+                                child: SvgPicture.asset(
+                                  svgPath,
+                                  colorFilter: const ColorFilter.mode(
+                                    AppColors.ink,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                              )
+                            : Icon(icon, size: 20, color: AppColors.ink),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            Text(
+                              subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        onPressed: () => Navigator.pop(sheetContext),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 20, color: Color(0xFFEEEEEE)),
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(20, 6, 20, 20),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: sections.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 16),
+                    itemBuilder: (context, i) {
+                      final item = sections[i];
+                      return Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.inputBg,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.borderAlt),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 22,
+                                  height: 22,
+                                  alignment: Alignment.center,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.black,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    item.number,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.white,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    item.heading,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              item.body,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                height: 1.5,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                  child: Column(
+                    children: [
+                      if (extraAction != null) ...[
+                        extraAction,
+                        const SizedBox(height: 10),
+                      ],
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(sheetContext),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.black,
+                            foregroundColor: AppColors.white,
+                            shape: const StadiumBorder(),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'Saya Mengerti',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── 10. Konfirmasi Keluar Akun ─────────────────────────────────────────────
+  void _confirmLogout() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          'Keluar dari Akun?',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink,
+          ),
+        ),
+        content: Text(
+          'Anda harus login kembali untuk mengakses keranjang dan riwayat transaksi kerajinan keramik Anda.',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            height: 1.5,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(
+              'Batal',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              context.go('/login');
+              _showFeedback('Anda telah berhasil keluar dari akun.');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFBA1A1A),
+              foregroundColor: AppColors.white,
+              shape: const StadiumBorder(),
+              elevation: 0,
+            ),
+            child: Text(
+              'Keluar',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Helper Tile Radio Option ──────────────────────────────────────────────
+  Widget _buildRadioOptionTile({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    String? pillText,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFF9F9F9) : AppColors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? AppColors.black : AppColors.borderAlt,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.inputBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 18,
+                color: isSelected ? AppColors.black : AppColors.ink,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (pillText != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.inputBg,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AppColors.borderAlt),
+                ),
+                child: Text(
+                  pillText,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Icon(
+              isSelected
+                  ? Icons.check_circle_rounded
+                  : Icons.radio_button_unchecked_rounded,
+              color: isSelected ? AppColors.black : AppColors.textMuted,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── BUILD UTAMA ───────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
+                children: [
+                  // 1. AKUN & KEAMANAN
+                  _buildGroup(
+                    'AKUN & KEAMANAN',
+                    [
+                      _SettingTile(
+                        icon: Icons.lock_outline_rounded,
+                        title: 'Ubah Kata Sandi',
+                        subtitle: _lastPasswordChanged,
+                        route: '/new-password',
+                        onTap: _navigateToNewPassword,
+                      ),
+                      _SettingTile(
+                        icon: Icons.verified_user_outlined,
+                        title: 'Autentikasi 2 Langkah (2FA)',
+                        subtitle: _twoFactor
+                            ? 'Aktif via Email ($_maskedEmail)'
+                            : 'Tingkatkan keamanan akun via Email OTP',
+                        onTap: _toggleTwoFactor,
+                        trailing: Switch(
+                          value: _twoFactor,
+                          activeThumbColor: AppColors.black,
+                          onChanged: (_) => _toggleTwoFactor(),
+                        ),
+                      ),
+                      _SettingTile(
+                        icon: Icons.devices_outlined,
+                        title: 'Perangkat Terhubung',
+                        subtitle: _hasOtherDevices
+                            ? '2 perangkat aktif saat ini'
+                            : '1 perangkat aktif saat ini',
+                        onTap: _openConnectedDevicesModal,
+                      ),
+                      const _SettingTile(
+                        icon: Icons.delete_outline_rounded,
+                        title: 'Hapus Akun',
+                        subtitle: 'Nonaktifkan akun secara permanen',
+                        destructive: true,
+                        route: '/hapus-akun',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // 2. NOTIFIKASI
+                  _buildGroup(
+                    'NOTIFIKASI',
+                    [
+                      _SettingTile(
+                        icon: Icons.local_shipping_outlined,
+                        title: 'Status Pesanan & Pengiriman',
+                        subtitle: 'Update resi pengiriman tembikar & keramik',
+                        onTap: () {
+                          setState(
+                            () => _orderNotification = !_orderNotification,
+                          );
+                          _showFeedback(
+                            _orderNotification
+                                ? 'Notifikasi pesanan & pengiriman diaktifkan.'
+                                : 'Notifikasi pesanan & pengiriman dinonaktifkan.',
+                          );
+                        },
+                        trailing: Switch(
+                          value: _orderNotification,
+                          activeThumbColor: AppColors.black,
+                          onChanged: (v) {
+                            setState(() => _orderNotification = v);
+                            _showFeedback(
+                              v
+                                  ? 'Notifikasi pesanan & pengiriman diaktifkan.'
+                                  : 'Notifikasi pesanan & pengiriman dinonaktifkan.',
+                            );
+                          },
+                        ),
+                      ),
+                      _SettingTile(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        title: 'Notifikasi via WhatsApp',
+                        subtitle: 'Terima nota dan update pengiriman via WA',
+                        onTap: () {
+                          setState(
+                            () =>
+                                _whatsAppNotification = !_whatsAppNotification,
+                          );
+                          _showFeedback(
+                            _whatsAppNotification
+                                ? 'Notifikasi via WhatsApp diaktifkan.'
+                                : 'Notifikasi via WhatsApp dinonaktifkan.',
+                          );
+                        },
+                        trailing: Switch(
+                          value: _whatsAppNotification,
+                          activeThumbColor: AppColors.black,
+                          onChanged: (v) {
+                            setState(() => _whatsAppNotification = v);
+                            _showFeedback(
+                              v
+                                  ? 'Notifikasi via WhatsApp diaktifkan.'
+                                  : 'Notifikasi via WhatsApp dinonaktifkan.',
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // 3. PREFERENSI APLIKASI
+                  _buildGroup(
+                    'PREFERENSI APLIKASI',
+                    [
+                      _SettingTile(
+                        icon: Icons.language_outlined,
+                        title: 'Bahasa Aplikasi',
+                        subtitle: _selectedLanguage,
+                        trailingPill: _selectedLanguageCode,
+                        onTap: _openLanguageModal,
+                      ),
+                      _SettingTile(
+                        icon: _currentThemeIcon,
+                        title: 'Tema Tampilan',
+                        subtitle: _selectedTheme,
+                        onTap: _openThemeModal,
+                      ),
+                      _SettingTile(
+                        icon: Icons.cleaning_services_outlined,
+                        title: 'Bersihkan Cache',
+                        subtitle: _cacheSize,
+                        trailingPillAction: _isCacheCleaned
+                            ? 'Bersih'
+                            : 'Bersihkan',
+                        onPillAction: _clearCache,
+                        onTap: _clearCache,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // 4. PRIVASI & LEGALITAS
+                  _buildGroup(
+                    'PRIVASI & LEGALITAS',
+                    [
+                      _SettingTile(
+                        icon: Icons.privacy_tip_outlined,
+                        title: 'Kebijakan Privasi',
+                        onTap: _openPrivacyPolicyModal,
+                      ),
+                      _SettingTile(
+                        icon: Icons.description_outlined,
+                        title: 'Syarat & Ketentuan Penggunaan',
+                        onTap: _openTermsModal,
+                      ),
+                      _SettingTile(
+                        icon: Icons.gavel_outlined,
+                        svgPath: AppAssets.iconGaransi,
+                        title: 'Kebijakan Garansi Barang Pecah Belah',
+                        onTap: _openWarrantyModal,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 5. Keluar dari Akun
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      onPressed: _confirmLogout,
+                      icon: const Icon(
+                        Icons.logout_rounded,
+                        size: 20,
+                        color: Colors.redAccent,
+                      ),
+                      label: Text(
+                        'Keluar dari Akun',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                          color: Colors.redAccent,
+                          width: 1.5,
+                        ),
+                        shape: const StadiumBorder(),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        backgroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Center(
+                    child: Text(
+                      'DinoyoCraft App v1.0.0',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Center(
+                    child: Text(
+                      'Sentra Keramik Dinoyo Malang • Jawa Timur',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return SizedBox(
+      height: 54,
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/profile');
+              }
+            },
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+          ),
+          Expanded(
+            child: Text(
+              'Kelola Pengaturan',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+          ),
+          const SizedBox(width: 48),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroup(String heading, List<Widget> tiles) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          heading,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderAlt),
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < tiles.length; i++) ...[
+                if (i > 0)
+                  const Divider(
+                    height: 1,
+                    indent: 60,
+                    color: Color(0xFFEEEEEE),
+                  ),
+                tiles[i],
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingTile extends StatelessWidget {
+  const _SettingTile({
+    required this.icon,
+    required this.title,
+    this.svgPath,
+    this.subtitle,
+    this.trailing,
+    this.trailingPill,
+    this.trailingPillAction,
+    this.onPillAction,
+    this.destructive = false,
+    this.route,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String? svgPath; // jika diisi, SVG ini menggantikan icon Material
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final String? trailingPill;
+  final String? trailingPillAction;
+  final VoidCallback? onPillAction;
+  final bool destructive;
+  final String? route;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleColor = destructive ? _destructiveColor : AppColors.ink;
+
+    final effectiveTap =
+        onTap ?? (route != null ? () => context.push(route!) : null);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: effectiveTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.inputBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: svgPath != null
+                  ? Padding(
+                      padding: const EdgeInsets.all(9),
+                      child: SvgPicture.asset(
+                        svgPath!,
+                        colorFilter: ColorFilter.mode(
+                          destructive ? _destructiveColor : AppColors.ink,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      icon,
+                      size: 18,
+                      color: destructive ? _destructiveColor : AppColors.ink,
+                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: titleColor,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (trailing != null)
+              trailing!
+            else if (trailingPill != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.inputBg,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AppColors.borderAlt),
+                ),
+                child: Text(
+                  trailingPill!,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                ),
+              )
+            else if (trailingPillAction != null)
+              InkWell(
+                onTap: onPillAction ?? effectiveTap,
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.inputBg,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: AppColors.borderAlt),
+                  ),
+                  child: Text(
+                    trailingPillAction!,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ),
+              )
+            else
+              const Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static const Color _destructiveColor = Color(0xFFBA1A1A);
+}
+
+class _LegalSection {
+  const _LegalSection({
+    required this.number,
+    required this.heading,
+    required this.body,
+  });
+
+  final String number;
+  final String heading;
+  final String body;
+}

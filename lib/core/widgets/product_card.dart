@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../data/mock_data.dart';
+import '../../features/product/presentation/modal_pilih_variasi.dart';
 import '../assets.dart';
 import '../theme/app_colors.dart';
 
@@ -159,7 +160,12 @@ class ProductCard extends StatelessWidget {
               shape: const CircleBorder(),
               child: InkWell(
                 customBorder: const CircleBorder(),
-                onTap: onAdd ?? () => context.push('/checkout'),
+                onTap: onAdd ??
+                    () => showModalPilihVariasi(
+                      context,
+                      product: product,
+                      mode: ModalVariasiMode.beliLangsung,
+                    ),
                 child: SizedBox(
                   width: 34,
                   height: 34,

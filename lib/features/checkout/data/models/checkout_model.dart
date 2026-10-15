@@ -1,0 +1,2 @@
+﻿// Checkout model
+class CheckoutModel {}

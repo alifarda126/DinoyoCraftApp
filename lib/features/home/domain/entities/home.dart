@@ -1,0 +1,2 @@
+﻿// Home entity
+class Home {}

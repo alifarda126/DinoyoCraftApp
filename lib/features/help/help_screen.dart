@@ -30,8 +30,12 @@ class _HelpScreenState extends State<HelpScreen> {
         )
         .toList();
 
-    return CustomScrollView(
-      slivers: [
+    return Scaffold(
+      // Scaffold diperlukan sebagai ancestor Material untuk TextField/
+      // ExpansionTile/InkWell; tanpa ini halaman melempar error rendering.
+      backgroundColor: Colors.white,
+      body: CustomScrollView(
+        slivers: [
         const SliverPinnedDcHeader(),
         SliverPadding(
           padding: const EdgeInsets.only(bottom: 100),
@@ -168,7 +172,8 @@ class _HelpScreenState extends State<HelpScreen> {
             ),
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 }

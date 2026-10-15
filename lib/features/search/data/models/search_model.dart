@@ -1,0 +1,2 @@
+﻿// Search model
+class SearchModel {}

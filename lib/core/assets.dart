@@ -6,6 +6,12 @@ abstract final class AppAssets {
   static const String logoBlack = 'assets/images/logo_black.png';
   static const String logoIconCircle = 'assets/images/logo_icon_circle.png';
   static const String promoBanner = 'assets/images/promo_banner.png';
+  static const String bannerDiskon =
+      'assets/images/Diskon Keramik Pengguna Baru.png';
+  static const String bannerPromo =
+      'assets/images/Promo Keramik Elegan Akhir Tahun.png';
+  static const String bannerTradisi =
+      'assets/images/Perpaduan Tradisi dan Estetika Keramik.png';
   static const String productVas = 'assets/images/product_vas.jpg';
   static const String productCangkir = 'assets/images/product_cangkir.jpg';
   static const String productMangkuk = 'assets/images/product_mangkuk.jpg';
@@ -33,11 +39,23 @@ abstract final class AppAssets {
   static const String navWorkshop = 'assets/icons/nav_workshop.svg';
   static const String navBantuan = 'assets/icons/nav_bantuan.svg';
   static const String navBerandaActive = 'assets/icons/nav_beranda_active.svg';
+  static const String navProfil = 'assets/icons/nav_profil.svg';
   static const String iconSearch = 'assets/icons/icon_search.svg';
   static const String iconProfile = 'assets/icons/icon_profile.svg';
   static const String iconChat = 'assets/icons/icon_chat.svg';
   static const String iconBot = 'assets/icons/icon_bot.svg';
+  static const String iconChatDot = 'assets/icons/icon_chat_dot.svg';
+  static const String iconNotification = 'assets/icons/icon_notification.svg';
+  static const String iconCart = 'assets/icons/icon_cart.svg';
   static const String iconFlame = 'assets/icons/icon_flame.svg';
   static const String iconStar = 'assets/icons/icon_star.svg';
   static const String iconPlus = 'assets/icons/icon_plus.svg';
+  static const String iconBerkas = 'assets/icons/icon_berkas.svg';
+  static const String iconEmoji = 'assets/icons/icon_emoji.svg';
+  static const String iconKirimPesan = 'assets/icons/icon_kirim_pesan.svg';
+  static const String iconMale = 'assets/icons/icon_male.svg';
+  static const String iconFemale = 'assets/icons/icon_female.svg';
+  static const String iconSave = 'assets/icons/icon_save.svg';
+  static const String iconGaransi = 'assets/icons/icon_garansi.svg';
+  static const String iconFloatingCS = 'assets/icons/icon_floatingCS.svg';
 }

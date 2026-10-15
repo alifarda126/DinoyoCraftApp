@@ -11,6 +11,7 @@ include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:
+    - "Convert Figma To Flutter/**"
     - build/**
     - android/**
     - ios/**

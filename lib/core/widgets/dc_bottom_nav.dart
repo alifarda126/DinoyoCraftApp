@@ -22,7 +22,7 @@ class DcBottomNav extends StatelessWidget {
     _NavItem('Produk', AppAssets.navProduk, Icons.shopping_bag_outlined),
     _NavItem('Toko', AppAssets.navToko, Icons.storefront_outlined),
     _NavItem('Workshop', AppAssets.navWorkshop, Icons.location_on_outlined),
-    _NavItem('Bantuan', AppAssets.navBantuan, Icons.help_outline),
+    _NavItem('Profil', AppAssets.navProfil, Icons.person_outline_rounded),
   ];
 
   // Tinggi bar konten (items layer) — cukup untuk icon+label
