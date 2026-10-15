@@ -50,3 +50,6 @@ app.*.map.json
 # Local Only
 /assets/Proto_Final/
 /docs/
+
+# Hasil konversi Figma (tidak perlu di version control)
+Convert Figma To Flutter/
