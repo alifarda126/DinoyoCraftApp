@@ -20,22 +20,26 @@ class CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.black : AppColors.inputBg,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: selected ? AppColors.white : AppColors.ink,
+    // Center melonggarkan constraint ketat dari ListView horizontal agar
+    // tinggi chip mengikuti kontennya (ramping), bukan memenuhi baris.
+    return Center(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.black : AppColors.inputBg,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: selected ? AppColors.white : AppColors.ink,
+            ),
           ),
         ),
       ),
