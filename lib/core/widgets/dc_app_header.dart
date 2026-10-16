@@ -218,7 +218,15 @@ class _DcHeaderDelegate extends SliverPersistentHeaderDelegate {
       height: topPad + contentH,
       child: Material(
         color: Colors.white, // solid white → konten scroll tidak tembus
-        child: DcAppHeader(showActions: showActions),
+        child: Container(
+          // Garis batas tipis agar jelas di mana akhir header.
+          decoration: const BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: Color(0xFFEAEAEA)),
+            ),
+          ),
+          child: DcAppHeader(showActions: showActions),
+        ),
       ),
     );
   }
