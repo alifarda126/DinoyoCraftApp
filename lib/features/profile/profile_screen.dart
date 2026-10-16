@@ -56,8 +56,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SliverPinnedDcHeader(),
           SliverToBoxAdapter(
             child: Padding(
-              // 16 sesuai desain (kartu pesanan selebar 361 di layar 393).
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              // Padding bawah 120 agar tombol logout & teks versi leluasa
+              // di atas navbar melayang (MainShell memakai extendBody: true).
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
