@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/category_chip.dart';
 import '../../core/widgets/dc_app_header.dart';
 import '../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
@@ -101,21 +102,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     separatorBuilder: (_, _) => const SizedBox(width: 8),
                     itemBuilder: (context, i) {
                       final cat = MockData.categories[i];
-                      final active = cat == _category;
-                      return ChoiceChip(
-                        label: Text(cat),
-                        selected: active,
-                        onSelected: (_) => setState(() => _category = cat),
-                        selectedColor: AppColors.black,
-                        backgroundColor: AppColors.inputBg,
-                        labelStyle: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: active ? AppColors.white : AppColors.ink,
-                        ),
-                        side: BorderSide.none,
-                        shape: const StadiumBorder(),
-                        showCheckmark: false,
+                      return CategoryChip(
+                        label: cat,
+                        selected: cat == _category,
+                        onTap: () => setState(() => _category = cat),
                       );
                     },
                   ),
