@@ -83,11 +83,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 20),
                         Center(
                           child: Text(
-                            'DinoyoCraft',
+                            'DinoyoCraft App v1.0.0',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Center(
+                          child: Text(
+                            'Sentra Keramik Dinoyo Malang • Jawa Timur',
+                            textAlign: TextAlign.center,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textMuted,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -1137,27 +1148,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildLogoutButton(BuildContext context) {
+    // Ukuran & gaya disamakan dengan tombol Keluar dari Akun
+    // di halaman Kelola Pengaturan.
     return SizedBox(
       width: double.infinity,
+      height: 56,
       child: OutlinedButton.icon(
         onPressed: () => context.go('/'),
         icon: const Icon(
           Icons.logout_rounded,
-          size: 16,
-          color: _logoutRed,
+          size: 20,
+          color: Colors.redAccent,
         ),
         label: Text(
           'Keluar dari Akun',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: _logoutRed,
+            color: Colors.redAccent,
           ),
         ),
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: _logoutRed),
+          side: const BorderSide(color: Colors.redAccent, width: 1.5),
           shape: const StadiumBorder(),
-          padding: const EdgeInsets.symmetric(vertical: 13),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          backgroundColor: Colors.white,
         ),
       ),
     );
