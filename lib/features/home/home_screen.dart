@@ -281,11 +281,13 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
             sliver: SliverGrid(
+              // Ratio & spacing disamakan dengan grid di halaman Produk
+              // agar ukuran kartu konsisten antar halaman.
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 18,
+                mainAxisSpacing: 16,
                 crossAxisSpacing: 14,
-                childAspectRatio: 0.58,
+                childAspectRatio: 0.62,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) => ProductCard(product: picks[index]),
