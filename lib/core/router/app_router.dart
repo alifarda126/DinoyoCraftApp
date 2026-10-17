@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/login_screen.dart';
+import '../../features/auth/new_password_screen.dart';
 import '../../features/auth/onboarding_screen.dart';
 import '../../features/auth/otp_screen.dart';
 import '../../features/auth/register_screen.dart';
@@ -41,6 +42,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/forgot-password',
       builder: (context, state) => const ForgotPasswordScreen(),
+    ),
+    GoRoute(
+      path: '/new-password',
+      builder: (context, state) => const NewPasswordScreen(),
     ),
     GoRoute(
       path: '/verify-otp',
