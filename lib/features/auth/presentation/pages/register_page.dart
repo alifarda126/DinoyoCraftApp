@@ -10,7 +10,7 @@ import '../../../../core/widgets/dc_text_field.dart';
 import '../../onboarding_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+const   RegisterScreen({super.key});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -62,7 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (!_terms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Setujui syarat & ketentuan terlebih dahulu')),
+        SnackBar(content: Text('Setujui syarat & ketentuan terlebih dahulu')),
       );
       return;
     }
@@ -72,7 +72,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AuthBackHeader(),
+      appBar: AuthBackHeader(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
@@ -89,7 +89,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     color: AppColors.ink,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Daftar untuk mulai menjelajah DinoyoCraft.',
                   style: GoogleFonts.plusJakartaSans(
@@ -97,7 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 DcTextField(
                   label: 'Nama Lengkap',
                   hint: 'Masukkan nama',
@@ -106,7 +106,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Nama wajib diisi' : null,
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 DcTextField(
                   label: 'Username',
                   hint: 'Masukkan username',
@@ -115,7 +115,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Username wajib diisi' : null,
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 DcTextField(
                   label: 'Email',
                   hint: 'Masukkan email',
@@ -125,7 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Email wajib diisi' : null,
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 DcTextField(
                   label: 'Tanggal Lahir',
                   hint: 'dd/mm/yyyy',
@@ -136,7 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   validator: (v) =>
                       (v == null || v.isEmpty) ? 'Tanggal lahir wajib diisi' : null,
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 DcTextField(
                   label: 'Nomor WhatsApp',
                   hint: '08xxxxxxxxxx',
@@ -146,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'WhatsApp wajib diisi' : null,
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 DcTextField(
                   label: 'Password',
                   hint: 'Buat password',
@@ -156,7 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   validator: (v) =>
                       (v == null || v.length < 6) ? 'Minimal 6 karakter' : null,
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 DcTextField(
                   label: 'Konfirmasi Password',
                   hint: 'Ulangi password',
@@ -169,7 +169,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -192,12 +192,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 DcButton(label: 'Daftar', onPressed: _submit),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Row(
                   children: [
-                    const Expanded(child: Divider(color: AppColors.border)),
+                    Expanded(child: Divider(color: AppColors.border)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
@@ -208,24 +208,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                     ),
-                    const Expanded(child: Divider(color: AppColors.border)),
+                    Expanded(child: Divider(color: AppColors.border)),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: OutlinedButton(
                     onPressed: () => context.go('/home'),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.border),
-                      shape: const StadiumBorder(),
+                      side: BorderSide(color: AppColors.border),
+                      shape: StadiumBorder(),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SvgPicture.asset(AppAssets.iconGoogle, width: 20, height: 20),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Text(
                           'Daftar dengan Google',
                           style: GoogleFonts.plusJakartaSans(
@@ -238,7 +238,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 Center(
                   child: GestureDetector(
                     onTap: () => context.go('/login'),
@@ -249,7 +249,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           color: AppColors.textSecondary,
                         ),
                         children: [
-                          const TextSpan(text: 'Sudah punya akun? '),
+                          TextSpan(text: 'Sudah punya akun? '),
                           TextSpan(
                             text: 'Masuk',
                             style: GoogleFonts.plusJakartaSans(

@@ -7,7 +7,7 @@ import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
 class DataDiriScreen extends StatefulWidget {
-  const DataDiriScreen({super.key});
+const   DataDiriScreen({super.key});
 
   @override
   State<DataDiriScreen> createState() => _DataDiriScreenState();
@@ -15,13 +15,13 @@ class DataDiriScreen extends StatefulWidget {
 
 class _DataDiriScreenState extends State<DataDiriScreen> {
   late final TextEditingController _nameController = TextEditingController(
-    text: 'Mochammad Al Mizan Ya Hafidl',
+    text: 'Customer',
   );
   late final TextEditingController _usernameController = TextEditingController(
-    text: 'mizanyf',
+    text: 'customer',
   );
   late final TextEditingController _emailController = TextEditingController(
-    text: 'mizan.artisan@gmail.com',
+    text: 'customer@gmail.com',
   );
   late final TextEditingController _phoneController = TextEditingController(
     text: '+62 859-777-588-138',
@@ -65,15 +65,15 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
                 children: [
                   _buildTitleBlock(),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _buildAvatarSection(),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   _buildLabelRow('Nama Lengkap', hint: 'Sesuai KTP'),
                   _buildField(
                     controller: _nameController,
                     icon: Icons.person_outline_rounded,
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _buildLabelRow(
                     'Username',
                     badge: 'Tersedia',
@@ -83,12 +83,12 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                     icon: Icons.alternate_email_rounded,
                     prefixText: '@',
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   _buildHelper(
-                    'Username profil dinoyocraft.id/@mizanyf. Ubah 30 hari '
+                    'Username profil dinoyocraft.id/@customer. Ubah 30 hari '
                     'sekali.',
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _buildLabelRow(
                     'Alamat Email',
                     verified: true,
@@ -99,7 +99,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                     icon: Icons.mail_outline_rounded,
                     focusNode: _emailFocus,
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _buildLabelRow(
                     'Nomor WhatsApp / Seluler',
                     verified: true,
@@ -110,18 +110,18 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                     icon: Icons.phone_outlined,
                     focusNode: _phoneFocus,
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _buildLabelRow('Jenis Kelamin'),
                   _buildGenderSegment(),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _buildLabelRow('Tanggal Lahir'),
                   _buildField(
                     controller: _birthController,
                     icon: Icons.calendar_today_outlined,
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   _buildNoticeBox(),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                 ],
               ),
             ),
@@ -159,14 +159,14 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               Navigator.of(dialogCtx).pop();
               _notifyPhotoDemo('Kamera');
             },
-            child: const Text('Kamera'),
+            child: Text('Kamera'),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(dialogCtx).pop();
               _notifyPhotoDemo('Galeri');
             },
-            child: const Text('Galeri'),
+            child: Text('Galeri'),
           ),
         ],
       ),
@@ -190,7 +190,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
         children: [
           IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19),
           ),
           Expanded(
             child: Text(
@@ -203,7 +203,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 48),
+          SizedBox(width: 48),
         ],
       ),
     );
@@ -225,7 +225,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                   color: AppColors.ink,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 'Kelola informasi akun dan profil pengrajin Anda',
                 style: GoogleFonts.plusJakartaSans(
@@ -236,7 +236,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             ],
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
@@ -267,13 +267,13 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.borderAlt),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.person_outline_rounded,
             size: 44,
             color: AppColors.ink,
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,7 +290,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 'Format JPG, PNG atau WEBP. Maksimal 5 MB.',
                 style: GoogleFonts.plusJakartaSans(
@@ -325,7 +325,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               color: AppColors.ink,
             ),
           ),
-          const Spacer(),
+          Spacer(),
           if (hint != null)
             Text(
               hint,
@@ -347,7 +347,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF474746),
+                  color: Color(0xFF474746),
                 ),
               ),
             ),
@@ -356,18 +356,18 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFF50B0FF),
+                color: Color(0xFF50B0FF),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: AppColors.white),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.check_rounded,
                     size: 10,
                     color: AppColors.ink,
                   ),
-                  const SizedBox(width: 2),
+                  SizedBox(width: 2),
                   Text(
                     'Verif',
                     style: GoogleFonts.plusJakartaSans(
@@ -379,7 +379,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             GestureDetector(
               onTap: onEdit,
               child: Text(
@@ -424,15 +424,15 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.borderAlt),
+          borderSide: BorderSide(color: AppColors.borderAlt),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.borderAlt),
+          borderSide: BorderSide(color: AppColors.borderAlt),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.ink),
+          borderSide: BorderSide(color: AppColors.ink),
         ),
       ),
     );
@@ -442,12 +442,12 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(
+        Icon(
           Icons.info_outline_rounded,
           size: 12,
           color: AppColors.textSecondary,
         ),
-        const SizedBox(width: 4),
+        SizedBox(width: 4),
         Expanded(
           child: Text(
             text,
@@ -473,7 +473,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             onTap: () => setState(() => _isMale = true),
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         Expanded(
           child: _genderButton(
             label: 'Perempuan',
@@ -517,7 +517,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                 BlendMode.srcIn,
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
@@ -542,12 +542,12 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.info_outline_rounded,
             size: 16,
             color: AppColors.textSecondary,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: Text(
               'Pastikan data diri sesuai dengan identitas resmi untuk '
@@ -573,7 +573,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
         20,
         12 + MediaQuery.paddingOf(context).bottom,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.white,
         boxShadow: [
           BoxShadow(
@@ -610,7 +610,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                 AppAssets.iconSave,
                 width: 16,
                 height: 16,
-                colorFilter: const ColorFilter.mode(
+                colorFilter: ColorFilter.mode(
                   AppColors.white,
                   BlendMode.srcIn,
                 ),
@@ -625,7 +625,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.black,
-                shape: const StadiumBorder(),
+                shape: StadiumBorder(),
               ),
             ),
           ),

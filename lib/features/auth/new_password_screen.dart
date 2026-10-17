@@ -8,7 +8,7 @@ import '../../core/widgets/dc_text_field.dart';
 
 /// Halaman Buat Kata Sandi Baru
 class NewPasswordScreen extends StatefulWidget {
-  const NewPasswordScreen({super.key});
+const   NewPasswordScreen({super.key});
 
   @override
   State<NewPasswordScreen> createState() => _NewPasswordScreenState();
@@ -67,7 +67,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
       if (_isCriteriaMet) {
         // Berhasil, kembali ke login
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Kata sandi berhasil diubah')),
+          SnackBar(content: Text('Kata sandi berhasil diubah')),
         );
         if (context.canPop()) {
           context.pop(true);
@@ -76,7 +76,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Harap penuhi kriteria kata sandi')),
+          SnackBar(content: Text('Harap penuhi kriteria kata sandi')),
         );
       }
     }
@@ -97,8 +97,8 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
-            const SizedBox(width: 10),
+            Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
+            SizedBox(width: 10),
             Text(
               'Kembali',
               style: GoogleFonts.plusJakartaSans(
@@ -113,15 +113,15 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
       actions: [
         IconButton(
           onPressed: () => context.push('/help'),
-          icon: const Icon(
+          icon: Icon(
             Icons.help_outline_rounded,
             size: 22,
             color: AppColors.textMuted,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
       ],
-      bottom: const PreferredSize(
+      bottom: PreferredSize(
         preferredSize: Size.fromHeight(1),
         child: Divider(height: 1, thickness: 1, color: AppColors.border),
       ),
@@ -138,7 +138,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
             size: 16,
             color: isMet ? Colors.green : AppColors.border,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
@@ -181,7 +181,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                             fit: BoxFit.contain,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
 
                         // ── Judul ──
                         Text(
@@ -194,7 +194,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                             color: AppColors.ink,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
 
                         // ── Deskripsi ──
                         Text(
@@ -207,7 +207,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24),
 
                         // ── Field Kata Sandi Baru ──
                         DcTextField(
@@ -220,7 +220,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                               ? 'Kata sandi wajib diisi'
                               : null,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         
                         // ── Field Konfirmasi Kata Sandi ──
                         DcTextField(
@@ -233,7 +233,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                               ? 'Konfirmasi kata sandi wajib diisi'
                               : null,
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20),
 
                         // ── Kriteria Kata Sandi ──
                         Container(
@@ -266,14 +266,14 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: 12),
                               _buildCriterion('Minimal 8 karakter', _isMinLength),
                               _buildCriterion('Mengandung huruf besar dan angka', _hasUpperAndNumber),
                               _buildCriterion('Cocok dengan konfirmasi kata sandi', _isMatch),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24),
 
                         // ── Tombol Simpan ──
                         SizedBox(
@@ -283,7 +283,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.black,
                               foregroundColor: AppColors.white,
-                              shape: const StadiumBorder(),
+                              shape: StadiumBorder(),
                               elevation: 0,
                             ),
                             child: Text(
@@ -297,8 +297,8 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                           ),
                         ),
                         
-                        const Spacer(),
-                        const SizedBox(height: 32),
+                        Spacer(),
+                        SizedBox(height: 32),
 
                         // ── Butuh Bantuan? ──
                         Center(
@@ -311,7 +311,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                   color: AppColors.textMuted,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               GestureDetector(
                                 onTap: () => context.push('/help'),
                                 behavior: HitTestBehavior.opaque,

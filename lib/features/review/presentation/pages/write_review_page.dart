@@ -6,7 +6,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 class WriteReviewPage extends StatefulWidget {
-  const WriteReviewPage({super.key, this.orderId = '#DNC-001', this.productName = 'Vas Keramik Minimalis', this.variant = 'Sand White Glossy 1x', this.imagePath = AppAssets.productVas, this.studioName = 'Dinoyo Ceramic Studio'});
+const   WriteReviewPage({super.key, this.orderId = '#DNC-001', this.productName = 'Vas Keramik Minimalis', this.variant = 'Sand White Glossy 1x', this.imagePath = AppAssets.productVas, this.studioName = 'Dinoyo Ceramic Studio'});
   final String orderId, productName, variant, imagePath, studioName;
   @override
   State<WriteReviewPage> createState() => _WriteReviewPageState();
@@ -27,7 +27,7 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: AppColors.bg, elevation: 0, scrolledUnderElevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.ink), onPressed: () => Navigator.of(context).maybePop()),
+        leading: IconButton(icon: Icon(Icons.arrow_back, color: AppColors.ink), onPressed: () => Navigator.of(context).maybePop()),
         title: Text('Beri Ulasan Produk', style: AppTextStyles.appBarTitle),
       ),
       body: ListView(
@@ -41,13 +41,13 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppDimensions.radiusM),
                 child: Image.asset(widget.imagePath, width: 56, height: 56, fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => ColoredBox(color: AppColors.border, child: const SizedBox(width: 56, height: 56))),
+                  errorBuilder: (_, _, _) => ColoredBox(color: AppColors.border, child: SizedBox(width: 56, height: 56))),
               ),
-              const SizedBox(width: AppDimensions.gapM),
+              SizedBox(width: AppDimensions.gapM),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
                   Text(widget.orderId, style: AppTextStyles.fieldLabel),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   Text('• Diterima 12 Feb 2025', style: AppTextStyles.caption),
                 ]),
                 Text(widget.productName, style: AppTextStyles.subTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -56,13 +56,13 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
               ])),
             ]),
           ),
-          const SizedBox(height: AppDimensions.paddingXXL),
+          SizedBox(height: AppDimensions.paddingXXL),
 
           // Star rating
           Text('Bagaimana kualitas keramik ini?', style: AppTextStyles.cardTitle),
-          const SizedBox(height: AppDimensions.gapS),
+          SizedBox(height: AppDimensions.gapS),
           Text('Sentuh bintang untuk memberikan penilaian keseluruhan', style: AppTextStyles.bodySmall),
-          const SizedBox(height: AppDimensions.paddingL),
+          SizedBox(height: AppDimensions.paddingL),
           Center(
             child: Row(mainAxisSize: MainAxisSize.min, children: List.generate(5, (i) => GestureDetector(
               onTap: () => setState(() => _rating = i + 1),
@@ -73,14 +73,14 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
             ))),
           ),
           if (_rating > 0) ...[
-            const SizedBox(height: AppDimensions.gapM),
+            SizedBox(height: AppDimensions.gapM),
             Center(child: Text('${_ratingLabels[_rating]} $_rating/5 ★', style: AppTextStyles.subTitle)),
           ],
-          const SizedBox(height: AppDimensions.paddingXXL),
+          SizedBox(height: AppDimensions.paddingXXL),
 
           // Comment
           Text('Tulis Ulasanmu', style: AppTextStyles.cardTitle),
-          const SizedBox(height: AppDimensions.gapM),
+          SizedBox(height: AppDimensions.gapM),
           TextFormField(
             controller: _commentCtrl,
             maxLines: 5,
@@ -89,12 +89,12 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
               hintText: 'Ceritakan pengalamanmu dengan produk ini...',
               hintStyle: AppTextStyles.fieldHint,
               filled: true, fillColor: AppColors.inputBg,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusL), borderSide: const BorderSide(color: AppColors.border)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusL), borderSide: const BorderSide(color: AppColors.border)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusL), borderSide: const BorderSide(color: AppColors.ink, width: 1.2)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusL), borderSide: BorderSide(color: AppColors.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusL), borderSide: BorderSide(color: AppColors.border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusL), borderSide: BorderSide(color: AppColors.ink, width: 1.2)),
             ),
           ),
-          const SizedBox(height: AppDimensions.paddingXXL),
+          SizedBox(height: AppDimensions.paddingXXL),
 
           // Submit
           SizedBox(
@@ -104,7 +104,7 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
                 // TODO: submit review ke repository
                 Navigator.of(context).pop();
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.black, disabledBackgroundColor: AppColors.textMuted, foregroundColor: AppColors.white, elevation: 0, shape: const StadiumBorder()),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.black, disabledBackgroundColor: AppColors.textMuted, foregroundColor: AppColors.white, elevation: 0, shape: StadiumBorder()),
               child: Text('Kirim Ulasan', style: AppTextStyles.buttonLabel),
             ),
           ),

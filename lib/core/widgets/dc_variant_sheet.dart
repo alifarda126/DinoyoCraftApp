@@ -6,7 +6,7 @@ import '../../../../core/theme/app_text_styles.dart';
 
 // ─── Model ───────────────────────────────────────────────────────────────────
 class VariantOption {
-  const VariantOption({required this.label, this.imagePath});
+const   VariantOption({required this.label, this.imagePath});
 
   final String label;
   final String? imagePath;
@@ -27,7 +27,7 @@ class VariantOption {
 /// );
 /// ```
 class DcVariantSheet extends StatefulWidget {
-  const DcVariantSheet({
+const   DcVariantSheet({
     super.key,
     required this.productName,
     required this.productImagePath,
@@ -89,7 +89,7 @@ class _DcVariantSheetState extends State<DcVariantSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppDimensions.radiusSheet),
@@ -141,11 +141,11 @@ class _DcVariantSheetState extends State<DcVariantSheet> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, _, _) => ColoredBox(
                             color: AppColors.inputBg,
-                            child: const SizedBox(width: 80, height: 80),
+                            child: SizedBox(width: 80, height: 80),
                           ),
                         ),
                       ),
-                      const SizedBox(width: AppDimensions.paddingL),
+                      SizedBox(width: AppDimensions.paddingL),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +156,7 @@ class _DcVariantSheetState extends State<DcVariantSheet> {
                                   : 'Pilih variasi dulu',
                               style: AppTextStyles.price,
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(widget.productName, style: AppTextStyles.bodySmall),
                             if (_selectedVariant != null)
                               Text(
@@ -168,15 +168,15 @@ class _DcVariantSheetState extends State<DcVariantSheet> {
                       ),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close, color: AppColors.textMuted),
+                        icon: Icon(Icons.close, color: AppColors.textMuted),
                       ),
                     ],
                   ),
-                  const Divider(height: 28, color: AppColors.border),
+                  Divider(height: 28, color: AppColors.border),
 
                   // ── Pilih Variasi ──────────────────────────────────
                   Text('Pilih Variasi', style: AppTextStyles.cardTitle),
-                  const SizedBox(height: AppDimensions.gapM),
+                  SizedBox(height: AppDimensions.gapM),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -185,7 +185,7 @@ class _DcVariantSheetState extends State<DcVariantSheet> {
                       return GestureDetector(
                         onTap: () => setState(() => _selectedVariant = v),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
+                          duration: Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppDimensions.paddingL,
                             vertical: AppDimensions.paddingS,
@@ -207,13 +207,13 @@ class _DcVariantSheetState extends State<DcVariantSheet> {
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: AppDimensions.paddingXL),
+                  SizedBox(height: AppDimensions.paddingXL),
 
                   // ── Jumlah ─────────────────────────────────────────
                   Row(
                     children: [
                       Text('Jumlah', style: AppTextStyles.cardTitle),
-                      const Spacer(),
+                      Spacer(),
                       _QtyCounter(
                         qty: _qty,
                         onDecrement: () {
@@ -223,7 +223,7 @@ class _DcVariantSheetState extends State<DcVariantSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppDimensions.paddingXXL),
+                  SizedBox(height: AppDimensions.paddingXXL),
 
                   // ── Add to Cart Button ─────────────────────────────
                   SizedBox(
@@ -241,7 +241,7 @@ class _DcVariantSheetState extends State<DcVariantSheet> {
                         disabledBackgroundColor: AppColors.textMuted,
                         foregroundColor: AppColors.white,
                         elevation: 0,
-                        shape: const StadiumBorder(),
+                        shape: StadiumBorder(),
                       ),
                       child: Text(
                         'Tambah ke Keranjang',
@@ -299,9 +299,9 @@ class _QtyBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.inputBg,
-      shape: const CircleBorder(),
+      shape: CircleBorder(),
       child: InkWell(
-        customBorder: const CircleBorder(),
+        customBorder: CircleBorder(),
         onTap: onTap,
         child: SizedBox(
           width: 36,

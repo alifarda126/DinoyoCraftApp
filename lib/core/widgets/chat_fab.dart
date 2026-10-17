@@ -6,7 +6,7 @@ import '../theme/app_colors.dart';
 import '../../features/chatbot/chatbot_screen.dart';
 
 class ChatFab extends StatelessWidget {
-  const ChatFab({super.key});
+const   ChatFab({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,12 +14,12 @@ class ChatFab extends StatelessWidget {
       onPressed: () => showClayBotPopup(context),
       backgroundColor: AppColors.black,
       elevation: 4,
-      shape: const CircleBorder(),
+      shape: CircleBorder(),
       child: SvgPicture.asset(
-        AppAssets.iconChat,
-        width: 24,
-        height: 24,
-        colorFilter: const ColorFilter.mode(AppColors.white, BlendMode.srcIn),
+        AppAssets.iconFloatingCS,
+        width: 28,
+        height: 28,
+        colorFilter: ColorFilter.mode(AppColors.white, BlendMode.srcIn),
       ),
     );
   }

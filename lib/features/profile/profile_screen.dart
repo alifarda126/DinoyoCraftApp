@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_settings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
 import '../../data/mock_data.dart';
@@ -12,7 +13,7 @@ import '../../data/mock_data.dart';
 /// Figma (ProfilPesananDikemas / ProfilPesananDikrim / ProfilPesananDiterima).
 /// Foto produk pesanan tetap memakai data project (MockData).
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+const   ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -53,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: AppColors.bg,
       body: CustomScrollView(
         slivers: [
-          const SliverPinnedDcHeader(),
+          SliverPinnedDcHeader(),
           SliverToBoxAdapter(
             child: Padding(
               // Padding bawah 120 agar tombol logout & teks versi leluasa
@@ -63,15 +64,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildProfileBlock(),
-                  const SizedBox(height: 28),
+                  SizedBox(height: 28),
                   _buildOrderSectionHeader(),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _buildSegmentedTabs(tabs),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   ..._buildOrderCards(context),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _buildSeeAllButton(context),
-                  const SizedBox(height: 28),
+                  SizedBox(height: 28),
                   // Bagian bawah tetap memakai margin 24 seperti sebelumnya.
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -79,9 +80,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildAccountSection(context),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24),
                         _buildLogoutButton(context),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20),
                         Center(
                           child: Text(
                             'DinoyoCraft App v1.0.0',
@@ -92,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        SizedBox(height: 3),
                         Center(
                           child: Text(
                             'Sentra Keramik Dinoyo Malang • Jawa Timur',
@@ -128,17 +129,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.border, width: 1),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person_outline_rounded,
               size: 44,
               color: AppColors.ink,
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Center(
           child: Text(
-            'Mochammad Al Mizan Ya Hafidl',
+            'Customer',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 20,
@@ -147,21 +148,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Center(
           child: Text(
-            '@mizanyf',
+            '@customer',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               color: AppColors.textMuted,
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Center(
           child: OutlinedButton.icon(
             onPressed: () => context.push('/profile/edit'),
-            icon: const Icon(
+            icon: Icon(
               Icons.person_outline_rounded,
               size: 16,
               color: AppColors.ink,
@@ -176,8 +177,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             style: OutlinedButton.styleFrom(
               backgroundColor: AppColors.white,
-              side: const BorderSide(color: AppColors.ink),
-              shape: const StadiumBorder(),
+              side: BorderSide(color: AppColors.ink),
+              shape: StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             ),
           ),
@@ -236,14 +237,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 behavior: HitTestBehavior.opaque,
                 onTap: () => setState(() => _orderTab = tabs[i]),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration: Duration(milliseconds: 200),
                   margin: EdgeInsets.only(right: i < tabs.length - 1 ? 9 : 0),
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     color: tabs[i] == _orderTab ? _black : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: tabs[i] == _orderTab
-                        ? const [
+                        ? [
                             BoxShadow(
                               color: Color(0x0D000000),
                               blurRadius: 2,
@@ -288,7 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onLeft: () => context.push('/review/write'),
             onBuyAgain: () => context.push('/product/1'),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _diterimaCard(
             id: '#DNC-000',
             store: 'Ruang Tanah Studio',
@@ -320,9 +321,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           storeColor: _textLight,
           badgeBorder: _borderGray,
         ),
-        const SizedBox(height: 10),
-        const Divider(height: 1, thickness: 1, color: _lineGray),
-        const SizedBox(height: 11),
+        SizedBox(height: 10),
+        Divider(height: 1, thickness: 1, color: _lineGray),
+        SizedBox(height: 11),
         _statusBox(
           title: 'Menyerahkan ke Pihak Jasa Kirim',
           dotColor: _dikemasYellow,
@@ -330,7 +331,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               'ke Pihak Jasa Kirim',
           noteColor: _dikemasYellow,
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         _simpleProductRow(
           product: _mangkukProduct,
           name: 'Mangkuk Keramik',
@@ -340,7 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           imageRadius: 8,
           gap: 16,
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         _totalRow('Total (1 Produk):', 'Rp25.000', _lineGray),
       ],
     );
@@ -361,9 +362,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           storeColor: _textGray,
           badgeBorder: _borderGray,
         ),
-        const SizedBox(height: 10),
-        const Divider(height: 1, thickness: 1, color: _lineGray),
-        const SizedBox(height: 16),
+        SizedBox(height: 10),
+        Divider(height: 1, thickness: 1, color: _lineGray),
+        SizedBox(height: 16),
         _statusBox(
           title: 'J&T Express - Reguler',
           titleTrailing: 'JT92817294820',
@@ -372,7 +373,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               'Malang (Hub Sukun)',
           noteColor: _dikirimRed,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         _simpleProductRow(
           product: _cangkirProduct,
           name: 'Cangkir Handmade Artisan',
@@ -382,9 +383,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           imageRadius: 8,
           gap: 8,
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         _totalRow('Total (2 Produk):', 'Rp145.000', _dividerPink),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Row(
           children: [
             Expanded(
@@ -412,7 +413,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
               ),
             ),
-            const SizedBox(width: 9),
+            SizedBox(width: 9),
             Expanded(
               child: _actionButton(
                 label: 'Hubungi Penjual',
@@ -461,14 +462,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           badgeFill: _badgeGray,
           showBullet: true,
         ),
-        const SizedBox(height: 11),
-        const Divider(height: 1, thickness: 1, color: _lineGray),
-        const SizedBox(height: 12),
+        SizedBox(height: 11),
+        Divider(height: 1, thickness: 1, color: _lineGray),
+        SizedBox(height: 12),
         Row(
           children: [
-            const Icon(Icons.check_circle_outline_rounded,
+            Icon(Icons.check_circle_outline_rounded,
                 size: 14, color: _textGray),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Expanded(
               child: Text(
                 deliveredText,
@@ -480,14 +481,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         SizedBox(
           height: 72,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _productImage(product, 72, 12),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -506,7 +507,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: _text,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           variant,
                           style: GoogleFonts.plusJakartaSans(
@@ -542,9 +543,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        const Divider(height: 1, thickness: 1, color: _lineGray),
-        const SizedBox(height: 10),
+        SizedBox(height: 12),
+        Divider(height: 1, thickness: 1, color: _lineGray),
+        SizedBox(height: 10),
         Row(
           children: [
             Expanded(
@@ -558,7 +559,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap: onLeft,
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: _actionButton(
                 label: 'Beli Lagi',
@@ -617,7 +618,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: _text,
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         if (showBullet) ...[
           Text(
             '•',
@@ -626,7 +627,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: _priceGray,
             ),
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
         ],
         Expanded(
           child: Text(
@@ -639,7 +640,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
@@ -680,9 +681,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.local_shipping_outlined,
+              Icon(Icons.local_shipping_outlined,
                   size: 14, color: _black),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Expanded(
                 child: Text(
                   title,
@@ -702,7 +703,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -715,7 +716,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: Text(
                   note,
@@ -745,7 +746,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           width: size,
           height: size,
           color: AppColors.inputBg,
-          child: const Icon(Icons.image_outlined, color: AppColors.textMuted),
+          child: Icon(Icons.image_outlined, color: AppColors.textMuted),
         ),
       ),
     );
@@ -787,7 +788,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: _text,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       'Karya Tanah Keramik Dinoyo',
                       maxLines: 1,
@@ -886,7 +887,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 if (icon != null) ...[
                   Icon(icon, size: 14, color: fg),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                 ],
                 Flexible(
                   child: Text(
@@ -917,8 +918,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.white,
-      barrierColor: const Color(0x73000000),
-      shape: const RoundedRectangleBorder(
+      barrierColor: Color(0x73000000),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetCtx) => DraggableScrollableSheet(
@@ -939,24 +940,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: AppColors.ink,
                     ),
                   ),
-                  const Spacer(),
+                  Spacer(),
                   IconButton(
                     onPressed: () => Navigator.of(ctx).pop(),
-                    icon: const Icon(Icons.close_rounded, size: 20),
+                    icon: Icon(Icons.close_rounded, size: 20),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: _lineGray),
+            Divider(height: 1, thickness: 1, color: _lineGray),
             Expanded(
               child: ListView(
                 controller: scrollCtrl,
                 padding: const EdgeInsets.all(16),
                 children: [
                   _dikemasCard(),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _dikirimCard(ctx),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _diterimaCard(
                     id: '#DNC-001',
                     store: 'Dinoyo Ceramic Studio',
@@ -971,7 +972,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onLeft: () => ctx.push('/review/write'),
                     onBuyAgain: () => ctx.push('/product/1'),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   _diterimaCard(
                     id: '#DNC-000',
                     store: 'Ruang Tanah Studio',
@@ -1022,8 +1023,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: AppColors.ink,
                 ),
               ),
-              const SizedBox(width: 6),
-              const Icon(Icons.chevron_right, size: 16, color: AppColors.ink),
+              SizedBox(width: 6),
+              Icon(Icons.chevron_right, size: 16, color: AppColors.ink),
             ],
           ),
         ),
@@ -1044,7 +1045,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: AppColors.ink,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
             color: AppColors.white.withValues(alpha: 0.82),
@@ -1060,7 +1061,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 subtitle: 'Kelola informasi akun & profil',
                 route: '/profile/edit',
               ),
-              const Divider(height: 1, indent: 60, color: _lineGray),
+              Divider(height: 1, indent: 60, color: _lineGray),
               _accountTile(
                 context,
                 icon: Icons.location_on_outlined,
@@ -1068,7 +1069,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 subtitle: 'Kelola alamat tujuan pesanan',
                 route: '/addresses',
               ),
-              const Divider(height: 1, indent: 60, color: _lineGray),
+              Divider(height: 1, indent: 60, color: _lineGray),
               _accountTile(
                 context,
                 icon: Icons.settings_outlined,
@@ -1076,7 +1077,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 subtitle: 'Notifikasi, bahasa & privasi',
                 route: '/settings',
               ),
-              const Divider(height: 1, indent: 60, color: _lineGray),
+              Divider(height: 1, indent: 60, color: _lineGray),
               _accountTile(
                 context,
                 icon: Icons.help_outline_rounded,
@@ -1113,7 +1114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Icon(icon, size: 18, color: AppColors.ink),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1126,7 +1127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: AppColors.ink,
                     ),
                   ),
-                  const SizedBox(height: 1),
+                  SizedBox(height: 1),
                   Text(
                     subtitle,
                     style: GoogleFonts.plusJakartaSans(
@@ -1137,7 +1138,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right,
               size: 16,
               color: AppColors.textMuted,
@@ -1155,8 +1156,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       height: 56,
       child: OutlinedButton.icon(
-        onPressed: () => context.go('/'),
-        icon: const Icon(
+        onPressed: () {
+          // Logout → login berikutnya butuh OTP (jika 2FA aktif).
+          AppSettings.instance.markLoggedOut();
+          context.go('/');
+        },
+        icon: Icon(
           Icons.logout_rounded,
           size: 20,
           color: Colors.redAccent,
@@ -1170,8 +1175,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Colors.redAccent, width: 1.5),
-          shape: const StadiumBorder(),
+          side: BorderSide(color: Colors.redAccent, width: 1.5),
+          shape: StadiumBorder(),
           padding: const EdgeInsets.symmetric(horizontal: 24),
           backgroundColor: Colors.white,
         ),

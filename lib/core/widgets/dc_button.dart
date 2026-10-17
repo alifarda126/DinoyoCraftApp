@@ -5,17 +5,17 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 
 class DcButton extends StatelessWidget {
-  const DcButton({
+  DcButton({
     super.key,
     required this.label,
     required this.onPressed,
     this.trailingIconPath,
     this.trailingIcon,
     this.backgroundColor = AppColors.black,
-    this.foregroundColor = AppColors.white,
+    Color? foregroundColor,
     this.height = 52,
     this.outlined = false,
-  });
+  }) : foregroundColor = foregroundColor ?? AppColors.white;
 
   final String label;
   final VoidCallback? onPressed;
@@ -41,7 +41,7 @@ class DcButton extends StatelessWidget {
           ),
         ),
         if (trailingIconPath != null) ...[
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           SvgPicture.asset(
             trailingIconPath!,
             width: 18,
@@ -52,7 +52,7 @@ class DcButton extends StatelessWidget {
             ),
           ),
         ] else if (trailingIcon != null) ...[
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Icon(
             trailingIcon,
             size: 18,
@@ -69,8 +69,8 @@ class DcButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: AppColors.border),
-            shape: const StadiumBorder(),
+            side: BorderSide(color: AppColors.border),
+            shape: StadiumBorder(),
             backgroundColor: AppColors.white,
           ),
           child: child,
@@ -88,7 +88,7 @@ class DcButton extends StatelessWidget {
           foregroundColor: foregroundColor,
           disabledBackgroundColor: AppColors.textMuted,
           elevation: 0,
-          shape: const StadiumBorder(),
+          shape: StadiumBorder(),
         ),
         child: child,
       ),

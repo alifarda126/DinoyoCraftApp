@@ -8,14 +8,14 @@ import '../../../../core/widgets/dc_app_header.dart';
 import '../../../../core/widgets/dc_button.dart';
 
 class WorkshopScreen extends StatelessWidget {
-  const WorkshopScreen({super.key});
+const   WorkshopScreen({super.key});
 
   Future<void> _openWhatsApp(BuildContext context) async {
     final uri = Uri.parse('https://wa.me/6281234567890');
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak dapat membuka WhatsApp')),
+        SnackBar(content: Text('Tidak dapat membuka WhatsApp')),
       );
     }
   }
@@ -24,7 +24,7 @@ class WorkshopScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
-        const SliverPinnedDcHeader(),
+        SliverPinnedDcHeader(),
         SliverPadding(
           padding: const EdgeInsets.only(bottom: 100),
           sliver: SliverList(
@@ -42,7 +42,7 @@ class WorkshopScreen extends StatelessWidget {
                   color: AppColors.ink,
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               ClipRRect(
                 borderRadius: BorderRadius.circular(18),
                 child: Stack(
@@ -85,7 +85,7 @@ class WorkshopScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               _InfoCard(
                 title: 'Pengalaman Workshop',
                 child: Text(
@@ -99,7 +99,7 @@ class WorkshopScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               _InfoCard(
                 title: 'Contact Person',
                 child: Column(
@@ -113,7 +113,7 @@ class WorkshopScreen extends StatelessWidget {
                         color: AppColors.ink,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       'WhatsApp: +62 812-3456-7890\nSeninâ€“Sabtu, 09.00â€“17.00 WIB',
                       style: GoogleFonts.plusJakartaSans(
@@ -125,7 +125,7 @@ class WorkshopScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               DcButton(
                 label: 'Reservasi via WhatsApp',
                 trailingIcon: Icons.open_in_new,
@@ -168,7 +168,7 @@ class _InfoCard extends StatelessWidget {
               color: AppColors.ink,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           child,
         ],
       ),

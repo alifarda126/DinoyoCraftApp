@@ -1,7 +1,7 @@
 import '../core/assets.dart';
 
 class Product {
-  const Product({
+const   Product({
     required this.id,
     required this.name,
     required this.studio,
@@ -23,7 +23,7 @@ class Product {
 }
 
 class Store {
-  const Store({
+const   Store({
     required this.name,
     required this.location,
     required this.description,
@@ -39,14 +39,14 @@ class Store {
 }
 
 class FaqItem {
-  const FaqItem({required this.question, required this.answer});
+const   FaqItem({required this.question, required this.answer});
 
   final String question;
   final String answer;
 }
 
 class CartItem {
-  const CartItem({required this.product, required this.qty});
+const   CartItem({required this.product, required this.qty});
 
   final Product product;
   final int qty;

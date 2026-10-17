@@ -7,7 +7,7 @@ import '../theme/app_colors.dart';
 /// ukuran dan gaya selalu konsisten. Container wrap-content sehingga
 /// teks tidak pernah terpotong.
 class CategoryChip extends StatelessWidget {
-  const CategoryChip({
+const   CategoryChip({
     super.key,
     required this.label,
     required this.selected,

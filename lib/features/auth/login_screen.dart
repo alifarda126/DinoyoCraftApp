@@ -3,12 +3,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_settings.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
 /// Halaman Login — disesuaikan 1:1 dengan desain Login.png.
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+const   LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -29,6 +30,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
+      // 2FA: setelah logout / login dari perangkat berbeda, wajib OTP email.
+      if (AppSettings.instance.twoFactorEnabled &&
+          AppSettings.instance.requireOtpNextLogin) {
+        context.push('/verify-otp?from=login');
+        return;
+      }
       context.go('/home');
     }
   }
@@ -56,8 +63,8 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
-            const SizedBox(width: 10),
+            Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
+            SizedBox(width: 10),
             Text(
               'Kembali',
               style: GoogleFonts.plusJakartaSans(
@@ -72,15 +79,15 @@ class _LoginScreenState extends State<LoginScreen> {
       actions: [
         IconButton(
           onPressed: () => context.push('/help'),
-          icon: const Icon(
+          icon: Icon(
             Icons.help_outline_rounded,
             size: 22,
             color: AppColors.textMuted,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
       ],
-      bottom: const PreferredSize(
+      bottom: PreferredSize(
         preferredSize: Size.fromHeight(1),
         child: Divider(height: 1, thickness: 1, color: AppColors.border),
       ),
@@ -116,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
             color: AppColors.ink,
           ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         TextFormField(
           controller: controller,
           obscureText: obscureText,
@@ -142,15 +149,15 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.only(left: 16, right: 12),
               child: Icon(icon, size: 20, color: AppColors.ink),
             ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 0),
+            prefixIconConstraints: BoxConstraints(minWidth: 0),
             suffixIcon: suffix,
-            suffixIconConstraints: const BoxConstraints(minWidth: 0),
+            suffixIconConstraints: BoxConstraints(minWidth: 0),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             enabledBorder: border(AppColors.ink),
             focusedBorder: border(AppColors.ink),
-            errorBorder: border(const Color(0xFFD32F2F)),
-            focusedErrorBorder: border(const Color(0xFFD32F2F)),
+            errorBorder: border(Color(0xFFD32F2F)),
+            focusedErrorBorder: border(Color(0xFFD32F2F)),
           ),
         ),
       ],
@@ -193,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6),
                       Center(
                         child: Text(
                           'DinoyoCraft',
@@ -205,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── Judul ──
                       FittedBox(
@@ -221,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         'Masuk untuk melanjutkan ke DinoyoCraft.',
                         textAlign: TextAlign.center,
@@ -230,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: AppColors.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      SizedBox(height: 32),
 
                       // ── Form ──
                       _field(
@@ -244,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? 'Email wajib diisi'
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _field(
                         label: 'Password',
                         hint: 'Masukkan password',
@@ -288,7 +295,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      SizedBox(height: 18),
 
                       // ── Tombol Masuk ──
                       SizedBox(
@@ -298,7 +305,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.black,
                             foregroundColor: AppColors.white,
-                            shape: const StadiumBorder(),
+                            shape: StadiumBorder(),
                             elevation: 0,
                           ),
                           child: Text(
@@ -311,12 +318,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
 
                       // ── ——— atau ——— ──
                       Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Divider(height: 1, color: AppColors.border),
                           ),
                           Padding(
@@ -329,12 +336,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ),
-                          const Expanded(
+                          Expanded(
                             child: Divider(height: 1, color: AppColors.border),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      SizedBox(height: 18),
 
                       // ── Masuk dengan Google ──
                       SizedBox(
@@ -343,8 +350,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () => context.go('/home'),
                           style: OutlinedButton.styleFrom(
                             backgroundColor: AppColors.white,
-                            side: const BorderSide(color: AppColors.border),
-                            shape: const StadiumBorder(),
+                            side: BorderSide(color: AppColors.border),
+                            shape: StadiumBorder(),
                             foregroundColor: AppColors.ink,
                           ),
                           child: Row(
@@ -355,7 +362,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 width: 18,
                                 height: 18,
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: 10),
                               Text(
                                 'Masuk dengan Google',
                                 style: GoogleFonts.plusJakartaSans(
@@ -370,8 +377,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
 
                       // Dorong "Belum punya akun?" ke dasar layar.
-                      const Spacer(),
-                      const SizedBox(height: 24),
+                      Spacer(),
+                      SizedBox(height: 24),
                       Center(
                         child: GestureDetector(
                           onTap: () => context.push('/register'),
@@ -385,7 +392,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: AppColors.textSecondary,
                                 ),
                                 children: [
-                                  const TextSpan(text: 'Belum punya akun? '),
+                                  TextSpan(text: 'Belum punya akun? '),
                                   TextSpan(
                                     text: 'Daftar',
                                     style: GoogleFonts.plusJakartaSans(

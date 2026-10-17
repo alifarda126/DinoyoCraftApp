@@ -8,7 +8,7 @@ import '../../core/theme/app_colors.dart';
 
 /// Halaman Daftar — disesuaikan 1:1 dengan desain Daftar.png.
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+const   RegisterScreen({super.key});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -73,7 +73,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (!_terms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Setujui syarat & ketentuan terlebih dahulu'),
         ),
       );
@@ -141,7 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text('Saya Mengerti'),
+            child: Text('Saya Mengerti'),
           ),
         ],
       ),
@@ -163,8 +163,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
-            const SizedBox(width: 10),
+            Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
+            SizedBox(width: 10),
             Text(
               'Kembali',
               style: GoogleFonts.plusJakartaSans(
@@ -179,15 +179,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       actions: [
         IconButton(
           onPressed: () => context.push('/help'),
-          icon: const Icon(
+          icon: Icon(
             Icons.help_outline_rounded,
             size: 22,
             color: AppColors.textMuted,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
       ],
-      bottom: const PreferredSize(
+      bottom: PreferredSize(
         preferredSize: Size.fromHeight(1),
         child: Divider(height: 1, thickness: 1, color: AppColors.border),
       ),
@@ -226,7 +226,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             color: AppColors.ink,
           ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         TextFormField(
           controller: controller,
           obscureText: obscureText,
@@ -254,19 +254,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
               padding: const EdgeInsets.only(left: 16, right: 12),
               child: Icon(icon, size: 18, color: AppColors.textSecondary),
             ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 0),
+            prefixIconConstraints: BoxConstraints(minWidth: 0),
             suffixIcon: suffix,
-            suffixIconConstraints: const BoxConstraints(minWidth: 0),
+            suffixIconConstraints: BoxConstraints(minWidth: 0),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             enabledBorder: border(AppColors.ink),
             focusedBorder: border(AppColors.ink),
-            errorBorder: border(const Color(0xFFD32F2F)),
-            focusedErrorBorder: border(const Color(0xFFD32F2F)),
+            errorBorder: border(Color(0xFFD32F2F)),
+            focusedErrorBorder: border(Color(0xFFD32F2F)),
           ),
         ),
         if (helper != null) ...[
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             helper,
             style: GoogleFonts.plusJakartaSans(
@@ -307,7 +307,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           border: Border.all(color: _terms ? AppColors.black : _checkBorder),
         ),
         child: _terms
-            ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+            ? Icon(Icons.check_rounded, size: 14, color: Colors.white)
             : null,
       ),
     );
@@ -355,7 +355,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Center(
                         child: Text(
                           'Daftar Akun',
@@ -367,7 +367,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
@@ -379,7 +379,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 44),
+                      SizedBox(height: 44),
 
                       // ── Form ──
                       _field(
@@ -391,7 +391,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? 'Nama wajib diisi'
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _field(
                         label: 'Username',
                         hint: 'Buat username kamu',
@@ -402,7 +402,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? 'Username wajib diisi'
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _field(
                         label: 'Email',
                         hint: 'Masukkan email kamu',
@@ -413,7 +413,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? 'Email wajib diisi'
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _field(
                         label: 'Tanggal Lahir',
                         hint: 'mm/dd/yyyy',
@@ -426,7 +426,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? 'Tanggal lahir wajib diisi'
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _field(
                         label: 'Nomor WhatsApp',
                         hint: 'Masukkan nomor WhatsApp (contoh: 0812xxxxxxxx)',
@@ -437,7 +437,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? 'WhatsApp wajib diisi'
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _field(
                         label: 'Password',
                         hint: 'Minimal 8 karakter',
@@ -453,7 +453,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? 'Minimal 8 karakter'
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _field(
                         label: 'Konfirmasi Password',
                         hint: 'Ulangi password',
@@ -474,7 +474,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 22),
+                      SizedBox(height: 22),
 
                       // ── Syarat & ketentuan ──
                       Row(
@@ -484,7 +484,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             padding: const EdgeInsets.only(top: 1),
                             child: _checkbox(),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Expanded(
                             child: Text.rich(
                               TextSpan(
@@ -494,19 +494,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   color: AppColors.textSecondary,
                                 ),
                                 children: [
-                                  const TextSpan(text: 'Saya menyetujui '),
+                                  TextSpan(text: 'Saya menyetujui '),
                                   TextSpan(
                                     text: 'Syarat & Ketentuan',
                                     style: linkStyle,
                                     recognizer: _termsLinkTap,
                                   ),
-                                  const TextSpan(text: ' dan '),
+                                  TextSpan(text: ' dan '),
                                   TextSpan(
                                     text: 'Kebijakan Privasi',
                                     style: linkStyle,
                                     recognizer: _privacyLinkTap,
                                   ),
-                                  const TextSpan(text: '.'),
+                                  TextSpan(text: '.'),
                                 ],
                               ),
                             ),
@@ -515,8 +515,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
 
                       // Tombol Daftar menempel di dasar layar.
-                      const Spacer(),
-                      const SizedBox(height: 28),
+                      Spacer(),
+                      SizedBox(height: 28),
                       SizedBox(
                         height: 52,
                         child: FilledButton(
@@ -524,7 +524,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.black,
                             foregroundColor: AppColors.white,
-                            shape: const StadiumBorder(),
+                            shape: StadiumBorder(),
                             elevation: 0,
                           ),
                           child: Text(

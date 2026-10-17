@@ -5,10 +5,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../assets.dart';
+import '../app_text.dart';
 import '../theme/app_colors.dart';
 
 class DcBottomNav extends StatelessWidget {
-  const DcBottomNav({
+const   DcBottomNav({
     super.key,
     required this.currentIndex,
     required this.onTap,
@@ -17,12 +18,14 @@ class DcBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
+  // Label diterjemahkan saat build (mengikuti AppSettings.locale).
   static const _items = [
-    _NavItem('Beranda', AppAssets.navBerandaActive, Icons.home_rounded),
-    _NavItem('Produk', AppAssets.navProduk, Icons.shopping_bag_outlined),
-    _NavItem('Toko', AppAssets.navToko, Icons.storefront_outlined),
-    _NavItem('Workshop', AppAssets.navWorkshop, Icons.location_on_outlined),
-    _NavItem('Profil', AppAssets.navProfil, Icons.person_outline_rounded),
+    _NavItem('nav.home', AppAssets.navBerandaActive, Icons.home_rounded),
+    _NavItem('nav.products', AppAssets.navProduk, Icons.shopping_bag_outlined),
+    _NavItem('nav.stores', AppAssets.navToko, Icons.storefront_outlined),
+    _NavItem(
+        'nav.workshop', AppAssets.navWorkshop, Icons.location_on_outlined),
+    _NavItem('nav.profile', AppAssets.navProfil, Icons.person_outline_rounded),
   ];
 
   // Tinggi bar konten (items layer) — cukup untuk icon+label
@@ -75,7 +78,7 @@ class DcBottomNav extends StatelessWidget {
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.08),
                         blurRadius: 20,
-                        offset: const Offset(0, -4),
+                        offset: Offset(0, -4),
                       ),
                     ],
                   ),
@@ -126,7 +129,7 @@ class _NavItemWidget extends StatelessWidget {
       children: [
         TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: active ? -10.0 : 0.0),
-          duration: const Duration(milliseconds: 280),
+          duration: Duration(milliseconds: 280),
           curve: Curves.easeOutBack,
           builder: (ctx, dy, child) {
             return Transform.translate(
@@ -136,15 +139,15 @@ class _NavItemWidget extends StatelessWidget {
           },
           child: _IconBubble(active: active, item: item),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 200),
+          duration: Duration(milliseconds: 200),
           style: GoogleFonts.plusJakartaSans(
             fontSize: 10,
             fontWeight: active ? FontWeight.w700 : FontWeight.w500,
             color: active ? AppColors.ink : AppColors.textMuted,
           ),
-          child: Text(item.label),
+          child: Text(AppText.get(item.label)),
         ),
       ],
     );
@@ -182,7 +185,7 @@ class _IconBubble extends StatelessWidget {
       // inner circle hitam mengisi hampir penuh (margin 1.5px ikut border)
       child: Container(
         margin: const EdgeInsets.all(1.5),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.black,
           shape: BoxShape.circle,
         ),

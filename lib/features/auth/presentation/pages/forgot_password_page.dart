@@ -9,7 +9,7 @@ import '../../../../core/widgets/dc_text_field.dart';
 import '../../onboarding_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+const   ForgotPasswordScreen({super.key});
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
@@ -28,7 +28,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AuthBackHeader(),
+      appBar: AuthBackHeader(),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -45,7 +45,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     color: AppColors.ink,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Masukkan email terdaftar. Kami akan mengirim kode verifikasi.',
                   style: GoogleFonts.plusJakartaSans(
@@ -54,7 +54,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 28),
+                SizedBox(height: 28),
                 DcTextField(
                   label: 'Email',
                   hint: 'Masukkan email',
@@ -64,7 +64,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Email wajib diisi' : null,
                 ),
-                const SizedBox(height: 28),
+                SizedBox(height: 28),
                 DcButton(
                   label: 'Kirim Kode',
                   onPressed: () {

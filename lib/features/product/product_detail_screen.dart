@@ -10,7 +10,7 @@ import 'presentation/modal_pilih_variasi.dart';
 /// Halaman Detail Produk — disesuaikan dengan desain
 /// Halaman_detail_produk_saat_ditekan.png.
 class ProductDetailScreen extends StatefulWidget {
-  const ProductDetailScreen({super.key, required this.productId});
+const   ProductDetailScreen({super.key, required this.productId});
 
   final String productId;
 
@@ -93,7 +93,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(product.name, style: _titleStyle),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.baseline,
                           textBaseline: TextBaseline.alphabetic,
@@ -102,7 +102,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               MockData.formatPrice(product.price),
                               style: _priceStyle,
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: 10),
                             Text(
                               MockData.formatPrice(originalPrice),
                               style: GoogleFonts.plusJakartaSans(
@@ -115,9 +115,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                         _MetaRow(rating: product.rating, store: product.studio),
-                        const SizedBox(height: 22),
+                        SizedBox(height: 22),
 
                         _StoreCard(
                           studio: product.studio,
@@ -129,10 +129,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             );
                           },
                         ),
-                        const SizedBox(height: 22),
+                        SizedBox(height: 22),
 
                         Text('Deskripsi Produk', style: _sectionStyle),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           'Vas keramik stoneware buatan tangan pengrajin lokal '
                           'Dinoyo. Dibakar pada suhu tinggi 1.250°C '
@@ -142,18 +142,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           'maupun interior minimalis.',
                           style: _bodyStyle,
                         ),
-                        const SizedBox(height: 18),
+                        SizedBox(height: 18),
 
                         const _SpecCard(),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
                         const _GuaranteeCard(),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
                         const _RatingSummary(rating: 4.9),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
 
                         _ReviewCard(
                           review: _Review(
-                            name: 'Mochammad Al Mizan',
+                            name: 'Customer',
                             date: '12 Feb 2025',
                             variantLabel: 'Sand White Glossy',
                             variantProduct: product.name,
@@ -168,11 +168,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             replyAuthor: 'Dinoyo Ceramic Studio',
                             replyDate: '13 Feb 2025',
                             reply:
-                                '"Terima kasih banyak Mas Mizan atas apresiasinya! '
+                                '"Terima kasih banyak Kak Customer atas apresiasinya! '
                                 'Semoga vas keramiknya mempercantik ruangan rumah."',
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
                         const _ReviewCard(
                           review: _Review(
                             name: 'Rian Hidayat',
@@ -201,14 +201,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               decoration: BoxDecoration(
                 color: AppColors.white,
-                border: const Border(
+                border: Border(
                   top: BorderSide(color: AppColors.border),
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: .06),
                     blurRadius: 12,
-                    offset: const Offset(0, -3),
+                    offset: Offset(0, -3),
                   ),
                 ],
               ),
@@ -223,14 +223,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       style: OutlinedButton.styleFrom(
                         padding: EdgeInsets.zero,
-                        shape: const CircleBorder(),
+                        shape: CircleBorder(),
                         foregroundColor: AppColors.ink,
-                        side: const BorderSide(color: AppColors.ink, width: 1.5),
+                        side: BorderSide(color: AppColors.ink, width: 1.5),
                       ),
-                      child: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
+                      child: Icon(Icons.chat_bubble_outline_rounded, size: 20),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: SizedBox(
                       height: 46,
@@ -240,7 +240,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           product: product,
                           mode: ModalVariasiMode.keranjang,
                         ),
-                        icon: const Icon(Icons.shopping_cart_outlined, size: 17),
+                        icon: Icon(Icons.shopping_cart_outlined, size: 17),
                         label: Text(
                           'Keranjang',
                           style: GoogleFonts.plusJakartaSans(
@@ -250,8 +250,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.ink,
-                          shape: const StadiumBorder(),
-                          side: const BorderSide(
+                          shape: StadiumBorder(),
+                          side: BorderSide(
                             color: AppColors.ink,
                             width: 1.5,
                           ),
@@ -259,7 +259,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: SizedBox(
                       height: 46,
@@ -273,7 +273,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           backgroundColor: AppColors.black,
                           foregroundColor: AppColors.white,
                           elevation: 0,
-                          shape: const StadiumBorder(),
+                          shape: StadiumBorder(),
                         ),
                         child: Text(
                           'Beli Langsung',
@@ -342,21 +342,21 @@ class _TopBar extends StatelessWidget {
       children: [
         IconButton(
           onPressed: onBack,
-          icon: const Icon(Icons.arrow_back_rounded, size: 22),
+          icon: Icon(Icons.arrow_back_rounded, size: 22),
           color: AppColors.ink,
         ),
-        const Spacer(),
+        Spacer(),
         IconButton(
           onPressed: onShare,
-          icon: const Icon(Icons.share_outlined, size: 20),
+          icon: Icon(Icons.share_outlined, size: 20),
           color: AppColors.ink,
         ),
         IconButton(
           onPressed: onMore,
-          icon: const Icon(Icons.more_vert_rounded, size: 21),
+          icon: Icon(Icons.more_vert_rounded, size: 21),
           color: AppColors.ink,
         ),
-        const SizedBox(width: 4),
+        SizedBox(width: 4),
       ],
     ),
   );
@@ -373,7 +373,7 @@ class _MetaRow extends StatelessWidget {
     child: Container(
       width: 3,
       height: 3,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.textMuted,
         shape: BoxShape.circle,
       ),
@@ -388,8 +388,8 @@ class _MetaRow extends StatelessWidget {
     );
     return Row(
       children: [
-        const Icon(Icons.star_rounded, size: 18, color: AppColors.ink),
-        const SizedBox(width: 3),
+        Icon(Icons.star_rounded, size: 18, color: AppColors.ink),
+        SizedBox(width: 3),
         Text(
           rating.toStringAsFixed(1),
           style: GoogleFonts.plusJakartaSans(
@@ -439,13 +439,13 @@ class _StoreCard extends StatelessWidget {
             border: Border.all(color: AppColors.ink, width: 1.5),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.storefront_outlined,
             size: 24,
             color: AppColors.ink,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,15 +460,15 @@ class _StoreCard extends StatelessWidget {
                   color: AppColors.ink,
                 ),
               ),
-              const SizedBox(height: 3),
+              SizedBox(height: 3),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.location_on_outlined,
                     size: 13,
                     color: AppColors.ink,
                   ),
-                  const SizedBox(width: 3),
+                  SizedBox(width: 3),
                   Expanded(
                     child: Text(
                       'Kampung Keramik Dinoyo',
@@ -485,16 +485,16 @@ class _StoreCard extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         OutlinedButton(
           onPressed: onTap,
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.ink,
-            minimumSize: const Size(0, 32),
+            minimumSize: Size(0, 32),
             padding: const EdgeInsets.symmetric(horizontal: 12),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape: const StadiumBorder(),
-            side: const BorderSide(color: AppColors.ink, width: 1.2),
+            shape: StadiumBorder(),
+            side: BorderSide(color: AppColors.ink, width: 1.2),
           ),
           child: Text(
             'Kunjungi Toko',
@@ -518,7 +518,7 @@ class _SpecCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: _smallGrey),
-        const SizedBox(height: 3),
+        SizedBox(height: 3),
         Text(
           value,
           style: GoogleFonts.plusJakartaSans(
@@ -544,21 +544,21 @@ class _SpecCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Spesifikasi Detail', style: _sectionStyle),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _cell('Bahan Utama', 'Tanah Liat Dinoyo (Stoneware)'),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             _cell('Finishing', 'Matte Glaze Alami'),
           ],
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _cell('Dimensi Produk', 'T 18cm × D 9cm'),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             _cell('Berat Bersih', '600 gram'),
           ],
         ),
@@ -585,9 +585,9 @@ class _GuaranteeCard extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.local_shipping_outlined,
+            Icon(Icons.local_shipping_outlined,
                 size: 18, color: AppColors.ink),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               'Garansi Kemasan Aman Dinoyo',
               style: GoogleFonts.plusJakartaSans(
@@ -598,7 +598,7 @@ class _GuaranteeCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         Padding(
           padding: const EdgeInsets.only(left: 26),
           child: Text(
@@ -649,8 +649,8 @@ class _RatingSummary extends StatelessWidget {
             child: LinearProgressIndicator(
               value: value,
               minHeight: 6,
-              backgroundColor: const Color(0xFFE8E8E8),
-              valueColor: const AlwaysStoppedAnimation(AppColors.black),
+              backgroundColor: Color(0xFFE8E8E8),
+              valueColor: AlwaysStoppedAnimation(AppColors.black),
             ),
           ),
         ),
@@ -694,12 +694,12 @@ class _RatingSummary extends StatelessWidget {
                     ),
                   ),
                   const _Stars(size: 20),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text('128 ulasan', style: _smallGrey),
                 ],
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               flex: 6,
               child: Column(
@@ -710,7 +710,7 @@ class _RatingSummary extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
@@ -720,9 +720,9 @@ class _RatingSummary extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.thumb_up_alt_outlined,
+              Icon(Icons.thumb_up_alt_outlined,
                   size: 17, color: AppColors.ink),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 '98% pembeli merekomendasikan produk ini',
                 style: GoogleFonts.plusJakartaSans(
@@ -819,7 +819,7 @@ class _ReviewCardState extends State<_ReviewCard> {
               size: 15,
               color: active ? AppColors.white : AppColors.ink,
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(
               'Membantu (${review.helpfulCount + (active ? 1 : 0)})',
               style: GoogleFonts.plusJakartaSans(
@@ -864,9 +864,9 @@ class _ReviewCardState extends State<_ReviewCard> {
                           color: AppColors.ink,
                         ),
                       )
-                    : const Icon(Icons.person, size: 22, color: AppColors.ink),
+                    : Icon(Icons.person, size: 22, color: AppColors.ink),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -879,14 +879,14 @@ class _ReviewCardState extends State<_ReviewCard> {
                         color: AppColors.ink,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(review.date, style: _smallGrey),
                   ],
                 ),
               ),
               PopupMenuButton<String>(
                 padding: EdgeInsets.zero,
-                icon: const Icon(
+                icon: Icon(
                   Icons.more_vert_rounded,
                   size: 18,
                   color: AppColors.ink,
@@ -895,17 +895,17 @@ class _ReviewCardState extends State<_ReviewCard> {
                   if (value == 'copy') {
                     Clipboard.setData(ClipboardData(text: review.text));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Ulasan disalin')),
+                      SnackBar(content: Text('Ulasan disalin')),
                     );
                   } else if (value == 'report') {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                      SnackBar(
                         content: Text('Terima kasih, laporan ulasan dikirim.'),
                       ),
                     );
                   }
                 },
-                itemBuilder: (context) => const [
+                itemBuilder: (context) => [
                   PopupMenuItem(
                     value: 'copy',
                     height: 40,
@@ -920,9 +920,9 @@ class _ReviewCardState extends State<_ReviewCard> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           const _Stars(size: 15),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
 
           // ── Varian ──
           Text.rich(
@@ -944,7 +944,7 @@ class _ReviewCardState extends State<_ReviewCard> {
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
 
           // ── Isi ulasan ──
           Text(
@@ -955,12 +955,12 @@ class _ReviewCardState extends State<_ReviewCard> {
               color: AppColors.ink,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           // ── Footer: Membantu ──
           if (review.footerOnly) ...[
-            const Divider(height: 1, thickness: 1, color: AppColors.border),
-            const SizedBox(height: 10),
+            Divider(height: 1, thickness: 1, color: AppColors.border),
+            SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -991,7 +991,7 @@ class _ReviewCardState extends State<_ReviewCard> {
 
           // ── Foto ulasan ──
           if (hasPhoto) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.asset(
@@ -1005,7 +1005,7 @@ class _ReviewCardState extends State<_ReviewCard> {
 
           // ── Balasan penjual ──
           if (hasReply) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -1019,9 +1019,9 @@ class _ReviewCardState extends State<_ReviewCard> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.storefront_outlined,
+                      Icon(Icons.storefront_outlined,
                           size: 14, color: AppColors.ink),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       Text(
                         review.replyAuthor ?? '',
                         style: GoogleFonts.plusJakartaSans(
@@ -1030,7 +1030,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                           color: AppColors.ink,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       Text(
                         '• ${review.replyDate ?? ''}',
                         style: GoogleFonts.plusJakartaSans(
@@ -1040,7 +1040,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Text(
                     review.reply!,
                     style: GoogleFonts.plusJakartaSans(

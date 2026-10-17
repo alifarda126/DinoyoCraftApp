@@ -10,7 +10,7 @@ import '../../core/widgets/dc_button.dart';
 import '../../data/mock_data.dart';
 
 class HelpScreen extends StatefulWidget {
-  const HelpScreen({super.key});
+const   HelpScreen({super.key});
 
   @override
   State<HelpScreen> createState() => _HelpScreenState();
@@ -36,7 +36,7 @@ class _HelpScreenState extends State<HelpScreen> {
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-        const SliverPinnedDcHeader(),
+        SliverPinnedDcHeader(),
         SliverPadding(
           padding: const EdgeInsets.only(bottom: 100),
           sliver: SliverToBoxAdapter(
@@ -53,7 +53,7 @@ class _HelpScreenState extends State<HelpScreen> {
                       color: AppColors.ink,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'Temukan jawaban cepat atau hubungi tim kami.',
                     style: GoogleFonts.plusJakartaSans(
@@ -61,7 +61,7 @@ class _HelpScreenState extends State<HelpScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   TextField(
                     onChanged: (v) => setState(() => _query = v),
                     decoration: InputDecoration(
@@ -76,7 +76,7 @@ class _HelpScreenState extends State<HelpScreen> {
                           AppAssets.iconSearch,
                           width: 20,
                           height: 20,
-                          colorFilter: const ColorFilter.mode(
+                          colorFilter: ColorFilter.mode(
                             AppColors.textMuted,
                             BlendMode.srcIn,
                           ),
@@ -90,7 +90,7 @@ class _HelpScreenState extends State<HelpScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Text(
                     'FAQ',
                     style: GoogleFonts.plusJakartaSans(
@@ -98,7 +98,7 @@ class _HelpScreenState extends State<HelpScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   ...faqs.map(
                     (f) => Theme(
                       data: Theme.of(context)
@@ -131,7 +131,7 @@ class _HelpScreenState extends State<HelpScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -149,7 +149,7 @@ class _HelpScreenState extends State<HelpScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           'Email: hello@dinoyocraft.id\nWhatsApp: +62 812-3456-7890\nJam operasional: 09.00–18.00 WIB',
                           style: GoogleFonts.plusJakartaSans(
@@ -161,7 +161,7 @@ class _HelpScreenState extends State<HelpScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   DcButton(
                     label: 'ClayBot Asisten',
                     trailingIconPath: AppAssets.iconChat,

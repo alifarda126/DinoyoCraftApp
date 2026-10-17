@@ -8,7 +8,7 @@ import '../../../../core/widgets/dc_button.dart';
 import '../../onboarding_screen.dart';
 
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({super.key, this.from = 'register'});
+const   OtpScreen({super.key, this.from = 'register'});
 
   final String from;
 
@@ -46,7 +46,7 @@ class _OtpScreenState extends State<OtpScreen> {
   Widget build(BuildContext context) {
     final isForgot = widget.from == 'forgot';
     return Scaffold(
-      appBar: const AuthBackHeader(),
+      appBar: AuthBackHeader(),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -61,7 +61,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   color: AppColors.ink,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 'Masukkan 6 digit kode yang dikirim ke email kamu.',
                 style: GoogleFonts.plusJakartaSans(
@@ -69,7 +69,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(6, (i) {
@@ -95,15 +95,15 @@ class _OtpScreenState extends State<OtpScreen> {
                         contentPadding: EdgeInsets.zero,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.border),
+                          borderSide: BorderSide(color: AppColors.border),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.border),
+                          borderSide: BorderSide(color: AppColors.border),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
+                          borderSide: BorderSide(
                             color: AppColors.ink,
                             width: 1.4,
                           ),
@@ -121,17 +121,17 @@ class _OtpScreenState extends State<OtpScreen> {
                   );
                 }),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               DcButton(
                 label: 'Lanjut',
                 onPressed: _complete ? _continue : null,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Center(
                 child: TextButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Kode baru telah dikirim (mock)')),
+                      SnackBar(content: Text('Kode baru telah dikirim (mock)')),
                     );
                   },
                   child: Text(

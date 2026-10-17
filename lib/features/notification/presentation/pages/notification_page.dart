@@ -8,7 +8,7 @@ enum NotifCategory { semua, transaksi, akun }
 enum NotifType { promo, workshop, payment, system }
 
 class NotifItem {
-  const NotifItem({required this.type, required this.category, required this.badge, required this.time, required this.title, required this.body, this.actionLabel, this.isRead = false});
+const   NotifItem({required this.type, required this.category, required this.badge, required this.time, required this.title, required this.body, this.actionLabel, this.isRead = false});
   final NotifType type;
   final NotifCategory category;
   final String badge, time, title, body;
@@ -17,7 +17,7 @@ class NotifItem {
 }
 
 class NotificationPage extends StatefulWidget {
-  const NotificationPage({super.key});
+const   NotificationPage({super.key});
   @override
   State<NotificationPage> createState() => _NotificationPageState();
 }
@@ -56,7 +56,7 @@ class _NotificationPageState extends State<NotificationPage> {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: AppColors.bg, elevation: 0, scrolledUnderElevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.ink), onPressed: () => Navigator.of(context).maybePop()),
+        leading: IconButton(icon: Icon(Icons.arrow_back, color: AppColors.ink), onPressed: () => Navigator.of(context).maybePop()),
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Notifikasi', style: AppTextStyles.appBarTitle),
           if (_unreadCount > 0)
@@ -71,7 +71,7 @@ class _NotificationPageState extends State<NotificationPage> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppDimensions.pageHorizontal),
             itemCount: _tabs.length,
-            separatorBuilder: (_, _) => const SizedBox(width: AppDimensions.gapS),
+            separatorBuilder: (_, _) => SizedBox(width: AppDimensions.gapS),
             itemBuilder: (context, i) {
               final isActive = i == _tab.index;
               return GestureDetector(
@@ -91,14 +91,14 @@ class _NotificationPageState extends State<NotificationPage> {
             },
           ),
         ),
-        const Divider(height: 16, color: AppColors.border),
+        Divider(height: 16, color: AppColors.border),
         Expanded(
           child: _filtered.isEmpty
               ? Center(child: Text('Tidak ada notifikasi.', style: AppTextStyles.bodySmall))
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(AppDimensions.pageHorizontal, 0, AppDimensions.pageHorizontal, AppDimensions.bottomNavClearance),
                   itemCount: _filtered.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1, color: AppColors.border),
+                  separatorBuilder: (_, _) => Divider(height: 1, color: AppColors.border),
                   itemBuilder: (context, i) => _NotifTile(item: _filtered[i]),
                 ),
         ),
@@ -129,7 +129,7 @@ class _NotifTile extends StatelessWidget {
           decoration: BoxDecoration(color: AppColors.black, borderRadius: BorderRadius.circular(AppDimensions.radiusM)),
           child: Icon(_icon, color: AppColors.white, size: 20),
         ),
-        const SizedBox(width: AppDimensions.gapM),
+        SizedBox(width: AppDimensions.gapM),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
@@ -138,22 +138,22 @@ class _NotifTile extends StatelessWidget {
                 decoration: BoxDecoration(color: AppColors.ink, borderRadius: BorderRadius.circular(4)),
                 child: Text(item.badge, style: AppTextStyles.badge.copyWith(fontSize: 9)),
               ),
-              const Spacer(),
+              Spacer(),
               Text(item.time, style: AppTextStyles.caption),
               if (!item.isRead) ...[
-                const SizedBox(width: 6),
-                const CircleAvatar(radius: 4, backgroundColor: Colors.redAccent),
+                SizedBox(width: 6),
+                CircleAvatar(radius: 4, backgroundColor: Colors.redAccent),
               ],
             ]),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(item.title, style: AppTextStyles.subTitle),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(item.body, style: AppTextStyles.bodySmall),
             if (item.actionLabel != null) ...[
-              const SizedBox(height: AppDimensions.gapS),
+              SizedBox(height: AppDimensions.gapS),
               TextButton(
                 onPressed: () {},
-                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 28)),
+                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size(0, 28)),
                 child: Text(item.actionLabel!, style: AppTextStyles.seeAllBold),
               ),
             ],

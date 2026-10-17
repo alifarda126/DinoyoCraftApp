@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 
 class Alamat {
-  const Alamat({
+const   Alamat({
     required this.label,
     required this.recipient,
     required this.phone,
@@ -46,7 +46,7 @@ class Alamat {
 }
 
 class AlamatScreen extends StatefulWidget {
-  const AlamatScreen({super.key});
+const   AlamatScreen({super.key});
 
   @override
   State<AlamatScreen> createState() => _AlamatScreenState();
@@ -56,9 +56,9 @@ class _AlamatScreenState extends State<AlamatScreen> {
   static const Color _destructive = Color(0xFFBA1A1A);
 
   final List<Alamat> _addresses = [
-    const Alamat(
+    Alamat(
       label: 'Rumah',
-      recipient: 'Mochammad Al Mizan',
+      recipient: 'Customer',
       phone: '+62 812-3456-7890',
       address:
           'Jl. Raya Sukun No. 128, RT 03 / RW 02, Sukun Raya, Kec. Sukun, '
@@ -69,9 +69,9 @@ class _AlamatScreenState extends State<AlamatScreen> {
           'ada di tempat."',
       verifiedPin: true,
     ),
-    const Alamat(
+    Alamat(
       label: 'Kantor',
-      recipient: 'Mochammad Al Mizan (Kantor)',
+      recipient: 'Customer (Kantor)',
       phone: '+62 812-9876-5432',
       address:
           'Kantor Dinoyo Hub, Jl. Mayjen Haryono No. 9, Dinoyo, Lowokwaru, '
@@ -98,7 +98,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
             color: AppColors.white,
           ),
         ),
-        duration: const Duration(seconds: 2),
+        duration: Duration(seconds: 2),
       ),
     );
   }
@@ -169,7 +169,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: _destructive,
               foregroundColor: AppColors.white,
-              shape: const StadiumBorder(),
+              shape: StadiumBorder(),
               elevation: 0,
             ),
             child: Text(
@@ -189,9 +189,9 @@ class _AlamatScreenState extends State<AlamatScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x73000000),
+      barrierColor: Color(0x73000000),
       builder: (sheetCtx) => Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -221,13 +221,13 @@ class _AlamatScreenState extends State<AlamatScreen> {
                       color: AppColors.inputBg,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.location_on_rounded,
                       color: Color(0xFFBA1A1A),
                       size: 22,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,12 +251,12 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
+                    icon: Icon(Icons.close_rounded, size: 20),
                     onPressed: () => Navigator.pop(sheetCtx),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -270,23 +270,23 @@ class _AlamatScreenState extends State<AlamatScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.gps_fixed_rounded,
                           size: 16,
                           color: Color(0xFF155724),
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           'Koordinat GPS Terhubung',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF155724),
+                            color: Color(0xFF155724),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       addr.address,
                       style: GoogleFonts.plusJakartaSans(
@@ -295,7 +295,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         color: AppColors.ink,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Text(
                       'Latitude: -7.9423 • Longitude: 112.6105 (Sentra Dinoyo Malang)',
                       style: GoogleFonts.plusJakartaSans(
@@ -306,7 +306,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -315,7 +315,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.black,
                     foregroundColor: AppColors.white,
-                    shape: const StadiumBorder(),
+                    shape: StadiumBorder(),
                     elevation: 0,
                   ),
                   child: Text(
@@ -352,7 +352,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
     final isEditing = editIndex != null && existing != null;
     String selectedLabel = existing?.label ?? 'Rumah';
     final recipientCtrl = TextEditingController(
-      text: existing?.recipient ?? 'Mochammad Al Mizan',
+      text: existing?.recipient ?? 'Customer',
     );
     final phoneCtrl = TextEditingController(
       text: existing?.phone ?? '+62 812-3456-7890',
@@ -371,7 +371,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x73000000),
+      barrierColor: Color(0x73000000),
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -382,7 +382,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.88,
               ),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
@@ -420,7 +420,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                     color: AppColors.ink,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
+                                SizedBox(height: 2),
                                 Text(
                                   'Pastikan rincian alamat tepat untuk kurir keramik',
                                   style: GoogleFonts.plusJakartaSans(
@@ -432,13 +432,13 @@ class _AlamatScreenState extends State<AlamatScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close_rounded, size: 22),
+                            icon: Icon(Icons.close_rounded, size: 22),
                             onPressed: () => Navigator.pop(sheetContext),
                           ),
                         ],
                       ),
                     ),
-                    const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                    Divider(height: 1, color: Color(0xFFEEEEEE)),
                     Expanded(
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
@@ -450,23 +450,23 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFDAD6),
+                                color: Color(0xFFFFDAD6),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.error_outline_rounded,
                                     color: Color(0xFFBA1A1A),
                                     size: 18,
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       errorMessage!,
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 12,
-                                        color: const Color(0xFFBA1A1A),
+                                        color: Color(0xFFBA1A1A),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -474,7 +474,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 14),
+                            SizedBox(height: 14),
                           ],
 
                           // Label Alamat Chips
@@ -486,7 +486,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               color: AppColors.textSecondary,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Wrap(
                             spacing: 6,
                             runSpacing: 6,
@@ -510,7 +510,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                       ? AppColors.white
                                       : AppColors.ink,
                                 ),
-                                shape: const StadiumBorder(),
+                                shape: StadiumBorder(),
                                 side: BorderSide(
                                   color: isSelected
                                       ? AppColors.black
@@ -522,7 +522,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               );
                             }).toList(),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
 
                           // Nama Penerima
                           _buildFormField(
@@ -531,7 +531,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                             controller: recipientCtrl,
                             icon: Icons.person_outline_rounded,
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: 14),
 
                           // Nomor Telepon
                           _buildFormField(
@@ -541,7 +541,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                             icon: Icons.phone_outlined,
                             keyboardType: TextInputType.phone,
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: 14),
 
                           // Alamat Lengkap
                           _buildFormField(
@@ -552,7 +552,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                             icon: Icons.location_on_outlined,
                             maxLines: 3,
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: 14),
 
                           // Catatan untuk Kurir
                           _buildFormField(
@@ -563,7 +563,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                             icon: Icons.note_outlined,
                             maxLines: 2,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
 
                           // Switch: Titik Peta GPS
                           Container(
@@ -578,12 +578,12 @@ class _AlamatScreenState extends State<AlamatScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.pin_drop_outlined,
                                   size: 20,
                                   color: AppColors.ink,
                                 ),
-                                const SizedBox(width: 10),
+                                SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -612,7 +612,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                   activeThumbColor: AppColors.white,
                                   activeTrackColor: AppColors.black,
                                   inactiveThumbColor: AppColors.white,
-                                  inactiveTrackColor: const Color(0xFFE4E2E2),
+                                  inactiveTrackColor: Color(0xFFE4E2E2),
                                   trackOutlineColor:
                                       const WidgetStatePropertyAll<Color?>(
                                     Colors.transparent,
@@ -623,7 +623,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
 
                           // Switch: Jadikan Alamat Utama
                           Container(
@@ -638,12 +638,12 @@ class _AlamatScreenState extends State<AlamatScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.star_outline_rounded,
                                   size: 20,
                                   color: AppColors.ink,
                                 ),
-                                const SizedBox(width: 10),
+                                SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -672,7 +672,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                   activeThumbColor: AppColors.white,
                                   activeTrackColor: AppColors.black,
                                   inactiveThumbColor: AppColors.white,
-                                  inactiveTrackColor: const Color(0xFFE4E2E2),
+                                  inactiveTrackColor: Color(0xFFE4E2E2),
                                   trackOutlineColor:
                                       const WidgetStatePropertyAll<Color?>(
                                     Colors.transparent,
@@ -683,7 +683,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: 24),
 
                           // Submit Button
                           SizedBox(
@@ -778,7 +778,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.black,
                                 foregroundColor: AppColors.white,
-                                shape: const StadiumBorder(),
+                                shape: StadiumBorder(),
                                 elevation: 0,
                               ),
                               child: Text(
@@ -824,7 +824,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
             color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -841,7 +841,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                 padding: EdgeInsets.only(top: maxLines > 1 ? 8 : 0),
                 child: Icon(icon, size: 18, color: AppColors.textSecondary),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: TextField(
                   controller: controller,
@@ -893,7 +893,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               color: AppColors.textSecondary,
                             ),
                           ),
-                          const Spacer(),
+                          Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -915,7 +915,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      SizedBox(height: 14),
                       if (_addresses.isEmpty) ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 60),
@@ -924,17 +924,17 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               Container(
                                 width: 72,
                                 height: 72,
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   color: AppColors.inputBg,
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.location_off_outlined,
                                   size: 32,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: 16),
                               Text(
                                 'Belum Ada Alamat Tersimpan',
                                 style: GoogleFonts.plusJakartaSans(
@@ -943,7 +943,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                   color: AppColors.ink,
                                 ),
                               ),
-                              const SizedBox(height: 6),
+                              SizedBox(height: 6),
                               Text(
                                 'Tambahkan alamat pengiriman untuk memudahkan proses pembelian tembikar dan keramik Dinoyo.',
                                 textAlign: TextAlign.center,
@@ -973,7 +973,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.white.withValues(alpha: 0.9),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
                             color: Color(0x0D000000),
                             blurRadius: 6,
@@ -989,7 +989,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                             height: 48,
                             child: FilledButton.icon(
                               onPressed: () => _openAddressFormSheet(),
-                              icon: const Icon(Icons.add_rounded, size: 18),
+                              icon: Icon(Icons.add_rounded, size: 18),
                               label: Text(
                                 'Tambah Alamat Baru',
                                 style: GoogleFonts.plusJakartaSans(
@@ -1000,11 +1000,11 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               ),
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.black,
-                                shape: const StadiumBorder(),
+                                shape: StadiumBorder(),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'Maksimal 5 alamat tersimpan untuk kemudahan checkout.',
                             style: GoogleFonts.plusJakartaSans(
@@ -1038,7 +1038,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                 context.go('/profile');
               }
             },
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19),
           ),
           Expanded(
             child: Text(
@@ -1051,7 +1051,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 48),
+          SizedBox(width: 48),
         ],
       ),
     );
@@ -1069,7 +1069,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
           width: addr.isPrimary ? 2 : 1,
         ),
         boxShadow: addr.isPrimary
-            ? const [
+            ? [
                 BoxShadow(
                   color: Color(0x0D000000),
                   blurRadius: 6,
@@ -1096,12 +1096,12 @@ class _AlamatScreenState extends State<AlamatScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.home_rounded,
                         size: 12,
                         color: AppColors.white,
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Text(
                         'Utama',
                         style: GoogleFonts.plusJakartaSans(
@@ -1113,7 +1113,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
               ],
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -1121,7 +1121,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFAF9F9),
+                  color: Color(0xFFFAF9F9),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(color: AppColors.borderAlt),
                 ),
@@ -1134,9 +1134,9 @@ class _AlamatScreenState extends State<AlamatScreen> {
                   ),
                 ),
               ),
-              const Spacer(),
+              Spacer(),
               PopupMenuButton<String>(
-                icon: const Icon(
+                icon: Icon(
                   Icons.more_vert_rounded,
                   size: 20,
                   color: AppColors.textSecondary,
@@ -1169,12 +1169,12 @@ class _AlamatScreenState extends State<AlamatScreen> {
                       value: 'primary',
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.star_outline_rounded,
                             size: 18,
                             color: AppColors.ink,
                           ),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10),
                           Text(
                             'Jadikan Utama',
                             style: GoogleFonts.plusJakartaSans(
@@ -1189,12 +1189,12 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     value: 'edit',
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.edit_outlined,
                           size: 18,
                           color: AppColors.ink,
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Text(
                           'Ubah Alamat',
                           style: GoogleFonts.plusJakartaSans(
@@ -1209,12 +1209,12 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     value: 'copy',
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.copy_rounded,
                           size: 18,
                           color: AppColors.ink,
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Text(
                           'Salin Alamat',
                           style: GoogleFonts.plusJakartaSans(
@@ -1229,12 +1229,12 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     value: 'delete',
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.delete_outline_rounded,
                           size: 18,
                           color: _destructive,
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Text(
                           'Hapus Alamat',
                           style: GoogleFonts.plusJakartaSans(
@@ -1250,7 +1250,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           // Recipient
           Text(
             addr.recipient,
@@ -1260,7 +1260,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
               color: AppColors.ink,
             ),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(
             addr.phone,
             style: GoogleFonts.plusJakartaSans(
@@ -1268,7 +1268,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             addr.address,
             style: GoogleFonts.plusJakartaSans(
@@ -1279,7 +1279,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
           ),
           // Courier note
           if (addr.courierNote != null) ...[
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -1298,20 +1298,20 @@ class _AlamatScreenState extends State<AlamatScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     addr.courierNote!,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       height: 1.5,
-                      color: const Color(0xFF4C4546),
+                      color: Color(0xFF4C4546),
                     ),
                   ),
                 ],
               ),
             ),
           ],
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           // Bottom actions
           if (addr.isPrimary)
             Row(
@@ -1326,12 +1326,12 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.location_on_outlined,
                           size: 16,
                           color: AppColors.textSecondary,
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                         Text(
                           addr.verifiedPin
                               ? 'Titik Peta\nTerverifikasi'
@@ -1346,18 +1346,18 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     ),
                   ),
                 ),
-                const Spacer(),
+                Spacer(),
                 OutlinedButton(
                   onPressed: () => _openAddressFormSheet(
                     editIndex: index,
                     existing: addr,
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.borderAlt),
+                    side: BorderSide(color: AppColors.borderAlt),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    minimumSize: const Size(0, 38),
+                    minimumSize: Size(0, 38),
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                   ),
                   child: Text(
@@ -1369,10 +1369,10 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 IconButton(
                   onPressed: () => _confirmDeleteAddress(index),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_outline_rounded,
                     size: 20,
                     color: _destructive,
@@ -1397,7 +1397,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -1405,7 +1405,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                       InkWell(
                         onTap: () => _showPinpointModal(addr),
                         borderRadius: BorderRadius.circular(8),
-                        child: const Padding(
+                        child: Padding(
                           padding: EdgeInsets.all(4),
                           child: Icon(
                             Icons.location_on_outlined,
@@ -1414,7 +1414,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                           ),
                         ),
                       ),
-                      const Spacer(),
+                      Spacer(),
                     ],
                     OutlinedButton(
                       onPressed: () => _openAddressFormSheet(
@@ -1422,11 +1422,11 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         existing: addr,
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.borderAlt),
+                        side: BorderSide(color: AppColors.borderAlt),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        minimumSize: const Size(0, 38),
+                        minimumSize: Size(0, 38),
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       child: Text(
@@ -1438,15 +1438,15 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     OutlinedButton(
                       onPressed: () => _confirmDeleteAddress(index),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: _destructive),
+                        side: BorderSide(color: _destructive),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        minimumSize: const Size(0, 38),
+                        minimumSize: Size(0, 38),
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       child: Text(

@@ -94,7 +94,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
       _messages.add(_ChatMessage(text: trimmed, isBot: false, time: t));
       final reply = _scripted[trimmed] ??
           'Ada produk keramik spesifik yang sedang ingin kamu cari hari ini?';
-      Future.delayed(const Duration(milliseconds: 600), () {
+      Future.delayed(Duration(milliseconds: 600), () {
         if (mounted) {
           setState(() {
             _messages.add(
@@ -113,7 +113,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
       if (_scroll.hasClients) {
         _scroll.animateTo(
           _scroll.position.maxScrollExtent + 120,
-          duration: const Duration(milliseconds: 300),
+          duration: Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
@@ -130,7 +130,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
     return Container(
       height: screenH * 0.82,
       margin: const EdgeInsets.only(top: 8),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -143,7 +143,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFD9D9D9),
+                color: Color(0xFFD9D9D9),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -169,7 +169,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                           AppAssets.iconBot,
                           width: 24,
                           height: 24,
-                          colorFilter: const ColorFilter.mode(
+                          colorFilter: ColorFilter.mode(
                             AppColors.white,
                             BlendMode.srcIn,
                           ),
@@ -184,7 +184,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                         width: 11,
                         height: 11,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF22C55E),
+                          color: Color(0xFF22C55E),
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 1.5),
                         ),
@@ -192,7 +192,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,13 +218,13 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                 // Close button
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded,
+                  icon: Icon(Icons.close_rounded,
                       size: 22, color: AppColors.ink),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+          Divider(height: 1, color: Color(0xFFEEEEEE)),
 
           // â”€â”€ messages list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           Expanded(
@@ -269,7 +269,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                                color: const Color(0xFFDDDDDD), width: 1),
+                                color: Color(0xFFDDDDDD), width: 1),
                           ),
                           child: Text(
                             '${qr.$1} ${qr.$2}',
@@ -295,7 +295,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
-                  offset: const Offset(0, -2),
+                  offset: Offset(0, -2),
                 ),
               ],
             ),
@@ -317,19 +317,19 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F5F5),
+                        color: Color(0xFFF5F5F5),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.add_rounded,
+                      child: Icon(Icons.add_rounded,
                           size: 20, color: AppColors.ink),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     // text field
                     Expanded(
                       child: Container(
                         height: 44,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
+                          color: Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(22),
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -354,18 +354,18 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     // send button
                     GestureDetector(
                       onTap: () => _send(_input.text),
                       child: Container(
                         width: 44,
                         height: 44,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.black,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.arrow_upward_rounded,
                           color: Colors.white,
                           size: 20,
@@ -374,7 +374,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'ClayBot memiliki batasan tertentu, cerdaslah dalam bertanya...',
                   style: GoogleFonts.plusJakartaSans(
@@ -402,7 +402,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
             Container(
               width: 32,
               height: 32,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.black,
                 shape: BoxShape.circle,
               ),
@@ -411,21 +411,21 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                   AppAssets.iconBot,
                   width: 16,
                   height: 16,
-                  colorFilter: const ColorFilter.mode(
+                  colorFilter: ColorFilter.mode(
                     AppColors.white,
                     BlendMode.srcIn,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             // Bot bubble
             Flexible(
               child: Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: Color(0xFFF5F5F5),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(4),
                     topRight: Radius.circular(16),
@@ -443,7 +443,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                 ),
               ),
             ),
-            const SizedBox(width: 40),
+            SizedBox(width: 40),
           ],
         ),
       );
@@ -455,7 +455,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            const SizedBox(width: 60),
+            SizedBox(width: 60),
             Flexible(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -463,7 +463,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 12),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppColors.black,
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(16),
@@ -481,7 +481,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     msg.time,
                     style: GoogleFonts.plusJakartaSans(
@@ -502,7 +502,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
 // â”€â”€â”€ Legacy full-screen route (kept for backward-compat, now just shows popup)
 // Ini tidak lagi dipakai sebagai route â€” bisa dihapus jika router di-cleanup.
 class ChatbotScreen extends StatelessWidget {
-  const ChatbotScreen({super.key});
+const   ChatbotScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

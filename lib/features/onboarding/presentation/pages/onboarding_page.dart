@@ -8,7 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/dc_button.dart';
 
 class OnboardingScreen extends StatelessWidget {
-  const OnboardingScreen({super.key});
+const   OnboardingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class OnboardingScreen extends StatelessWidget {
           Image.asset(
             AppAssets.onboardingBg,
             fit: BoxFit.cover,
-            alignment: const Alignment(0, -0.2),
+            alignment: Alignment(0, -0.2),
           ),
           DecoratedBox(
             decoration: BoxDecoration(
@@ -33,7 +33,7 @@ class OnboardingScreen extends StatelessWidget {
                   AppColors.white.withValues(alpha: 0.82),
                   AppColors.white,
                 ],
-                stops: const [0, 0.22, 0.48, 0.7, 1],
+                stops: [0, 0.22, 0.48, 0.7, 1],
               ),
             ),
           ),
@@ -61,7 +61,7 @@ class OnboardingScreen extends StatelessWidget {
                           fit: BoxFit.contain,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Text(
                         'DinoyoCraft',
                         style: GoogleFonts.plusJakartaSans(
@@ -73,7 +73,7 @@ class OnboardingScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const Spacer(),
+                  Spacer(),
                   Text.rich(
                     TextSpan(
                       style: GoogleFonts.plusJakartaSans(
@@ -84,7 +84,7 @@ class OnboardingScreen extends StatelessWidget {
                         color: AppColors.ink,
                       ),
                       children: [
-                        const TextSpan(text: 'Temukan Cerita di Balik Setiap '),
+                        TextSpan(text: 'Temukan Cerita di Balik Setiap '),
                         TextSpan(
                           text: 'Keramik!',
                           style: GoogleFonts.plusJakartaSans(
@@ -99,7 +99,7 @@ class OnboardingScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   Text(
                     'Jelajahi karya lokal Dinoyo, temukan pengrajin pilihan, '
                     'dan rasakan pengalaman kreatif di balik setiap tanah liat.',
@@ -109,13 +109,13 @@ class OnboardingScreen extends StatelessWidget {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  SizedBox(height: 28),
                   DcButton(
                     label: 'Mulai Menjelajah',
                     trailingIconPath: AppAssets.arrowRight,
                     onPressed: () => context.go('/login'),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Center(
                     child: GestureDetector(
                       onTap: () => context.go('/register'),
@@ -129,7 +129,7 @@ class OnboardingScreen extends StatelessWidget {
                               color: AppColors.textSecondary,
                             ),
                             children: [
-                              const TextSpan(text: 'Belum punya akun? '),
+                              TextSpan(text: 'Belum punya akun? '),
                               TextSpan(
                                 text: 'Daftar',
                                 style: GoogleFonts.plusJakartaSans(
@@ -158,7 +158,7 @@ class OnboardingScreen extends StatelessWidget {
 
 /// Shared back app bar for auth screens.
 class AuthBackHeader extends StatelessWidget implements PreferredSizeWidget {
-  const AuthBackHeader({super.key, this.onBack});
+const   AuthBackHeader({super.key, this.onBack});
 
   final VoidCallback? onBack;
 
@@ -181,7 +181,7 @@ class AuthBackHeader extends StatelessWidget implements PreferredSizeWidget {
           AppAssets.iconBack,
           width: 22,
           height: 22,
-          colorFilter: const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
         ),
       ),
     );

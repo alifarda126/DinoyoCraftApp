@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 
 class DcTextField extends StatefulWidget {
-  const DcTextField({
+const   DcTextField({
     super.key,
     required this.label,
     this.hint,
@@ -51,7 +51,7 @@ class _DcTextFieldState extends State<DcTextField> {
           widget.leadingIconPath!,
           width: 20,
           height: 20,
-          colorFilter: const ColorFilter.mode(
+          colorFilter: ColorFilter.mode(
             AppColors.textMuted,
             BlendMode.srcIn,
           ),
@@ -75,7 +75,7 @@ class _DcTextFieldState extends State<DcTextField> {
             color: AppColors.ink,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         TextFormField(
           controller: widget.controller,
           obscureText: _obscured,
@@ -99,7 +99,7 @@ class _DcTextFieldState extends State<DcTextField> {
             fillColor: AppColors.inputBg,
             prefixIcon: leading,
             prefixIconConstraints:
-                const BoxConstraints(minWidth: 0, minHeight: 0),
+                BoxConstraints(minWidth: 0, minHeight: 0),
             suffixIcon: widget.obscureText
                 ? IconButton(
                     onPressed: () => setState(() => _obscured = !_obscured),
@@ -116,19 +116,19 @@ class _DcTextFieldState extends State<DcTextField> {
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: AppColors.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.ink, width: 1.2),
+              borderSide: BorderSide(color: AppColors.ink, width: 1.2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.redAccent),
+              borderSide: BorderSide(color: Colors.redAccent),
             ),
           ),
         ),

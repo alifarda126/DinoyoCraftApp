@@ -5,7 +5,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+const   SettingsPage({super.key});
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
@@ -22,7 +22,7 @@ class _SettingsPageState extends State<SettingsPage> {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: AppColors.bg, elevation: 0, scrolledUnderElevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.ink), onPressed: () => Navigator.of(context).maybePop()),
+        leading: IconButton(icon: Icon(Icons.arrow_back, color: AppColors.ink), onPressed: () => Navigator.of(context).maybePop()),
         title: Text('Kelola Pengaturan', style: AppTextStyles.appBarTitle),
       ),
       body: ListView(
@@ -33,21 +33,21 @@ class _SettingsPageState extends State<SettingsPage> {
           _MenuTile(icon: Icons.lock_outline, title: 'Ubah Kata Sandi', subtitle: 'Terakhir diubah 3 bulan lalu', onTap: () {}),
           _SwitchTile(icon: Icons.security_outlined, title: 'Autentikasi 2 Langkah (2FA)', subtitle: 'Tingkatkan keamanan akun via SMS/OTP', value: _twoFa, onChanged: (v) => setState(() => _twoFa = v)),
           _MenuTile(icon: Icons.devices_outlined, title: 'Perangkat Terhubung', subtitle: '1 perangkat aktif saat ini', onTap: () {}),
-          const Divider(height: 28, color: AppColors.border),
+          Divider(height: 28, color: AppColors.border),
 
           // NOTIFIKASI
           _SectionHeader(label: 'NOTIFIKASI'),
           _SwitchTile(icon: Icons.receipt_long_outlined, title: 'Transaksi & Pesanan', subtitle: 'Update status pesanan realtime', value: _notifTransaksi, onChanged: (v) => setState(() => _notifTransaksi = v)),
           _SwitchTile(icon: Icons.local_offer_outlined, title: 'Promo & Diskon', subtitle: 'Voucher dan penawaran terbaru', value: _notifPromo, onChanged: (v) => setState(() => _notifPromo = v)),
           _SwitchTile(icon: Icons.brush_outlined, title: 'Workshop Keramik', subtitle: 'Jadwal dan kuota workshop', value: _notifWorkshop, onChanged: (v) => setState(() => _notifWorkshop = v)),
-          const Divider(height: 28, color: AppColors.border),
+          Divider(height: 28, color: AppColors.border),
 
           // LAINNYA
           _SectionHeader(label: 'LAINNYA'),
           _MenuTile(icon: Icons.privacy_tip_outlined, title: 'Kebijakan Privasi', onTap: () {}),
           _MenuTile(icon: Icons.description_outlined, title: 'Syarat & Ketentuan', onTap: () {}),
           _MenuTile(icon: Icons.info_outline, title: 'Tentang Aplikasi', subtitle: 'Versi 1.0.0', onTap: () {}),
-          const Divider(height: 28, color: AppColors.border),
+          Divider(height: 28, color: AppColors.border),
 
           // ZONA BERBAHAYA
           _SectionHeader(label: 'ZONA BERBAHAYA'),
@@ -57,7 +57,7 @@ class _SettingsPageState extends State<SettingsPage> {
             color: Colors.redAccent,
             onTap: () => _showConfirmDialog(context, title: 'Keluar dari akun?', body: 'Anda harus login kembali untuk mengakses akun.', confirmLabel: 'Keluar', onConfirm: () { /* TODO: logout */ }),
           ),
-          const SizedBox(height: AppDimensions.paddingS),
+          SizedBox(height: AppDimensions.paddingS),
           _DangerTile(
             icon: Icons.delete_forever_outlined,
             title: 'Hapus Akun',
@@ -79,7 +79,7 @@ class _SettingsPageState extends State<SettingsPage> {
           TextButton(onPressed: () => Navigator.pop(context), child: Text('Batal', style: AppTextStyles.seeAll)),
           ElevatedButton(
             onPressed: () { Navigator.pop(context); onConfirm(); },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: AppColors.white, elevation: 0, shape: const StadiumBorder()),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: AppColors.white, elevation: 0, shape: StadiumBorder()),
             child: Text(confirmLabel, style: AppTextStyles.buttonLabel),
           ),
         ],
@@ -94,17 +94,17 @@ class _SettingsPageState extends State<SettingsPage> {
         title: Text('Hapus Akun', style: AppTextStyles.cardTitle.copyWith(color: Colors.red)),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Tindakan ini tidak dapat dibatalkan. Semua data Anda akan dihapus permanen termasuk:', style: AppTextStyles.bodySmall),
-          const SizedBox(height: AppDimensions.gapM),
+          SizedBox(height: AppDimensions.gapM),
           ...[' Riwayat pesanan', ' Ulasan yang ditulis', ' Alamat tersimpan', ' Data akun'].map((t) => Padding(
             padding: const EdgeInsets.only(bottom: 4),
-            child: Row(children: [const Icon(Icons.close, size: 14, color: Colors.redAccent), const SizedBox(width: 6), Text(t, style: AppTextStyles.bodySmall)]),
+            child: Row(children: [Icon(Icons.close, size: 14, color: Colors.redAccent), SizedBox(width: 6), Text(t, style: AppTextStyles.bodySmall)]),
           )),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text('Batal', style: AppTextStyles.seeAll)),
           ElevatedButton(
             onPressed: () { Navigator.pop(context); /* TODO: delete account */ },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700, foregroundColor: AppColors.white, elevation: 0, shape: const StadiumBorder()),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700, foregroundColor: AppColors.white, elevation: 0, shape: StadiumBorder()),
             child: Text('Hapus Akun', style: AppTextStyles.buttonLabel),
           ),
         ],
@@ -138,12 +138,12 @@ class _MenuTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingM),
       child: Row(children: [
         Container(width: 40, height: 40, decoration: BoxDecoration(color: AppColors.inputBg, borderRadius: BorderRadius.circular(AppDimensions.radiusM)), child: Icon(icon, color: AppColors.ink, size: 20)),
-        const SizedBox(width: AppDimensions.gapM),
+        SizedBox(width: AppDimensions.gapM),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title, style: AppTextStyles.subTitle),
           if (subtitle != null) Text(subtitle!, style: AppTextStyles.caption),
         ])),
-        const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+        Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
       ]),
     ),
   );
@@ -162,7 +162,7 @@ class _SwitchTile extends StatelessWidget {
     padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingS),
     child: Row(children: [
       Container(width: 40, height: 40, decoration: BoxDecoration(color: AppColors.inputBg, borderRadius: BorderRadius.circular(AppDimensions.radiusM)), child: Icon(icon, color: AppColors.ink, size: 20)),
-      const SizedBox(width: AppDimensions.gapM),
+      SizedBox(width: AppDimensions.gapM),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title, style: AppTextStyles.subTitle),
         if (subtitle != null) Text(subtitle!, style: AppTextStyles.caption),
@@ -187,7 +187,7 @@ class _DangerTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingM),
       child: Row(children: [
         Container(width: 40, height: 40, decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppDimensions.radiusM)), child: Icon(icon, color: color, size: 20)),
-        const SizedBox(width: AppDimensions.gapM),
+        SizedBox(width: AppDimensions.gapM),
         Text(title, style: AppTextStyles.subTitle.copyWith(color: color)),
       ]),
     ),

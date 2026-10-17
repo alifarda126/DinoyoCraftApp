@@ -11,18 +11,18 @@ Future<void> showNotificationsModal(BuildContext context) {
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x73000000),
-    builder: (context) => const NotificationsModalSheet(),
+    barrierColor: Color(0x73000000),
+    builder: (context) => NotificationsModalSheet(),
   );
 }
 
 class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({super.key});
+const   NotificationsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0x73000000),
+      backgroundColor: Color(0x73000000),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -34,7 +34,7 @@ class NotificationsScreen extends StatelessWidget {
                 child: const SizedBox.expand(),
               ),
             ),
-            const NotificationsModalSheet(isFullPageFallback: true),
+            NotificationsModalSheet(isFullPageFallback: true),
           ],
         ),
       ),
@@ -43,7 +43,7 @@ class NotificationsScreen extends StatelessWidget {
 }
 
 class NotificationsModalSheet extends StatefulWidget {
-  const NotificationsModalSheet({super.key, this.isFullPageFallback = false});
+const   NotificationsModalSheet({super.key, this.isFullPageFallback = false});
 
   final bool isFullPageFallback;
 
@@ -81,7 +81,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
 
     return Container(
       height: modalH,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(24),
@@ -127,7 +127,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -155,13 +155,13 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     height: 32,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFF4F3F3),
+                      color: Color(0xFFF4F3F3),
                       border: Border.all(
-                        color: const Color(0xFFE5E5E5),
+                        color: Color(0xFFE5E5E5),
                         width: 0.8,
                       ),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Icon(
                         Icons.close_rounded,
                         size: 16,
@@ -174,7 +174,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           // ── Filter Chips: Semua, Transaksi & Pesanan, Info Akun ───────
           SingleChildScrollView(
@@ -183,20 +183,20 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             child: Row(
               children: [
                 _buildFilterChip('Semua'),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _buildFilterChip('Transaksi & Pesanan'),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _buildFilterChip('Info Akun'),
               ],
             ),
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           // ── Daftar Kartu Notifikasi (Expanded + Scrollable) ───────────
           Expanded(
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: BouncingScrollPhysics(),
               padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + bottomPad),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,13 +204,13 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                   // Kartu 1: Voucher Diskon
                   if (_shouldShow('Transaksi & Pesanan')) ...[
                     _buildVoucherCard(context),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                   ],
 
                   // Kartu 2: Jadwal Workshop
                   if (_shouldShow('Info Akun')) ...[
                     _buildWorkshopCard(context),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                   ],
 
                   // Kartu 3: Pembayaran Dikonfirmasi
@@ -219,7 +219,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                       onTap: () => _openNotificationTarget('3', '/profile'),
                       child: _buildPaymentCard(),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                   ],
 
                   // Kartu 4: Status Pesanan Dikemas (terlihat saat discroll)
@@ -228,7 +228,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                       onTap: () => _openNotificationTarget('4', '/profile'),
                       child: _buildOrderPackedCard(),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                   ],
 
                   // Kartu 5: Info Keamanan Akun (terlihat saat discroll)
@@ -237,7 +237,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                       onTap: () => _openNotificationTarget('5', '/settings'),
                       child: _buildAccountSecurityCard(),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                   ],
                 ],
               ),
@@ -266,7 +266,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
     return GestureDetector(
       onTap: () => setState(() => _selectedFilter = label),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(9999),
@@ -276,7 +276,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             width: 1,
           ),
           boxShadow: isSelected
-              ? const [
+              ? [
                   BoxShadow(
                     color: Color(0x1A000000),
                     blurRadius: 4,
@@ -320,15 +320,15 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E5E5)),
+              border: Border.all(color: Color(0xFFE5E5E5)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.local_offer_outlined,
               size: 20,
               color: _textDark,
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,11 +354,11 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                           ),
                         ),
                         if (isUnread) ...[
-                          const SizedBox(width: 7),
+                          SizedBox(width: 7),
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: _black,
                             ),
@@ -368,7 +368,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   'Voucher Diskon Keramik 15%',
                   style: GoogleFonts.plusJakartaSans(
@@ -377,11 +377,11 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text.rich(
                   TextSpan(
                     children: [
-                      const TextSpan(text: 'Gunakan kode '),
+                      TextSpan(text: 'Gunakan kode '),
                       WidgetSpan(
                         alignment: PlaceholderAlignment.middle,
                         child: Container(
@@ -391,11 +391,11 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                           ),
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: const Color(0xFFCFC4C5),
+                              color: Color(0xFFCFC4C5),
                               width: 1,
                             ),
                             borderRadius: BorderRadius.circular(4),
-                            color: const Color(0xFFEEEEEE),
+                            color: Color(0xFFEEEEEE),
                           ),
                           child: Text(
                             'DINOYOKARYA',
@@ -408,7 +408,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                           ),
                         ),
                       ),
-                      const TextSpan(
+                      TextSpan(
                         text:
                             ' untuk potongan belanja produk tembikar buatan pengrajin Dinoyo.',
                       ),
@@ -420,11 +420,11 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 InkWell(
                   onTap: () {
                     Clipboard.setData(
-                      const ClipboardData(text: 'DINOYOKARYA'),
+                      ClipboardData(text: 'DINOYOKARYA'),
                     );
                     setState(() => _readIds.add('1'));
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -437,7 +437,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        duration: const Duration(seconds: 2),
+                        duration: Duration(seconds: 2),
                       ),
                     );
                   },
@@ -452,8 +452,8 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      const Icon(
+                      SizedBox(width: 5),
+                      Icon(
                         Icons.copy_rounded,
                         size: 13,
                         color: _black,
@@ -492,15 +492,15 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E5E5)),
+              border: Border.all(color: Color(0xFFE5E5E5)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.calendar_today_outlined,
               size: 20,
               color: _textDark,
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,11 +526,11 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                           ),
                         ),
                         if (isUnread) ...[
-                          const SizedBox(width: 7),
+                          SizedBox(width: 7),
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: _black,
                             ),
@@ -540,7 +540,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   'Jadwal Workshop Pembuatan Keramik',
                   style: GoogleFonts.plusJakartaSans(
@@ -549,7 +549,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   'Kelas seni putar tanah liat akhir pekan ini di Studio Dinoyo dibuka. Kuota tersisa 3 orang!',
                   style: GoogleFonts.plusJakartaSans(
@@ -558,7 +558,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 InkWell(
                   onTap: () {
                     setState(() => _readIds.add('2'));
@@ -576,8 +576,8 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      const Icon(
+                      SizedBox(width: 4),
+                      Icon(
                         Icons.arrow_forward_rounded,
                         size: 14,
                         color: _black,
@@ -612,17 +612,17 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFF9F9F9),
+              color: Color(0xFFF9F9F9),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEEEEEE)),
+              border: Border.all(color: Color(0xFFEEEEEE)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_circle_outline_rounded,
               size: 22,
               color: _textGray,
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -647,7 +647,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   'Pembayaran Dikonfirmasi',
                   style: GoogleFonts.plusJakartaSans(
@@ -656,7 +656,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   'Pembayaran via GoPay untuk pesanan Cangkir Speckle sebesar Rp70.000 telah berhasil diverifikasi.',
                   style: GoogleFonts.plusJakartaSans(
@@ -692,17 +692,17 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFF9F9F9),
+              color: Color(0xFFF9F9F9),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEEEEEE)),
+              border: Border.all(color: Color(0xFFEEEEEE)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.local_shipping_outlined,
               size: 22,
               color: _textGray,
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -727,7 +727,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   'Pesanan Sedang Dikemas',
                   style: GoogleFonts.plusJakartaSans(
@@ -736,7 +736,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   'Penjual Dinoyo Ceramic Studio sedang menyiapkan pesanan #DNC-001 milikmu.',
                   style: GoogleFonts.plusJakartaSans(
@@ -772,17 +772,17 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFF9F9F9),
+              color: Color(0xFFF9F9F9),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEEEEEE)),
+              border: Border.all(color: Color(0xFFEEEEEE)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.shield_outlined,
               size: 22,
               color: _textGray,
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -807,7 +807,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   'Masuk dari Perangkat Baru',
                   style: GoogleFonts.plusJakartaSans(
@@ -816,9 +816,9 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
-                  'Akun @mizanyf terdeteksi masuk dari perangkat baru pada 12 Feb 2025.',
+                  'Akun @customer terdeteksi masuk dari perangkat baru pada 12 Feb 2025.',
                   style: GoogleFonts.plusJakartaSans(
                     color: _textDesc,
                     fontSize: 12,

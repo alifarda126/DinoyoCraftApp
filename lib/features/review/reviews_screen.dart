@@ -6,7 +6,7 @@ import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
 class ReviewsScreen extends StatefulWidget {
-  const ReviewsScreen({super.key, this.storeName = 'Dinoyo Ceramic Studio'});
+const   ReviewsScreen({super.key, this.storeName = 'Dinoyo Ceramic Studio'});
 
   final String storeName;
 
@@ -48,7 +48,7 @@ class _ReviewItem {
 
 const List<_ReviewItem> _reviews = [
   _ReviewItem(
-    name: 'Mochammad Al Mizan',
+    name: 'Customer',
     date: '12 Feb 2025',
     rating: 5,
     variant: 'Varian: Sand White Glossy - Vas Keramik Minimalis',
@@ -59,7 +59,7 @@ const List<_ReviewItem> _reviews = [
     helpful: 14,
     photos: [AppAssets.productVas, AppAssets.productCangkir],
     reply:
-        '"Terima kasih banyak Mas Mizan atas apresiasinya! Semoga vas '
+        '"Terima kasih banyak Kak Customer atas apresiasinya! Semoga vas '
         'keramiknya mempercantik ruangan rumah."',
     replyDate: '13 Feb 2025',
   ),
@@ -127,7 +127,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               top: 40,
               right: 16,
               child: IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                icon: Icon(Icons.close_rounded, color: Colors.white),
                 onPressed: () => Navigator.of(dialogCtx).pop(),
               ),
             ),
@@ -168,7 +168,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).maybePop(),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       size: 19,
                     ),
@@ -184,7 +184,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  SizedBox(width: 48),
                 ],
               ),
             ),
@@ -193,11 +193,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
                 children: [
                   _buildTitleBlock(),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _buildSummaryCard(histogram),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _buildFilterChips(),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   ..._filtered.map(_buildReviewCard),
                 ],
               ),
@@ -223,7 +223,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                   color: AppColors.ink,
                 ),
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: 2),
               Text(
                 widget.storeName,
                 style: GoogleFonts.plusJakartaSans(
@@ -246,7 +246,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF4C4546),
+              color: Color(0xFF4C4546),
             ),
           ),
         ),
@@ -280,9 +280,9 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                         color: AppColors.ink,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     _starRow(5, size: 18),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       '128 ulasan',
                       style: GoogleFonts.plusJakartaSans(
@@ -293,7 +293,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 flex: 2,
                 child: Column(
@@ -304,7 +304,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -314,12 +314,12 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.thumb_up_alt_rounded,
                   size: 15,
                   color: AppColors.ink,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     '98% pembeli merekomendasikan produk studio ini',
@@ -354,7 +354,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(99),
@@ -372,7 +372,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           SizedBox(
             width: 32,
             child: Text(
@@ -399,7 +399,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: chips.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => SizedBox(width: 8),
         itemBuilder: (context, i) {
           final (rating, count) = chips[i];
           final active = _filterRating == rating;
@@ -410,9 +410,9 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               side: BorderSide(
                 color: active ? AppColors.black : AppColors.borderAlt,
               ),
-              shape: const StadiumBorder(),
+              shape: StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 14),
-              minimumSize: const Size(0, 38),
+              minimumSize: Size(0, 38),
             ),
             child: Text(
               rating == null
@@ -459,7 +459,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,7 +484,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               ),
               PopupMenuButton<String>(
                 padding: EdgeInsets.zero,
-                icon: const Icon(
+                icon: Icon(
                   Icons.more_vert_rounded,
                   size: 18,
                   color: AppColors.textMuted,
@@ -493,17 +493,17 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                   if (value == 'copy') {
                     Clipboard.setData(ClipboardData(text: review.text));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Ulasan disalin')),
+                      SnackBar(content: Text('Ulasan disalin')),
                     );
                   } else if (value == 'report') {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                      SnackBar(
                         content: Text('Terima kasih, laporan ulasan dikirim.'),
                       ),
                     );
                   }
                 },
-                itemBuilder: (context) => const [
+                itemBuilder: (context) => [
                   PopupMenuItem(
                     value: 'copy',
                     height: 40,
@@ -518,9 +518,9 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _starRow(review.rating, size: 15),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             review.variant,
             style: GoogleFonts.plusJakartaSans(
@@ -528,7 +528,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             review.text,
             style: GoogleFonts.plusJakartaSans(
@@ -537,7 +537,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               color: AppColors.ink,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           // Helpful row
           Row(
             children: [
@@ -552,28 +552,28 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                       ? Icons.thumb_up_alt_rounded
                       : Icons.thumb_up_alt_outlined,
                   size: 13,
-                  color: marked ? AppColors.white : const Color(0xFF4C4546),
+                  color: marked ? AppColors.white : Color(0xFF4C4546),
                 ),
                 label: Text(
                   'Membantu (${review.helpful + (marked ? 1 : 0)})',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: marked ? AppColors.white : const Color(0xFF4C4546),
+                    color: marked ? AppColors.white : Color(0xFF4C4546),
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
                   backgroundColor: marked ? AppColors.black : AppColors.white,
-                  side: const BorderSide(color: AppColors.borderAlt),
-                  shape: const StadiumBorder(),
+                  side: BorderSide(color: AppColors.borderAlt),
+                  shape: StadiumBorder(),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
                   ),
-                  minimumSize: const Size(0, 32),
+                  minimumSize: Size(0, 32),
                 ),
               ),
-              const Spacer(),
+              Spacer(),
               Text(
                 'Apakah ulasan ini bermanfaat?',
                 style: GoogleFonts.plusJakartaSans(
@@ -585,7 +585,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           ),
           // Photos
           if (review.photos.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
               children: [
                 for (final photo in review.photos) ...[
@@ -601,14 +601,14 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                 ],
               ],
             ),
           ],
           // Store reply
           if (review.reply != null) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -622,12 +622,12 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.storefront_rounded,
                         size: 14,
                         color: AppColors.ink,
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       Text(
                         widget.storeName,
                         style: GoogleFonts.plusJakartaSans(
@@ -645,13 +645,13 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Text(
                     review.reply!,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       height: 1.5,
-                      color: const Color(0xFF4C4546),
+                      color: Color(0xFF4C4546),
                     ),
                   ),
                 ],

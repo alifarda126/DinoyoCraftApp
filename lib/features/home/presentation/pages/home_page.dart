@@ -9,7 +9,7 @@ import '../../../../core/widgets/product_card.dart';
 import '../../../../data/mock_data.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+const   HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return CustomScrollView(
       slivers: [
-        const SliverPinnedDcHeader(),
+        SliverPinnedDcHeader(),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
@@ -42,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 // Hero headline â€” sesuai Proto_Final/Beranda.png
                 Text(
                   'Tanah liat Dinoyo, dari roda\npemutar langsung ke\ntanganmu.',
@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppColors.ink,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 // Sub-headline â€” sesuai Proto_Final/Beranda.png
                 Text(
                   'Temukan karya keramik lokal dan pengalaman kreatif dari pengrajin Dinoyo.',
@@ -64,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 // Promo banner
                 ClipRRect(
                   borderRadius: BorderRadius.circular(18),
@@ -76,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 22),
+                SizedBox(height: 22),
                 // Jelajahi Kategori row â€” dengan "Lihat Semua"
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -93,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed: () => context.go('/products'),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        minimumSize: const Size(44, 36),
+                        minimumSize: Size(44, 36),
                       ),
                       child: Text(
                         'Lihat Semua',
@@ -106,13 +106,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 SizedBox(
                   height: 40,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: MockData.categories.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
+                    separatorBuilder: (_, _) => SizedBox(width: 8),
                     itemBuilder: (context, i) {
                       final cat = MockData.categories[i];
                       final active = cat == _category;
@@ -133,14 +133,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: active ? AppColors.white : AppColors.ink,
                         ),
                         side: BorderSide.none,
-                        shape: const StadiumBorder(),
+                        shape: StadiumBorder(),
                         showCheckmark: false,
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                       );
                     },
                   ),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 // Pilihan Untukmu row
                 Row(
                   children: [
@@ -152,12 +152,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: AppColors.ink,
                       ),
                     ),
-                    const Spacer(),
+                    Spacer(),
                     TextButton(
                       onPressed: () => context.go('/products'),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        minimumSize: const Size(44, 40),
+                        minimumSize: Size(44, 40),
                       ),
                       child: Text(
                         'Lihat semua',
@@ -177,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
               ],
             ),
           ),
@@ -199,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: 18,
                 crossAxisSpacing: 14,

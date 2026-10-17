@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/assets.dart';
 import '../../core/widgets/dc_bottom_nav.dart';
 import '../../features/chatbot/chatbot_screen.dart';
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key, required this.navigationShell});
+const   MainShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
@@ -112,15 +114,17 @@ class _DraggableFabButton extends StatelessWidget {
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.25),
               blurRadius: 12,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             ),
           ],
         ),
         child: Center(
-          child: Icon(
-            Icons.headset_mic_rounded,
-            size: 28,
-            color: Colors.white,
+          child: SvgPicture.asset(
+            AppAssets.iconFloatingCS,
+            width: 28,
+            height: 28,
+            colorFilter:
+                ColorFilter.mode(Colors.white, BlendMode.srcIn),
           ),
         ),
       ),

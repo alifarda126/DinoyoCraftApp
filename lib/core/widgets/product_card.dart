@@ -9,7 +9,7 @@ import '../assets.dart';
 import '../theme/app_colors.dart';
 
 class ProductCard extends StatelessWidget {
-  const ProductCard({super.key, required this.product, this.onAdd});
+const   ProductCard({super.key, required this.product, this.onAdd});
 
   final Product product;
   final VoidCallback? onAdd;
@@ -36,7 +36,7 @@ class ProductCard extends StatelessWidget {
                         width: double.infinity,
                         height: double.infinity,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const Center(
+                        errorBuilder: (_, _, _) => Center(
                           child: Icon(
                             Icons.image_not_supported_outlined,
                             color: AppColors.textMuted,
@@ -65,12 +65,12 @@ class ProductCard extends StatelessWidget {
                               AppAssets.iconFlame,
                               width: 12,
                               height: 12,
-                              colorFilter: const ColorFilter.mode(
+                              colorFilter: ColorFilter.mode(
                                 Colors.orangeAccent,
                                 BlendMode.srcIn,
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
                               'Hot',
                               style: GoogleFonts.plusJakartaSans(
@@ -103,7 +103,7 @@ class ProductCard extends StatelessWidget {
                             width: 12,
                             height: 12,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           Text(
                             product.rating.toStringAsFixed(1),
                             style: GoogleFonts.plusJakartaSans(
@@ -121,7 +121,7 @@ class ProductCard extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         Text(
           product.name,
           maxLines: 1,
@@ -132,7 +132,7 @@ class ProductCard extends StatelessWidget {
             color: AppColors.ink,
           ),
         ),
-        const SizedBox(height: 2),
+        SizedBox(height: 2),
         Text(
           product.studio,
           maxLines: 1,
@@ -142,7 +142,7 @@ class ProductCard extends StatelessWidget {
             color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Row(
           children: [
             Expanded(
@@ -157,9 +157,9 @@ class ProductCard extends StatelessWidget {
             ),
             Material(
               color: AppColors.black,
-              shape: const CircleBorder(),
+              shape: CircleBorder(),
               child: InkWell(
-                customBorder: const CircleBorder(),
+                customBorder: CircleBorder(),
                 onTap: onAdd ??
                     () => showModalPilihVariasi(
                       context,
@@ -174,7 +174,7 @@ class ProductCard extends StatelessWidget {
                       AppAssets.iconPlus,
                       width: 14,
                       height: 14,
-                      colorFilter: const ColorFilter.mode(
+                      colorFilter: ColorFilter.mode(
                         AppColors.white,
                         BlendMode.srcIn,
                       ),

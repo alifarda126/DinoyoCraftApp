@@ -24,19 +24,19 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const OnboardingScreen(),
+      builder: (context, state) => OnboardingScreen(),
     ),
     GoRoute(
       path: '/login',
-      builder: (context, state) => const LoginScreen(),
+      builder: (context, state) => LoginScreen(),
     ),
     GoRoute(
       path: '/register',
-      builder: (context, state) => const RegisterScreen(),
+      builder: (context, state) => RegisterScreen(),
     ),
     GoRoute(
       path: '/forgot-password',
-      builder: (context, state) => const ForgotPasswordScreen(),
+      builder: (context, state) => ForgotPasswordScreen(),
     ),
     GoRoute(
       path: '/verify-otp',
@@ -54,7 +54,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/home',
-              builder: (context, state) => const HomeScreen(),
+              builder: (context, state) => HomeScreen(),
             ),
           ],
         ),
@@ -74,7 +74,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/stores',
-              builder: (context, state) => const StoresScreen(),
+              builder: (context, state) => StoresScreen(),
             ),
           ],
         ),
@@ -82,7 +82,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/workshop',
-              builder: (context, state) => const WorkshopScreen(),
+              builder: (context, state) => WorkshopScreen(),
             ),
           ],
         ),
@@ -90,7 +90,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/help',
-              builder: (context, state) => const HelpScreen(),
+              builder: (context, state) => HelpScreen(),
             ),
           ],
         ),
@@ -98,15 +98,15 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/profile',
-      builder: (context, state) => const ProfileScreen(),
+      builder: (context, state) => ProfileScreen(),
     ),
     GoRoute(
       path: '/checkout',
-      builder: (context, state) => const CheckoutScreen(),
+      builder: (context, state) => CheckoutScreen(),
     ),
     GoRoute(
       path: '/chatbot',
-      builder: (context, state) => const ChatbotScreen(),
+      builder: (context, state) => ChatbotScreen(),
     ),
   ],
 );

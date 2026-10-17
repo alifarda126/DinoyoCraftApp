@@ -43,15 +43,15 @@ abstract final class AppTheme {
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.ink, width: 1.2),
+          borderSide: BorderSide(color: AppColors.ink, width: 1.2),
         ),
       ),
       checkboxTheme: CheckboxThemeData(
@@ -60,7 +60,7 @@ abstract final class AppTheme {
           return AppColors.white;
         }),
         checkColor: WidgetStateProperty.all(AppColors.white),
-        side: const BorderSide(color: AppColors.border, width: 1.5),
+        side: BorderSide(color: AppColors.border, width: 1.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
     );
