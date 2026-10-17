@@ -10,7 +10,7 @@ import '../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
 
 class ProductsScreen extends StatefulWidget {
-  const ProductsScreen({super.key, this.initialCategory = 'Semua'});
+const   ProductsScreen({super.key, this.initialCategory = 'Semua'});
 
   final String initialCategory;
 
@@ -48,7 +48,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-        const SliverPinnedDcHeader(),
+        SliverPinnedDcHeader(),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -63,7 +63,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     color: AppColors.ink,
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 TextField(
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
@@ -78,7 +78,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         AppAssets.iconSearch,
                         width: 20,
                         height: 20,
-                        colorFilter: const ColorFilter.mode(
+                        colorFilter: ColorFilter.mode(
                           AppColors.textMuted,
                           BlendMode.srcIn,
                         ),
@@ -93,13 +93,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 SizedBox(
                   height: 38,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: MockData.categories.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
+                    separatorBuilder: (_, _) => SizedBox(width: 8),
                     itemBuilder: (context, i) {
                       final cat = MockData.categories[i];
                       return CategoryChip(
@@ -110,7 +110,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
               ],
             ),
           ),
@@ -118,7 +118,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
           sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               mainAxisSpacing: 16,
               crossAxisSpacing: 14,

@@ -10,7 +10,7 @@ import '../../../../core/widgets/dc_text_field.dart';
 import '../../onboarding_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+const   LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AuthBackHeader(),
+      appBar: AuthBackHeader(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
@@ -54,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     fit: BoxFit.contain,
                   ),
                 ),
-                const SizedBox(height: 28),
+                SizedBox(height: 28),
                 Text(
                   'Silahkan Login...',
                   style: GoogleFonts.plusJakartaSans(
@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: AppColors.ink,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Masuk untuk lanjut menjelajah keramik Dinoyo.',
                   style: GoogleFonts.plusJakartaSans(
@@ -73,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 28),
+                SizedBox(height: 28),
                 DcTextField(
                   label: 'Email / No. Telepon',
                   hint: 'Masukkan email atau nomor telepon',
@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? 'Email / telepon wajib diisi'
                       : null,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 DcTextField(
                   label: 'Password',
                   hint: 'Masukkan password',
@@ -106,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         horizontal: 4,
                         vertical: 8,
                       ),
-                      minimumSize: const Size(44, 44),
+                      minimumSize: Size(44, 44),
                     ),
                     child: Text(
                       'Lupa password?',
@@ -118,12 +118,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 DcButton(label: 'Masuk', onPressed: _submit),
-                const SizedBox(height: 22),
+                SizedBox(height: 22),
                 Row(
                   children: [
-                    const Expanded(child: Divider(color: AppColors.border)),
+                    Expanded(child: Divider(color: AppColors.border)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
@@ -134,18 +134,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const Expanded(child: Divider(color: AppColors.border)),
+                    Expanded(child: Divider(color: AppColors.border)),
                   ],
                 ),
-                const SizedBox(height: 22),
+                SizedBox(height: 22),
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: OutlinedButton(
                     onPressed: () => context.go('/home'),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.border),
-                      shape: const StadiumBorder(),
+                      side: BorderSide(color: AppColors.border),
+                      shape: StadiumBorder(),
                       foregroundColor: AppColors.ink,
                     ),
                     child: Row(
@@ -156,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 20,
                           height: 20,
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Text(
                           'Masuk dengan Google',
                           style: GoogleFonts.plusJakartaSans(
@@ -169,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 28),
+                SizedBox(height: 28),
                 Center(
                   child: GestureDetector(
                     onTap: () => context.push('/register'),
@@ -183,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: AppColors.textSecondary,
                           ),
                           children: [
-                            const TextSpan(text: 'Belum punya akun? '),
+                            TextSpan(text: 'Belum punya akun? '),
                             TextSpan(
                               text: 'Daftar',
                               style: GoogleFonts.plusJakartaSans(

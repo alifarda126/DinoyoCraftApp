@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
@@ -6,7 +6,7 @@ import '../../../../core/theme/app_text_styles.dart';
 
 // ─── Account Settings Page (DataDiri.dart + Pengaturan.dart → 1 page) ─────────
 class AccountSettingsPage extends StatefulWidget {
-  const AccountSettingsPage({super.key});
+const   AccountSettingsPage({super.key});
 
   @override
   State<AccountSettingsPage> createState() => _AccountSettingsPageState();
@@ -14,9 +14,9 @@ class AccountSettingsPage extends StatefulWidget {
 
 class _AccountSettingsPageState extends State<AccountSettingsPage> {
   // TODO: Isi dari user repository / state management
-  final _nameCtrl = TextEditingController(text: 'Mochammad Al Mizan Ya Hafidl');
-  final _usernameCtrl = TextEditingController(text: 'mizanyf');
-  final _emailCtrl = TextEditingController(text: 'mizan.artisan@gmail.com');
+  final _nameCtrl = TextEditingController(text: 'Customer');
+  final _usernameCtrl = TextEditingController(text: 'customer');
+  final _emailCtrl = TextEditingController(text: 'customer@gmail.com');
   final _phoneCtrl = TextEditingController(text: '+62 859-777-588-138');
 
   String _gender = 'Laki-laki';
@@ -65,7 +65,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink),
+          icon: Icon(Icons.arrow_back, color: AppColors.ink),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text('Kelola Data Diri', style: AppTextStyles.appBarTitle),
@@ -94,7 +94,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             'Kelola informasi akun dan profil pengrajin Anda',
             style: AppTextStyles.bodySmall,
           ),
-          const SizedBox(height: AppDimensions.paddingXL),
+          SizedBox(height: AppDimensions.paddingXL),
 
           // ── Avatar Section ────────────────────────────────────────────
           Center(
@@ -114,7 +114,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                   backgroundColor: AppColors.black,
                   child: IconButton(
                     padding: EdgeInsets.zero,
-                    icon: const Icon(Icons.camera_alt, size: 14, color: AppColors.white),
+                    icon: Icon(Icons.camera_alt, size: 14, color: AppColors.white),
                     onPressed: () {
                       // TODO: image picker
                     },
@@ -132,7 +132,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
               ),
             ),
           ),
-          const SizedBox(height: AppDimensions.paddingXXL),
+          SizedBox(height: AppDimensions.paddingXXL),
 
           // ── Form Fields ───────────────────────────────────────────────
           _FormField(
@@ -140,7 +140,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             hint: 'Sesuai KTP',
             controller: _nameCtrl,
           ),
-          const SizedBox(height: AppDimensions.paddingXL),
+          SizedBox(height: AppDimensions.paddingXL),
 
           _FormField(
             label: 'Username',
@@ -160,7 +160,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             helper:
                 'Username profil dinoyocraft.id/@${_usernameCtrl.text}. Ubah 30 hari sekali.',
           ),
-          const SizedBox(height: AppDimensions.paddingXL),
+          SizedBox(height: AppDimensions.paddingXL),
 
           _FormField(
             label: 'Alamat Email',
@@ -169,11 +169,11 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             keyboardType: TextInputType.emailAddress,
             trailingButtons: [
               _SmallActionBtn(label: 'Verif', onTap: () {}),
-              const SizedBox(width: AppDimensions.gapS),
+              SizedBox(width: AppDimensions.gapS),
               _SmallActionBtn(label: 'Ubah', onTap: () {}),
             ],
           ),
-          const SizedBox(height: AppDimensions.paddingXL),
+          SizedBox(height: AppDimensions.paddingXL),
 
           _FormField(
             label: 'Nomor WhatsApp / Seluler',
@@ -182,15 +182,15 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             keyboardType: TextInputType.phone,
             trailingButtons: [
               _SmallActionBtn(label: 'Verif', onTap: () {}),
-              const SizedBox(width: AppDimensions.gapS),
+              SizedBox(width: AppDimensions.gapS),
               _SmallActionBtn(label: 'Ubah', onTap: () {}),
             ],
           ),
-          const SizedBox(height: AppDimensions.paddingXL),
+          SizedBox(height: AppDimensions.paddingXL),
 
           // ── Jenis Kelamin ──────────────────────────────────────────────
           Text('Jenis Kelamin', style: AppTextStyles.fieldLabel),
-          const SizedBox(height: AppDimensions.gapS),
+          SizedBox(height: AppDimensions.gapS),
           Row(
             children: ['Laki-laki', 'Perempuan'].map((g) {
               final selected = g == _gender;
@@ -202,7 +202,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                   child: GestureDetector(
                     onTap: () => setState(() => _gender = g),
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
+                      duration: Duration(milliseconds: 150),
                       height: 48,
                       decoration: BoxDecoration(
                         color: selected ? AppColors.black : AppColors.inputBg,
@@ -228,11 +228,11 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
               );
             }).toList(),
           ),
-          const SizedBox(height: AppDimensions.paddingXL),
+          SizedBox(height: AppDimensions.paddingXL),
 
           // ── Tanggal Lahir ─────────────────────────────────────────────
           Text('Tanggal Lahir', style: AppTextStyles.fieldLabel),
-          const SizedBox(height: AppDimensions.gapS),
+          SizedBox(height: AppDimensions.gapS),
           InkWell(
             onTap: _pickDate,
             borderRadius: BorderRadius.circular(AppDimensions.radiusM),
@@ -254,7 +254,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                       style: AppTextStyles.fieldText,
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.calendar_today_outlined,
                     size: 18,
                     color: AppColors.textMuted,
@@ -298,16 +298,16 @@ class _FormField extends StatelessWidget {
           children: [
             Text(label, style: AppTextStyles.fieldLabel),
             if (trailing != null) ...[
-              const SizedBox(width: AppDimensions.gapS),
+              SizedBox(width: AppDimensions.gapS),
               trailing!,
             ],
             if (trailingButtons != null) ...[
-              const Spacer(),
+              Spacer(),
               ...trailingButtons!,
             ],
           ],
         ),
-        const SizedBox(height: AppDimensions.gapS),
+        SizedBox(height: AppDimensions.gapS),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
@@ -323,15 +323,15 @@ class _FormField extends StatelessWidget {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: AppColors.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-              borderSide: const BorderSide(
+              borderSide: BorderSide(
                 color: AppColors.ink,
                 width: 1.2,
               ),
@@ -339,7 +339,7 @@ class _FormField extends StatelessWidget {
           ),
         ),
         if (helper != null) ...[
-          const SizedBox(height: AppDimensions.gapXS),
+          SizedBox(height: AppDimensions.gapXS),
           Text(helper!, style: AppTextStyles.caption),
         ],
       ],

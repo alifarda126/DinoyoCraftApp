@@ -6,7 +6,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 class WorkshopPage extends StatelessWidget {
-  const WorkshopPage({super.key});
+const   WorkshopPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,14 +24,14 @@ class WorkshopPage extends StatelessWidget {
                     child: Image.asset(
                       AppAssets.workshopHero,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const ColoredBox(color: AppColors.inputBg),
+                      errorBuilder: (_, _, _) => ColoredBox(color: AppColors.inputBg),
                     ),
                   ),
                   Positioned(
                     bottom: 0, left: 0, right: 0,
                     child: Container(
                       padding: const EdgeInsets.all(AppDimensions.pageHorizontal),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.bottomCenter, end: Alignment.topCenter,
                           colors: [Colors.black87, Colors.transparent],
@@ -57,22 +57,22 @@ class WorkshopPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Workshop Keramik Dinoyo', style: AppTextStyles.sectionTitle),
-                    const SizedBox(height: AppDimensions.gapS),
+                    SizedBox(height: AppDimensions.gapS),
                     Text(
                       'Rasakan pengalaman membuat keramik langsung\nbersama pengrajin lokal.',
                       style: AppTextStyles.bodySmall,
                     ),
-                    const SizedBox(height: AppDimensions.paddingXXL),
+                    SizedBox(height: AppDimensions.paddingXXL),
 
                     Text('Pengalaman Membuat Keramik', style: AppTextStyles.cardTitle),
-                    const SizedBox(height: AppDimensions.gapM),
+                    SizedBox(height: AppDimensions.gapM),
                     Text(
                       'Luangkan waktu bersama teman atau keluarga untuk mencoba membuat keramik secara '
                       'langsung. Belajar dari pengrajin lokal, mencoba proses pembuatan keramik, dan membawa '
                       'pulang pengalaman yang berkesan dari Dinoyo.',
                       style: AppTextStyles.bodySmall,
                     ),
-                    const SizedBox(height: AppDimensions.paddingXXL),
+                    SizedBox(height: AppDimensions.paddingXXL),
 
                     // Info box
                     Container(
@@ -86,12 +86,12 @@ class WorkshopPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Ingin Ikut Workshop?', style: AppTextStyles.cardTitle),
-                          const SizedBox(height: AppDimensions.gapS),
+                          SizedBox(height: AppDimensions.gapS),
                           Text(
                             'Hubungi contact person untuk mengetahui jadwal, harga, dan ketersediaan workshop.',
                             style: AppTextStyles.bodySmall,
                           ),
-                          const SizedBox(height: AppDimensions.paddingL),
+                          SizedBox(height: AppDimensions.paddingL),
                           SizedBox(
                             width: double.infinity,
                             height: AppDimensions.buttonHeight,
@@ -103,16 +103,16 @@ class WorkshopPage extends StatelessWidget {
                                 backgroundColor: AppColors.black,
                                 foregroundColor: AppColors.white,
                                 elevation: 0,
-                                shape: const StadiumBorder(),
+                                shape: StadiumBorder(),
                               ),
-                              icon: const Icon(Icons.phone_outlined, size: 18),
+                              icon: Icon(Icons.phone_outlined, size: 18),
                               label: Text('Hubungi Kami', style: AppTextStyles.buttonLabel),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppDimensions.bottomNavClearance),
+                    SizedBox(height: AppDimensions.bottomNavClearance),
                   ],
                 ),
               ),

@@ -10,7 +10,7 @@ import '../../features/notification/notifications_screen.dart';
 import '../theme/app_colors.dart';
 
 class DcAppHeader extends StatelessWidget {
-  const DcAppHeader({
+const   DcAppHeader({
     super.key,
     this.showActions = true,
     this.showBorder = false,
@@ -28,7 +28,7 @@ class DcAppHeader extends StatelessWidget {
         child: Row(
           children: [
             Image.asset(AppAssets.logoBlack, width: 36, height: 36),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Text(
               'DinoyoCraft',
               style: GoogleFonts.plusJakartaSans(
@@ -37,28 +37,34 @@ class DcAppHeader extends StatelessWidget {
                 color: AppColors.ink,
               ),
             ),
-            const Spacer(),
+            Spacer(),
             if (showActions) ...[
               _IconBtn(
                 asset: AppAssets.iconNotification,
                 iconSize: 22,
                 showDot: true,
+                dotTop: 4.0,
+                dotRight: 7.0,
+                dotSize: 7.5,
                 onTap: () => showNotificationsModal(context),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               _IconBtn(
                 asset: AppAssets.iconCart,
                 iconSize: 22,
                 badge: '${MockData.mockCart.length}',
                 onTap: () => showCartModal(context),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               _IconBtn(
                 asset: AppAssets.iconChat,
                 // Ukuran 18.5 agar visual balance & optical weight sama persis
                 // dengan icon lonceng notifikasi (18.3px) dan keranjang (18.9px)
                 iconSize: 18.5,
                 showDot: true,
+                dotTop: 5.0,
+                dotRight: 5.0,
+                dotSize: 7.5,
                 onTap: () => context.push('/messages'),
               ),
             ],
@@ -69,7 +75,7 @@ class DcAppHeader extends StatelessWidget {
 
     if (showBorder) {
       content = Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
             bottom: BorderSide(color: Color(0xFFEAEAEA)),
@@ -89,6 +95,9 @@ class _IconBtn extends StatelessWidget {
     required this.onTap,
     this.iconSize = 22,
     this.showDot = false,
+    this.dotTop = 4.0,
+    this.dotRight = 5.0,
+    this.dotSize = 7.5,
     this.badge,
   });
 
@@ -96,6 +105,9 @@ class _IconBtn extends StatelessWidget {
   final VoidCallback onTap;
   final double iconSize;
   final bool showDot;
+  final double dotTop;
+  final double dotRight;
+  final double dotSize;
   final String? badge;
 
   @override
@@ -115,7 +127,7 @@ class _IconBtn extends StatelessWidget {
                 width: iconSize,
                 height: iconSize,
                 fit: BoxFit.contain,
-                colorFilter: const ColorFilter.mode(
+                colorFilter: ColorFilter.mode(
                   AppColors.ink,
                   BlendMode.srcIn,
                 ),
@@ -123,15 +135,15 @@ class _IconBtn extends StatelessWidget {
             ),
             if (showDot)
               Positioned(
-                top: 1,
-                right: 1,
+                top: dotTop,
+                right: dotRight,
                 child: Container(
-                  width: 7,
-                  height: 7,
+                  width: dotSize,
+                  height: dotSize,
                   decoration: BoxDecoration(
                     color: AppColors.black,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.2),
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                 ),
               ),
@@ -141,7 +153,7 @@ class _IconBtn extends StatelessWidget {
                 right: -4,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  constraints: const BoxConstraints(minWidth: 15),
+                  constraints: BoxConstraints(minWidth: 15),
                   decoration: BoxDecoration(
                     color: AppColors.black,
                     borderRadius: BorderRadius.circular(999),
@@ -167,7 +179,7 @@ class _IconBtn extends StatelessWidget {
 
 // ─── Pinned sliver header — pakai ini di CustomScrollView ────────────────────
 class SliverPinnedDcHeader extends StatelessWidget {
-  const SliverPinnedDcHeader({super.key, this.showActions = true});
+const   SliverPinnedDcHeader({super.key, this.showActions = true});
 
   final bool showActions;
 
@@ -220,7 +232,7 @@ class _DcHeaderDelegate extends SliverPersistentHeaderDelegate {
         color: Colors.white, // solid white → konten scroll tidak tembus
         child: Container(
           // Garis batas tipis agar jelas di mana akhir header.
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(color: Color(0xFFEAEAEA)),
             ),

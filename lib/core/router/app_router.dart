@@ -33,19 +33,19 @@ final GoRouter appRouter = GoRouter(
   navigatorKey: _rootKey,
   initialLocation: '/',
   routes: [
-    GoRoute(path: '/', builder: (context, state) => const OnboardingScreen()),
-    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+    GoRoute(path: '/', builder: (context, state) => OnboardingScreen()),
+    GoRoute(path: '/login', builder: (context, state) => LoginScreen()),
     GoRoute(
       path: '/register',
-      builder: (context, state) => const RegisterScreen(),
+      builder: (context, state) => RegisterScreen(),
     ),
     GoRoute(
       path: '/forgot-password',
-      builder: (context, state) => const ForgotPasswordScreen(),
+      builder: (context, state) => ForgotPasswordScreen(),
     ),
     GoRoute(
       path: '/new-password',
-      builder: (context, state) => const NewPasswordScreen(),
+      builder: (context, state) => NewPasswordScreen(),
     ),
     GoRoute(
       path: '/verify-otp',
@@ -63,7 +63,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/home',
-              builder: (context, state) => const HomeScreen(),
+              builder: (context, state) => HomeScreen(),
             ),
           ],
         ),
@@ -83,7 +83,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/stores',
-              builder: (context, state) => const StoresScreen(),
+              builder: (context, state) => StoresScreen(),
             ),
           ],
         ),
@@ -91,7 +91,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/workshop',
-              builder: (context, state) => const WorkshopScreen(),
+              builder: (context, state) => WorkshopScreen(),
             ),
           ],
         ),
@@ -100,7 +100,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/profile',
-              builder: (context, state) => const ProfileScreen(),
+              builder: (context, state) => ProfileScreen(),
             ),
           ],
         ),
@@ -108,13 +108,13 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/help',
-      builder: (context, state) => const HelpScreen(),
+      builder: (context, state) => HelpScreen(),
     ),
     GoRoute(
       path: '/checkout',
-      builder: (context, state) => const CheckoutScreen(),
+      builder: (context, state) => CheckoutScreen(),
     ),
-    GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
+    GoRoute(path: '/cart', builder: (context, state) => CartScreen()),
     GoRoute(
       path: '/product/:id',
       builder: (context, state) =>
@@ -128,30 +128,30 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/notifications',
-      builder: (context, state) => const NotificationsScreen(),
+      builder: (context, state) => NotificationsScreen(),
     ),
     GoRoute(
       path: '/profile/edit',
       builder: (context, state) =>
-          const AccountSettingsScreen(type: AccountScreenType.profile),
+          AccountSettingsScreen(type: AccountScreenType.profile),
     ),
     GoRoute(
       path: '/addresses',
       builder: (context, state) =>
-          const AccountSettingsScreen(type: AccountScreenType.address),
+          AccountSettingsScreen(type: AccountScreenType.address),
     ),
     GoRoute(
       path: '/settings',
       builder: (context, state) =>
-          const AccountSettingsScreen(type: AccountScreenType.settings),
+          AccountSettingsScreen(type: AccountScreenType.settings),
     ),
     GoRoute(
       path: '/chatbot',
-      builder: (context, state) => const ChatbotScreen(),
+      builder: (context, state) => ChatbotScreen(),
     ),
     GoRoute(
       path: '/messages',
-      builder: (context, state) => const ChatListScreen(),
+      builder: (context, state) => ChatListScreen(),
     ),
     GoRoute(
       path: '/chat-room',
@@ -167,11 +167,11 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/review/write',
-      builder: (context, state) => const WriteReviewScreen(),
+      builder: (context, state) => WriteReviewScreen(),
     ),
     GoRoute(
       path: '/hapus-akun',
-      builder: (context, state) => const DeleteAccountScreen(),
+      builder: (context, state) => DeleteAccountScreen(),
     ),
   ],
 );

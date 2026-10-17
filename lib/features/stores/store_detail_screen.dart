@@ -10,7 +10,7 @@ const Color _borderColor = Color(0xFFE5E5E5);
 const double _padH = 24;
 
 class StoreDetailScreen extends StatefulWidget {
-  const StoreDetailScreen({super.key, required this.storeIndex});
+const   StoreDetailScreen({super.key, required this.storeIndex});
   final int storeIndex;
 
   @override
@@ -52,7 +52,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+                    icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19),
                   ),
                   Expanded(
                     child: Text(
@@ -65,7 +65,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                   ),
                   IconButton(
                     onPressed: () => context.push('/help'),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.help_outline_rounded,
                       size: 22,
                       color: Color(0xFF404040),
@@ -101,7 +101,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: Colors.white, width: 3),
-                            boxShadow: const [
+                            boxShadow: [
                               BoxShadow(
                                 color: Color(0x26000000),
                                 blurRadius: 8,
@@ -143,12 +143,12 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.star_rounded,
                                   color: Color(0xFFF5A623),
                                   size: 15,
                                 ),
-                                const SizedBox(width: 3),
+                                SizedBox(width: 3),
                                 Text(
                                   store.rating.toStringAsFixed(1),
                                   style: GoogleFonts.plusJakartaSans(
@@ -177,7 +177,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           store.name,
                           style: GoogleFonts.plusJakartaSans(
@@ -185,7 +185,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
 
                         // ── Deskripsi dalam kotak berborder ──
                         Container(
@@ -201,11 +201,11 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               height: 1.5,
-                              color: const Color(0xFF404040),
+                              color: Color(0xFF404040),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
 
                         // ── Tombol Chat Toko ──
                         SizedBox(
@@ -215,7 +215,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             onPressed: () => context.push(
                               '/chat-room?store=${Uri.encodeComponent(store.name)}',
                             ),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.chat_bubble_outline_rounded,
                               size: 16,
                             ),
@@ -236,7 +236,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
 
                         // ── Search produk toko ──
                         SizedBox(
@@ -248,13 +248,13 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             decoration: InputDecoration(
                               isDense: true,
                               filled: true,
-                              fillColor: const Color(0xFFF7F7F7),
+                              fillColor: Color(0xFFF7F7F7),
                               hintText: 'Cari produk di toko ini...',
                               hintStyle: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
-                                color: const Color(0xFF737373),
+                                color: Color(0xFF737373),
                               ),
-                              prefixIcon: const Icon(
+                              prefixIcon: Icon(
                                 Icons.search_rounded,
                                 size: 18,
                                 color: Color(0xFFA3A3A3),
@@ -267,7 +267,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                                         _searchController.clear();
                                         setState(() => _query = '');
                                       },
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.close_rounded,
                                         size: 16,
                                         color: Color(0xFFA3A3A3),
@@ -278,17 +278,17 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
                                 borderSide:
-                                    const BorderSide(color: _borderColor),
+                                    BorderSide(color: _borderColor),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
                                 borderSide:
-                                    const BorderSide(color: AppColors.black),
+                                    BorderSide(color: AppColors.black),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20),
 
                         // ── Header katalog ──
                         Row(
@@ -312,7 +312,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
 
                         if (shownProducts.isEmpty)
                           Padding(
@@ -330,10 +330,10 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                         else
                           GridView.builder(
                             shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
+                            physics: NeverScrollableScrollPhysics(),
                             itemCount: shownProducts.length,
                             gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               childAspectRatio: 0.58,
                               crossAxisSpacing: 20,

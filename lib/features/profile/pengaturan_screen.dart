@@ -3,11 +3,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_settings.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
 class PengaturanScreen extends StatefulWidget {
-  const PengaturanScreen({super.key});
+const   PengaturanScreen({super.key});
 
   @override
   State<PengaturanScreen> createState() => _PengaturanScreenState();
@@ -15,28 +16,34 @@ class PengaturanScreen extends StatefulWidget {
 
 class _PengaturanScreenState extends State<PengaturanScreen> {
   // ── State Pengaturan ───────────────────────────────────────────────────────
-  bool _twoFactor = true;
-  static const String _userEmail = 'mizan.artisan@gmail.com';
-  static const String _maskedEmail = 'miz***@gmail.com';
+  static const String _userEmail = 'customer@gmail.com';
+  static const String _maskedEmail = 'cus***@gmail.com';
   bool _orderNotification = true;
   bool _whatsAppNotification = true;
   String _lastPasswordChanged = 'Terakhir diubah 3 bulan lalu';
-  String _selectedLanguage = 'Bahasa Indonesia';
-  String _selectedLanguageCode = 'ID';
-  String _selectedTheme = 'Terang (Light Mode)';
-  String _cacheSize = '24.5 MB file sementara';
-  bool _isCacheCleaned = false;
-  bool _hasOtherDevices = true;
 
-  IconData get _currentThemeIcon {
-    if (_selectedTheme.startsWith('Terang')) {
-      return Icons.light_mode_outlined;
-    } else if (_selectedTheme.startsWith('Gelap')) {
-      return Icons.dark_mode_outlined;
-    } else {
-      return Icons.brightness_auto_outlined;
-    }
-  }
+  /// Sumber kebenaran tema/bahasa/2FA/perangkat/cache ada di AppSettings
+  /// agar seluruh aplikasi ikut berubah saat diubah dari sini.
+  AppSettings get _settings => AppSettings.instance;
+
+  String get _selectedTheme => switch (_settings.themeMode) {
+        AppThemeMode.light => 'Terang (Light Mode)',
+        AppThemeMode.dark => 'Gelap (Dark Mode)',
+        AppThemeMode.system => 'Mengikuti Sistem',
+      };
+
+  String get _selectedLanguage =>
+      _settings.locale == 'en' ? 'English' : 'Bahasa Indonesia';
+  String get _selectedLanguageCode => _settings.locale == 'en' ? 'EN' : 'ID';
+
+  String get _cacheSize => '${_settings.cacheLabel} file sementara';
+  bool get _isCacheCleaned => _settings.cacheBytes <= 0;
+
+  IconData get _currentThemeIcon => switch (_settings.themeMode) {
+        AppThemeMode.light => Icons.light_mode_outlined,
+        AppThemeMode.dark => Icons.dark_mode_outlined,
+        AppThemeMode.system => Icons.brightness_auto_outlined,
+      };
 
   void _showFeedback(String message) {
     if (!mounted) return;
@@ -55,7 +62,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             color: AppColors.white,
           ),
         ),
-        duration: const Duration(seconds: 2),
+        duration: Duration(seconds: 2),
       ),
     );
   }
@@ -68,7 +75,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x73000000),
+      barrierColor: Color(0x73000000),
       builder: builder,
     );
   }
@@ -86,7 +93,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
 
   // ── 2. Autentikasi 2 Langkah (2FA) ─────────────────────────────────────────
   void _toggleTwoFactor() {
-    if (_twoFactor) {
+    if (_settings.twoFactorEnabled) {
       // Tampilkan dialog konfirmasi nonaktifkan
       showDialog<void>(
         context: context,
@@ -124,13 +131,14 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(dialogCtx);
-                setState(() => _twoFactor = false);
+                _settings.setTwoFactor(false);
+                setState(() {});
                 _showFeedback('Autentikasi 2 Langkah dinonaktifkan.');
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFBA1A1A),
+                backgroundColor: Color(0xFFBA1A1A),
                 foregroundColor: AppColors.white,
-                shape: const StadiumBorder(),
+                shape: StadiumBorder(),
                 elevation: 0,
               ),
               child: Text(
@@ -149,7 +157,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       _showAppBottomSheet<void>(
         builder: (sheetContext) {
           return Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
@@ -179,13 +187,13 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                           color: AppColors.inputBg,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.mark_email_read_outlined,
                           color: AppColors.ink,
                           size: 22,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Aktifkan 2FA via Email',
@@ -197,12 +205,12 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
+                        icon: Icon(Icons.close_rounded, size: 20),
                         onPressed: () => Navigator.pop(sheetContext),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Text(
                     'Setiap kali Anda masuk di perangkat baru, DinoyoCraft akan mengirimkan kode verifikasi 6 digit ke alamat email terdaftar Anda.',
                     style: GoogleFonts.plusJakartaSans(
@@ -211,7 +219,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -228,13 +236,13 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             color: AppColors.white,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.email_outlined,
                             size: 20,
                             color: AppColors.ink,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,7 +255,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                   color: AppColors.textSecondary,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                               Text(
                                 _userEmail,
                                 style: GoogleFonts.plusJakartaSans(
@@ -265,7 +273,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD4EDDA),
+                            color: Color(0xFFD4EDDA),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
@@ -273,32 +281,32 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF155724),
+                              color: Color(0xFF155724),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF9F9F9),
+                      color: Color(0xFFF9F9F9),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                      border: Border.all(color: Color(0xFFEEEEEE)),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.info_outline_rounded,
                           size: 18,
                           color: AppColors.textSecondary,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Pastikan Anda selalu memiliki akses ke kotak masuk email ini untuk menerima kode OTP masuk.',
@@ -311,14 +319,15 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22),
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(sheetContext);
-                        setState(() => _twoFactor = true);
+                        _settings.setTwoFactor(true);
+                        setState(() {});
                         _showFeedback(
                           'Autentikasi 2 Langkah via Email berhasil diaktifkan.',
                         );
@@ -326,7 +335,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.black,
                         foregroundColor: AppColors.white,
-                        shape: const StadiumBorder(),
+                        shape: StadiumBorder(),
                         elevation: 0,
                       ),
                       child: Text(
@@ -354,7 +363,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
             return Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
@@ -390,7 +399,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                   color: AppColors.ink,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 'Daftar perangkat yang aktif mengakses akun Anda',
                                 style: GoogleFonts.plusJakartaSans(
@@ -402,12 +411,12 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20),
+                          icon: Icon(Icons.close_rounded, size: 20),
                           onPressed: () => Navigator.pop(sheetContext),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     // Perangkat 1: Smartphone ini
                     Container(
                       padding: const EdgeInsets.all(14),
@@ -425,13 +434,13 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               color: AppColors.white,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.phone_android_rounded,
                               size: 22,
                               color: AppColors.ink,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -446,14 +455,14 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                         color: AppColors.ink,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: 8),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 7,
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFD4EDDA),
+                                        color: Color(0xFFD4EDDA),
                                         borderRadius: BorderRadius.circular(
                                           999,
                                         ),
@@ -463,13 +472,13 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF155724),
+                                          color: Color(0xFF155724),
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 3),
+                                SizedBox(height: 3),
                                 Text(
                                   'Malang, Indonesia • DinoyoCraft App v1.0.0',
                                   style: GoogleFonts.plusJakartaSans(
@@ -483,8 +492,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         ],
                       ),
                     ),
-                    if (_hasOtherDevices) ...[
-                      const SizedBox(height: 10),
+                    if (_settings.hasOtherDevices) ...[
+                      SizedBox(height: 10),
                       // Perangkat 2: Laptop / Browser
                       Container(
                         padding: const EdgeInsets.all(14),
@@ -502,13 +511,13 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 color: AppColors.inputBg,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.laptop_chromebook_rounded,
                                 size: 22,
                                 color: AppColors.ink,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,7 +530,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                       color: AppColors.ink,
                                     ),
                                   ),
-                                  const SizedBox(height: 3),
+                                  SizedBox(height: 3),
                                   Text(
                                     'Surabaya, Indonesia • Aktif kemarin',
                                     style: GoogleFonts.plusJakartaSans(
@@ -534,19 +543,22 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             ),
                             OutlinedButton(
                               onPressed: () {
-                                setSheetState(() => _hasOtherDevices = false);
-                                setState(() => _hasOtherDevices = false);
+                                // Sesi perangkat tersebut dicabut —
+                                // perangkat itu harus login kembali.
+                                _settings.removeOtherDevice(0);
+                                setSheetState(() {});
+                                setState(() {});
                                 _showFeedback(
                                   'Berhasil keluar dari sesi Chrome di Windows.',
                                 );
                               },
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFFBA1A1A),
-                                side: const BorderSide(
+                                foregroundColor: Color(0xFFBA1A1A),
+                                side: BorderSide(
                                   color: Color(0xFFBA1A1A),
                                 ),
-                                shape: const StadiumBorder(),
-                                minimumSize: const Size(0, 32),
+                                shape: StadiumBorder(),
+                                minimumSize: Size(0, 32),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
                                 ),
@@ -562,20 +574,21 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            setSheetState(() => _hasOtherDevices = false);
-                            setState(() => _hasOtherDevices = false);
+                            _settings.removeAllOtherDevices();
+                            setSheetState(() {});
+                            setState(() {});
                             Navigator.pop(sheetContext);
                             _showFeedback(
                               'Berhasil keluar dari semua perangkat lain.',
                             );
                           },
-                          icon: const Icon(Icons.logout_rounded, size: 18),
+                          icon: Icon(Icons.logout_rounded, size: 18),
                           label: Text(
                             'Keluar dari Semua Perangkat Lain',
                             style: GoogleFonts.plusJakartaSans(
@@ -584,14 +597,14 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFBA1A1A),
-                            side: const BorderSide(color: Color(0xFFBA1A1A)),
-                            shape: const StadiumBorder(),
+                            foregroundColor: Color(0xFFBA1A1A),
+                            side: BorderSide(color: Color(0xFFBA1A1A)),
+                            shape: StadiumBorder(),
                           ),
                         ),
                       ),
                     ] else ...[
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Center(
                         child: Text(
                           'Hanya perangkat ini yang sedang aktif.',
@@ -625,13 +638,12 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         'code': 'EN',
         'desc': 'International English localization',
       },
-      {'name': 'Basa Jawa', 'code': 'JV', 'desc': 'Basa daerah Jawa Timur'},
     ];
 
     _showAppBottomSheet<void>(
       builder: (sheetContext) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
@@ -667,7 +679,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               color: AppColors.ink,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Bahasa tampilan menu & pemberitahuan',
                             style: GoogleFonts.plusJakartaSans(
@@ -679,12 +691,12 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 20),
+                      icon: Icon(Icons.close_rounded, size: 20),
                       onPressed: () => Navigator.pop(sheetContext),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 for (final lang in languages) ...[
                   _buildRadioOptionTile(
                     icon: Icons.language_outlined,
@@ -693,17 +705,15 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     pillText: lang['code']!,
                     isSelected: _selectedLanguage == lang['name'],
                     onTap: () {
-                      setState(() {
-                        _selectedLanguage = lang['name']!;
-                        _selectedLanguageCode = lang['code']!;
-                      });
+                      _settings.setLocale(lang['code'] == 'EN' ? 'en' : 'id');
+                      setState(() {});
                       Navigator.pop(sheetContext);
                       _showFeedback(
-                        'Bahasa aplikasi diubah ke $_selectedLanguage.',
+                        'Bahasa aplikasi diubah ke ${lang['name']}.',
                       );
                     },
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                 ],
               ],
             ),
@@ -736,7 +746,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
     _showAppBottomSheet<void>(
       builder: (sheetContext) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
@@ -772,7 +782,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               color: AppColors.ink,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Sesuaikan kenyamanan visual Anda',
                             style: GoogleFonts.plusJakartaSans(
@@ -784,12 +794,12 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 20),
+                      icon: Icon(Icons.close_rounded, size: 20),
                       onPressed: () => Navigator.pop(sheetContext),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 for (final th in themes) ...[
                   _buildRadioOptionTile(
                     icon: th['icon'] as IconData,
@@ -797,14 +807,18 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     subtitle: th['desc'] as String,
                     isSelected: _selectedTheme == th['name'],
                     onTap: () {
-                      setState(() {
-                        _selectedTheme = th['name'] as String;
-                      });
+                      final mode = switch (th['name'] as String) {
+                        'Gelap (Dark Mode)' => AppThemeMode.dark,
+                        'Mengikuti Sistem' => AppThemeMode.system,
+                        _ => AppThemeMode.light,
+                      };
+                      _settings.setThemeMode(mode);
+                      setState(() {});
                       Navigator.pop(sheetContext);
-                      _showFeedback('Tema diubah ke $_selectedTheme.');
+                      _showFeedback('Tema diubah ke ${th['name']}.');
                     },
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                 ],
               ],
             ),
@@ -834,7 +848,9 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           ),
         ),
         content: Text(
-          'File sementara sebesar 24.5 MB berupa pratinjau gambar keramik dan data offline akan dihapus. Ini tidak akan menghapus data akun Anda.',
+          'File sementara sebesar ${_settings.cacheLabel} berupa pratinjau '
+          'gambar keramik dan data offline akan dihapus. Ini tidak akan '
+          'menghapus data akun Anda.',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 13,
             height: 1.5,
@@ -854,17 +870,16 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           ),
           ElevatedButton(
             onPressed: () {
+              final cleared = _settings.cacheLabel;
               Navigator.pop(dialogCtx);
-              setState(() {
-                _cacheSize = '0 B file sementara';
-                _isCacheCleaned = true;
-              });
-              _showFeedback('Cache sebesar 24.5 MB berhasil dibersihkan.');
+              _settings.clearCache();
+              setState(() {});
+              _showFeedback('Cache sebesar $cleared berhasil dibersihkan.');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.black,
               foregroundColor: AppColors.white,
-              shape: const StadiumBorder(),
+              shape: StadiumBorder(),
               elevation: 0,
             ),
             child: Text(
@@ -886,7 +901,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       title: 'Kebijakan Privasi',
       subtitle: 'Terakhir diperbarui: 1 Oktober 2026',
       icon: Icons.privacy_tip_outlined,
-      sections: const [
+      sections: [
         _LegalSection(
           number: '1',
           heading: 'Komitmen Perlindungan Privasi',
@@ -927,7 +942,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       title: 'Syarat & Ketentuan Penggunaan',
       subtitle: 'Ketentuan berbelanja & bertransaksi di DinoyoCraft',
       icon: Icons.description_outlined,
-      sections: const [
+      sections: [
         _LegalSection(
           number: '1',
           heading: 'Ketentuan Akun',
@@ -974,7 +989,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           Navigator.pop(context);
           context.push('/help');
         },
-        icon: const Icon(Icons.help_outline_rounded, size: 16),
+        icon: Icon(Icons.help_outline_rounded, size: 16),
         label: Text(
           'Pusat Bantuan & Klaim',
           style: GoogleFonts.plusJakartaSans(
@@ -984,12 +999,12 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         ),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.ink,
-          side: const BorderSide(color: AppColors.borderAlt),
-          shape: const StadiumBorder(),
-          minimumSize: const Size(double.infinity, 48),
+          side: BorderSide(color: AppColors.borderAlt),
+          shape: StadiumBorder(),
+          minimumSize: Size(double.infinity, 48),
         ),
       ),
-      sections: const [
+      sections: [
         _LegalSection(
           number: '1',
           heading: 'Jaminan Proteksi 100% Tanpa Risiko',
@@ -1031,7 +1046,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       builder: (sheetContext) {
         return Container(
           height: MediaQuery.of(sheetContext).size.height * 0.82,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
@@ -1066,7 +1081,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 padding: const EdgeInsets.all(9),
                                 child: SvgPicture.asset(
                                   svgPath,
-                                  colorFilter: const ColorFilter.mode(
+                                  colorFilter: ColorFilter.mode(
                                     AppColors.ink,
                                     BlendMode.srcIn,
                                   ),
@@ -1074,7 +1089,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               )
                             : Icon(icon, size: 20, color: AppColors.ink),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1102,19 +1117,19 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
+                        icon: Icon(Icons.close_rounded, size: 20),
                         onPressed: () => Navigator.pop(sheetContext),
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 20, color: Color(0xFFEEEEEE)),
+                Divider(height: 20, color: Color(0xFFEEEEEE)),
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(20, 6, 20, 20),
-                    physics: const BouncingScrollPhysics(),
+                    physics: BouncingScrollPhysics(),
                     itemCount: sections.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 16),
+                    separatorBuilder: (_, _) => SizedBox(height: 16),
                     itemBuilder: (context, i) {
                       final item = sections[i];
                       return Container(
@@ -1133,7 +1148,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                   width: 22,
                                   height: 22,
                                   alignment: Alignment.center,
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     color: AppColors.black,
                                     shape: BoxShape.circle,
                                   ),
@@ -1146,7 +1161,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     item.heading,
@@ -1159,7 +1174,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                             Text(
                               item.body,
                               style: GoogleFonts.plusJakartaSans(
@@ -1180,7 +1195,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     children: [
                       if (extraAction != null) ...[
                         extraAction,
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                       ],
                       SizedBox(
                         width: double.infinity,
@@ -1190,7 +1205,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.black,
                             foregroundColor: AppColors.white,
-                            shape: const StadiumBorder(),
+                            shape: StadiumBorder(),
                             elevation: 0,
                           ),
                           child: Text(
@@ -1249,13 +1264,16 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogCtx);
+              // Logout dari perangkat ini → login berikutnya butuh OTP
+              // (jika 2FA aktif).
+              AppSettings.instance.markLoggedOut();
               context.go('/login');
               _showFeedback('Anda telah berhasil keluar dari akun.');
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFBA1A1A),
+              backgroundColor: Color(0xFFBA1A1A),
               foregroundColor: AppColors.white,
-              shape: const StadiumBorder(),
+              shape: StadiumBorder(),
               elevation: 0,
             ),
             child: Text(
@@ -1286,7 +1304,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF9F9F9) : AppColors.white,
+          color: isSelected ? Color(0xFFF9F9F9) : AppColors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? AppColors.black : AppColors.borderAlt,
@@ -1308,7 +1326,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                 color: isSelected ? AppColors.black : AppColors.ink,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1322,7 +1340,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     ),
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: GoogleFonts.plusJakartaSans(
@@ -1354,7 +1372,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
             ],
             Icon(
               isSelected
@@ -1396,12 +1414,12 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       _SettingTile(
                         icon: Icons.verified_user_outlined,
                         title: 'Autentikasi 2 Langkah (2FA)',
-                        subtitle: _twoFactor
+                        subtitle: _settings.twoFactorEnabled
                             ? 'Aktif via Email ($_maskedEmail)'
                             : 'Tingkatkan keamanan akun via Email OTP',
                         onTap: _toggleTwoFactor,
                         trailing: Switch(
-                          value: _twoFactor,
+                          value: _settings.twoFactorEnabled,
                           activeThumbColor: AppColors.black,
                           onChanged: (_) => _toggleTwoFactor(),
                         ),
@@ -1409,8 +1427,9 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       _SettingTile(
                         icon: Icons.devices_outlined,
                         title: 'Perangkat Terhubung',
-                        subtitle: _hasOtherDevices
-                            ? '2 perangkat aktif saat ini'
+                        subtitle: _settings.hasOtherDevices
+                            ? '${_settings.otherDevices.length + 1} '
+                                'perangkat aktif saat ini'
                             : '1 perangkat aktif saat ini',
                         onTap: _openConnectedDevicesModal,
                       ),
@@ -1423,7 +1442,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
 
                   // 2. NOTIFIKASI
                   _buildGroup(
@@ -1486,7 +1505,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
 
                   // 3. PREFERENSI APLIKASI
                   _buildGroup(
@@ -1517,7 +1536,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
 
                   // 4. PRIVASI & LEGALITAS
                   _buildGroup(
@@ -1541,7 +1560,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // 5. Keluar dari Akun
                   SizedBox(
@@ -1549,7 +1568,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     height: 56,
                     child: OutlinedButton.icon(
                       onPressed: _confirmLogout,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.logout_rounded,
                         size: 20,
                         color: Colors.redAccent,
@@ -1563,17 +1582,17 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
+                        side: BorderSide(
                           color: Colors.redAccent,
                           width: 1.5,
                         ),
-                        shape: const StadiumBorder(),
+                        shape: StadiumBorder(),
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         backgroundColor: Colors.white,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   Center(
                     child: Text(
                       'DinoyoCraft App v1.0.0',
@@ -1584,7 +1603,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  SizedBox(height: 3),
                   Center(
                     child: Text(
                       'Sentra Keramik Dinoyo Malang • Jawa Timur',
@@ -1617,7 +1636,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                 context.go('/profile');
               }
             },
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19),
           ),
           Expanded(
             child: Text(
@@ -1630,7 +1649,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 48),
+          SizedBox(width: 48),
         ],
       ),
     );
@@ -1648,7 +1667,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             color: AppColors.ink,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: AppColors.white,
@@ -1659,7 +1678,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             children: [
               for (var i = 0; i < tiles.length; i++) ...[
                 if (i > 0)
-                  const Divider(
+                  Divider(
                     height: 1,
                     indent: 60,
                     color: Color(0xFFEEEEEE),
@@ -1739,7 +1758,7 @@ class _SettingTile extends StatelessWidget {
                       color: destructive ? _destructiveColor : AppColors.ink,
                     ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1753,7 +1772,7 @@ class _SettingTile extends StatelessWidget {
                     ),
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       subtitle!,
                       style: GoogleFonts.plusJakartaSans(
@@ -1766,7 +1785,7 @@ class _SettingTile extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             if (trailing != null)
               trailing!
             else if (trailingPill != null)
@@ -1814,7 +1833,7 @@ class _SettingTile extends StatelessWidget {
                 ),
               )
             else
-              const Icon(
+              Icon(
                 Icons.chevron_right,
                 size: 18,
                 color: AppColors.textMuted,

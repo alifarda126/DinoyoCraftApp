@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -7,7 +7,7 @@ import '../../../../core/theme/app_text_styles.dart';
 
 // â”€â”€â”€ Placeholder Model (ganti dengan entity dari domain layer) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class ProductDetailArgs {
-  const ProductDetailArgs({
+const   ProductDetailArgs({
     required this.id,
     required this.name,
     required this.studio,
@@ -42,7 +42,7 @@ class ProductDetailArgs {
 /// Panggil via: Navigator.push / context.push('/product/:id')
 class ProductDetailPage extends StatelessWidget {
   // TODO: Saat pakai go_router, terima id sebagai param dan fetch dari repository
-  const ProductDetailPage({super.key, required this.args});
+const   ProductDetailPage({super.key, required this.args});
 
   final ProductDetailArgs args;
 
@@ -89,11 +89,11 @@ class ProductDetailPage extends StatelessWidget {
                     rating: args.rating,
                     reviewCount: args.reviewCount,
                   ),
-                  const SizedBox(height: AppDimensions.gapS),
+                  SizedBox(height: AppDimensions.gapS),
 
                   // Product Name
                   Text(args.name, style: AppTextStyles.sectionTitle),
-                  const SizedBox(height: AppDimensions.gapM),
+                  SizedBox(height: AppDimensions.gapM),
 
                   // Studio Row
                   _StudioRow(
@@ -102,14 +102,14 @@ class ProductDetailPage extends StatelessWidget {
                       // TODO: context.push('/store/:id')
                     },
                   ),
-                  const Divider(height: 32, color: AppColors.border),
+                  Divider(height: 32, color: AppColors.border),
 
                   // Deskripsi
                   _SectionBlock(
                     title: 'Deskripsi Produk',
                     child: Text(args.description, style: AppTextStyles.bodySmall),
                   ),
-                  const SizedBox(height: AppDimensions.paddingXL),
+                  SizedBox(height: AppDimensions.paddingXL),
 
                   // Spesifikasi
                   _SectionBlock(
@@ -123,11 +123,11 @@ class ProductDetailPage extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: AppDimensions.paddingXL),
+                  SizedBox(height: AppDimensions.paddingXL),
 
                   // Jaminan
                   _GuaranteeChip(),
-                  const Divider(height: 32, color: AppColors.border),
+                  Divider(height: 32, color: AppColors.border),
 
                   // Ulasan preview
                   _ReviewPreviewSection(
@@ -166,13 +166,13 @@ class _CircleBackBtn extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       child: Material(
         color: AppColors.white,
-        shape: const CircleBorder(),
+        shape: CircleBorder(),
         elevation: 2,
         shadowColor: Colors.black12,
         child: InkWell(
-          customBorder: const CircleBorder(),
+          customBorder: CircleBorder(),
           onTap: () => Navigator.of(context).maybePop(),
-          child: const Padding(
+          child: Padding(
             padding: EdgeInsets.all(8),
             child: Icon(Icons.arrow_back, size: 20, color: AppColors.ink),
           ),
@@ -196,7 +196,7 @@ class _ProductHeroImage extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => const Center(
+        errorBuilder: (_, _, _) => Center(
           child: Icon(
             Icons.image_not_supported_outlined,
             size: 48,
@@ -218,13 +218,13 @@ class _RatingRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
-        const SizedBox(width: 4),
+        Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+        SizedBox(width: 4),
         Text(
           rating.toStringAsFixed(1),
           style: AppTextStyles.ratingBadge,
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: 6),
         Text(
           '($reviewCount Ulasan)',
           style: AppTextStyles.caption,
@@ -247,9 +247,9 @@ class _StudioRow extends StatelessWidget {
         CircleAvatar(
           radius: 18,
           backgroundColor: AppColors.inputBg,
-          child: const Icon(Icons.store_outlined, size: 18, color: AppColors.textMuted),
+          child: Icon(Icons.store_outlined, size: 18, color: AppColors.textMuted),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,8 +262,8 @@ class _StudioRow extends StatelessWidget {
           onPressed: onVisitTap,
           style: TextButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            side: const BorderSide(color: AppColors.border),
-            shape: const StadiumBorder(),
+            side: BorderSide(color: AppColors.border),
+            shape: StadiumBorder(),
           ),
           child: Text('Kunjungi Toko', style: AppTextStyles.seeAll),
         ),
@@ -284,7 +284,7 @@ class _SectionBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: AppTextStyles.cardTitle),
-        const SizedBox(height: AppDimensions.gapS),
+        SizedBox(height: AppDimensions.gapS),
         child,
       ],
     );
@@ -335,8 +335,8 @@ class _GuaranteeChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.verified_outlined, size: 16, color: AppColors.ink),
-          const SizedBox(width: 8),
+          Icon(Icons.verified_outlined, size: 16, color: AppColors.ink),
+          SizedBox(width: 8),
           Text(
             'Garansi Kemasan Aman Dinoyo',
             style: AppTextStyles.fieldLabel,
@@ -366,7 +366,7 @@ class _ReviewPreviewSection extends StatelessWidget {
         Row(
           children: [
             Text('$reviewCount Ulasan', style: AppTextStyles.cardTitle),
-            const Spacer(),
+            Spacer(),
             TextButton(
               onPressed: onSeeAll,
               child: Text('Lihat Semua', style: AppTextStyles.seeAll),
@@ -375,8 +375,8 @@ class _ReviewPreviewSection extends StatelessWidget {
         ),
         // Placeholder review item
         _ReviewItem(
-          initials: 'MA',
-          name: 'Mochammad Al Mizan',
+          initials: 'CU',
+          name: 'Customer',
           date: '12 Feb 2025',
           rating: 5,
           comment: 'Sangat kokoh dan aman sampai rumah tanpa kerusakan. Kualitas sangat memuaskan!',
@@ -426,7 +426,7 @@ class _ReviewItem extends StatelessWidget {
                 backgroundColor: AppColors.inputBg,
                 child: Text(initials, style: AppTextStyles.fieldLabel),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,9 +448,9 @@ class _ReviewItem extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppDimensions.gapS),
+          SizedBox(height: AppDimensions.gapS),
           Text(comment, style: AppTextStyles.bodySmall),
-          const SizedBox(height: AppDimensions.gapS),
+          SizedBox(height: AppDimensions.gapS),
           Text(
             'Membantu $helpfulCount orang',
             style: AppTextStyles.caption,
@@ -482,7 +482,7 @@ class _BottomActionBar extends StatelessWidget {
         AppDimensions.pageHorizontal,
         AppDimensions.paddingL + bottomPad,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.white,
         border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
       ),
@@ -496,21 +496,21 @@ class _BottomActionBar extends StatelessWidget {
               Text(price, style: AppTextStyles.price),
             ],
           ),
-          const SizedBox(width: AppDimensions.paddingL),
+          SizedBox(width: AppDimensions.paddingL),
           Expanded(
             child: SizedBox(
               height: AppDimensions.buttonHeight,
               child: OutlinedButton(
                 onPressed: onAddToCart,
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.border),
-                  shape: const StadiumBorder(),
+                  side: BorderSide(color: AppColors.border),
+                  shape: StadiumBorder(),
                 ),
                 child: Text('Keranjang', style: AppTextStyles.seeAll),
               ),
             ),
           ),
-          const SizedBox(width: AppDimensions.paddingS),
+          SizedBox(width: AppDimensions.paddingS),
           Expanded(
             flex: 2,
             child: SizedBox(
@@ -521,7 +521,7 @@ class _BottomActionBar extends StatelessWidget {
                   backgroundColor: AppColors.black,
                   foregroundColor: AppColors.white,
                   elevation: 0,
-                  shape: const StadiumBorder(),
+                  shape: StadiumBorder(),
                 ),
                 child: Text('Beli Langsung', style: AppTextStyles.buttonLabel),
               ),

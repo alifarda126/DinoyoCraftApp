@@ -9,7 +9,7 @@ import '../../../../core/widgets/dc_button.dart';
 import '../../../../data/mock_data.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key});
+const   CheckoutScreen({super.key});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -118,13 +118,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             AppAssets.iconBack,
             width: 22,
             height: 22,
-            colorFilter: const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
           ),
         ),
         actions: [
           IconButton(
             onPressed: () {},
-            icon: const Icon(
+            icon: Icon(
               Icons.help_outline_rounded,
               color: AppColors.ink,
               size: 22,
@@ -146,7 +146,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     onPressed: () {},
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
-                      minimumSize: const Size(40, 28),
+                      minimumSize: Size(40, 28),
                     ),
                     child: Text(
                       'Mode Kosong',
@@ -172,7 +172,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               color: AppColors.ink,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
@@ -191,10 +191,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               ),
                             ),
                           ),
-                          const Spacer(),
+                          Spacer(),
                           TextButton.icon(
                             onPressed: () {},
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.edit_outlined,
                               size: 13,
                               color: AppColors.textSecondary,
@@ -208,20 +208,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 28),
+                              minimumSize: Size(0, 28),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.phone_outlined,
                             size: 13,
                             color: AppColors.textSecondary,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           Text(
                             '0812-3456-7890',
                             style: GoogleFonts.plusJakartaSans(
@@ -231,16 +231,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.location_on_outlined,
                             size: 13,
                             color: AppColors.textSecondary,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               'Jl. Veteran No.1, RT/RW. 04/02, Kel. Ketawanggede, Kec. Lowokwaru, Kota Malang, Jawa Timur 65145',
@@ -253,10 +253,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       OutlinedButton.icon(
                         onPressed: () {},
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.add,
                           size: 14,
                           color: AppColors.ink,
@@ -270,7 +270,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
+                          side: BorderSide(
                             color: AppColors.border,
                             width: 1,
                           ),
@@ -286,7 +286,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // â”€â”€â”€ Produk yang Dibeli â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _SectionHeader(
@@ -319,14 +319,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 width: 68,
                                 height: 68,
                                 color: AppColors.inputBg,
-                                child: const Icon(
+                                child: Icon(
                                   Icons.image_outlined,
                                   color: AppColors.textMuted,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,15 +339,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     color: AppColors.ink,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
+                                SizedBox(height: 2),
                                 Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.store_outlined,
                                       size: 12,
                                       color: AppColors.textSecondary,
                                     ),
-                                    const SizedBox(width: 3),
+                                    SizedBox(width: 3),
                                     Expanded(
                                       child: Text(
                                         item.product.studio,
@@ -360,7 +360,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 6),
+                                SizedBox(height: 6),
                                 Text(
                                   MockData.formatPrice(
                                     item.product.price * _qtys[i],
@@ -407,7 +407,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   );
                 }),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
 
                 // â”€â”€â”€ Metode Pengiriman â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _SectionHeader(
@@ -435,7 +435,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   selected: _shipping == 'Express',
                   onTap: () => setState(() => _shipping = 'Express'),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // â”€â”€â”€ Metode Pembayaran â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _SectionHeader(
@@ -448,31 +448,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   subtitle:
                       'Bayar instan bebas biaya admin dengan scan kode QRIS.',
                   badge: 'DIREKOMENDASIKAN',
-                  tags: const ['QRIS', 'GoPay', 'OVO', 'ShopeePay', 'BCA'],
+                  tags: ['QRIS', 'GoPay', 'OVO', 'ShopeePay', 'BCA'],
                   selected: _payment == 'QRIS',
                   onTap: () => setState(() => _payment = 'QRIS'),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _PaymentCard(
                   id: 'VA',
                   title: 'Virtual Account',
                   subtitle:
                       'Verifikasi otomatis 24 jam tanpa perlu bukti transfer.',
-                  tags: const ['BCA', 'Mandiri', 'BRI', 'BNI 46'],
+                  tags: ['BCA', 'Mandiri', 'BRI', 'BNI 46'],
                   selected: _payment == 'VA',
                   onTap: () => setState(() => _payment = 'VA'),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _PaymentCard(
                   id: 'E-Wallet',
                   title: 'E-Wallet',
                   subtitle:
                       'Terhubung langsung ke akun dompet digital favorit kamu.',
-                  tags: const ['ShopeePay', 'GoPay', 'OVO', 'DANA'],
+                  tags: ['ShopeePay', 'GoPay', 'OVO', 'DANA'],
                   selected: _payment == 'E-Wallet',
                   onTap: () => setState(() => _payment = 'E-Wallet'),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // â”€â”€â”€ Catatan untuk Penjual â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 _SectionHeader(
@@ -505,7 +505,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // â”€â”€â”€ Ringkasan Pembayaran â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 Text(
@@ -516,14 +516,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     color: AppColors.ink,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _RowLine('Subtotal Produk', MockData.formatPrice(_subtotal)),
                 _RowLine(
                   'Biaya Pengiriman (${_shippingLabel()})',
                   MockData.formatPrice(_shippingFee),
                 ),
                 _RowLine('Biaya Layanan', MockData.formatPrice(_serviceFee)),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Divider(height: 1, color: AppColors.border),
                 ),
@@ -532,7 +532,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   MockData.formatPrice(_total),
                   bold: true,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
               ],
             ),
           ),
@@ -545,7 +545,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 16,
-                  offset: const Offset(0, -4),
+                  offset: Offset(0, -4),
                 ),
               ],
             ),
@@ -567,7 +567,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               color: AppColors.textSecondary,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          SizedBox(height: 2),
                           Text(
                             MockData.formatPrice(_total),
                             style: GoogleFonts.plusJakartaSans(
@@ -579,7 +579,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: DcButton(label: 'Bayar Sekarang', onPressed: _pay),
                     ),
@@ -624,7 +624,7 @@ class _SectionHeader extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon, size: 18, color: AppColors.ink),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           Text(
             title,
             style: GoogleFonts.plusJakartaSans(
@@ -633,7 +633,7 @@ class _SectionHeader extends StatelessWidget {
               color: AppColors.ink,
             ),
           ),
-          if (trailing != null) ...[const Spacer(), trailing!],
+          if (trailing != null) ...[Spacer(), trailing!],
         ],
       ),
     );
@@ -654,7 +654,7 @@ class _Card extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEEEEEE)),
+        border: Border.all(color: Color(0xFFEEEEEE)),
       ),
       child: child,
     );
@@ -721,7 +721,7 @@ class _ShippingTile extends StatelessWidget {
             color: AppColors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? AppColors.black : const Color(0xFFEEEEEE),
+              color: selected ? AppColors.black : Color(0xFFEEEEEE),
               width: selected ? 1.5 : 1,
             ),
           ),
@@ -732,7 +732,7 @@ class _ShippingTile extends StatelessWidget {
                 size: 20,
                 color: selected ? AppColors.black : AppColors.textMuted,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -802,7 +802,7 @@ class _PaymentCard extends StatelessWidget {
           color: AppColors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppColors.black : const Color(0xFFEEEEEE),
+            color: selected ? AppColors.black : Color(0xFFEEEEEE),
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -818,7 +818,7 @@ class _PaymentCard extends StatelessWidget {
                   size: 20,
                   color: selected ? AppColors.black : AppColors.textMuted,
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Text(
                   title,
                   style: GoogleFonts.plusJakartaSans(
@@ -828,7 +828,7 @@ class _PaymentCard extends StatelessWidget {
                   ),
                 ),
                 if (badge != null) ...[
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
@@ -848,8 +848,8 @@ class _PaymentCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                const Spacer(),
-                const Icon(
+                Spacer(),
+                Icon(
                   Icons.keyboard_arrow_down_rounded,
                   size: 18,
                   color: AppColors.textMuted,
@@ -867,7 +867,7 @@ class _PaymentCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.only(left: 30),
               child: Wrap(

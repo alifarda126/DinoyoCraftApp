@@ -11,7 +11,7 @@ class _FaqItem {
 }
 
 class HelpPage extends StatefulWidget {
-  const HelpPage({super.key});
+const   HelpPage({super.key});
   @override
   State<HelpPage> createState() => _HelpPageState();
 }
@@ -37,34 +37,34 @@ class _HelpPageState extends State<HelpPage> {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: AppColors.bg, elevation: 0, scrolledUnderElevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.ink), onPressed: () => Navigator.of(context).maybePop()),
+        leading: IconButton(icon: Icon(Icons.arrow_back, color: AppColors.ink), onPressed: () => Navigator.of(context).maybePop()),
         title: Text('Bantuan', style: AppTextStyles.appBarTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(AppDimensions.pageHorizontal, AppDimensions.paddingL, AppDimensions.pageHorizontal, AppDimensions.bottomNavClearance),
         children: [
           Text('Butuh Bantuan?', style: AppTextStyles.sectionTitle),
-          const SizedBox(height: AppDimensions.gapS),
+          SizedBox(height: AppDimensions.gapS),
           Text('Temukan jawaban untuk pertanyaan seputar DinoyoCraft.', style: AppTextStyles.bodySmall),
-          const SizedBox(height: AppDimensions.paddingL),
+          SizedBox(height: AppDimensions.paddingL),
           TextField(
             onChanged: (v) => setState(() { _query = v; _expandedIndex = null; }),
             decoration: InputDecoration(
               hintText: 'Cari pertanyaan...',
               hintStyle: AppTextStyles.fieldHint,
-              prefixIcon: const Icon(Icons.search, color: AppColors.textMuted, size: 20),
+              prefixIcon: Icon(Icons.search, color: AppColors.textMuted, size: 20),
               filled: true, fillColor: AppColors.inputBg,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusL), borderSide: BorderSide.none),
               contentPadding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
-          const SizedBox(height: AppDimensions.paddingXL),
+          SizedBox(height: AppDimensions.paddingXL),
           Row(children: [
             Text('Pertanyaan Umum', style: AppTextStyles.cardTitle),
-            const SizedBox(width: AppDimensions.gapS),
+            SizedBox(width: AppDimensions.gapS),
             Text('${_filtered.length} Pertanyaan', style: AppTextStyles.caption),
           ]),
-          const SizedBox(height: AppDimensions.paddingM),
+          SizedBox(height: AppDimensions.paddingM),
           ..._filtered.asMap().entries.map((e) {
             final i = e.key;
             final faq = e.value;
@@ -86,7 +86,7 @@ class _HelpPageState extends State<HelpPage> {
                       Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: AppColors.textMuted),
                     ]),
                     if (isExpanded) ...[
-                      const SizedBox(height: AppDimensions.gapM),
+                      SizedBox(height: AppDimensions.gapM),
                       Text(faq.answer, style: AppTextStyles.bodySmall),
                     ],
                   ]),

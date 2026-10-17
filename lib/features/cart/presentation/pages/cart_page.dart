@@ -7,7 +7,7 @@ import '../../../../core/constants/asset_constants.dart';
 
 // ─── Cart Item Model (placeholder — ganti dengan entity domain layer) ─────────
 class CartItem {
-  CartItem({
+CartItem({
     required this.id,
     required this.productName,
     required this.studioName,
@@ -30,7 +30,7 @@ class CartItem {
 
 // ─── Cart Page ────────────────────────────────────────────────────────────────
 class CartPage extends StatefulWidget {
-  const CartPage({super.key});
+const CartPage({super.key});
 
   @override
   State<CartPage> createState() => _CartPageState();
@@ -91,7 +91,7 @@ class _CartPageState extends State<CartPage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink),
+          icon: Icon(Icons.arrow_back, color: AppColors.ink),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Column(
@@ -114,7 +114,7 @@ class _CartPageState extends State<CartPage> {
                   onDeleteSelected:
                       _selectedItems.isEmpty ? null : _deleteSelected,
                 ),
-                const Divider(height: 1, color: AppColors.border),
+                Divider(height: 1, color: AppColors.border),
 
                 // ── Item list ───────────────────────────────────────────
                 Expanded(
@@ -124,7 +124,7 @@ class _CartPageState extends State<CartPage> {
                     ),
                     itemCount: _items.length,
                     separatorBuilder: (_, _) =>
-                        const Divider(height: 1, color: AppColors.border),
+                        Divider(height: 1, color: AppColors.border),
                     itemBuilder: (context, index) {
                       final item = _items[index];
                       return _CartItemTile(
@@ -167,14 +167,14 @@ class _EmptyCart extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.shopping_bag_outlined,
             size: 64,
             color: AppColors.textMuted,
           ),
-          const SizedBox(height: AppDimensions.paddingL),
+          SizedBox(height: AppDimensions.paddingL),
           Text('Keranjang masih kosong', style: AppTextStyles.cardTitle),
-          const SizedBox(height: AppDimensions.gapS),
+          SizedBox(height: AppDimensions.gapS),
           Text(
             'Temukan produk keramik favoritmu dan tambahkan ke sini.',
             style: AppTextStyles.bodySmall,
@@ -213,11 +213,11 @@ class _SelectAllBar extends StatelessWidget {
             onChanged: onToggleAll,
             activeColor: AppColors.black,
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: 4),
           Text('Pilih Semua', style: AppTextStyles.fieldLabel),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           Text('($selectedCount barang)', style: AppTextStyles.caption),
-          const Spacer(),
+          Spacer(),
           if (onDeleteSelected != null)
             TextButton(
               onPressed: onDeleteSelected,
@@ -279,11 +279,11 @@ class _CartItemTile extends StatelessWidget {
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => ColoredBox(
                 color: AppColors.inputBg,
-                child: const SizedBox(width: 72, height: 72),
+                child: SizedBox(width: 72, height: 72),
               ),
             ),
           ),
-          const SizedBox(width: AppDimensions.gapM),
+          SizedBox(width: AppDimensions.gapM),
 
           // Info + controls
           Expanded(
@@ -296,23 +296,23 @@ class _CartItemTile extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   item.productName,
                   style: AppTextStyles.subTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(item.variant, style: AppTextStyles.caption),
-                const SizedBox(height: AppDimensions.gapS),
+                SizedBox(height: AppDimensions.gapS),
                 Row(
                   children: [
                     Text(
                       _formatPrice(item.price),
                       style: AppTextStyles.price,
                     ),
-                    const Spacer(),
+                    Spacer(),
                     _QtyControl(
                       qty: item.qty,
                       onDecrement: item.qty > 1
@@ -419,7 +419,7 @@ class _CheckoutBar extends StatelessWidget {
         AppDimensions.pageHorizontal,
         AppDimensions.paddingL + bottomPad,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.white,
         border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
       ),
@@ -439,7 +439,7 @@ class _CheckoutBar extends StatelessWidget {
                   ),
                 ],
               ),
-              const Spacer(),
+              Spacer(),
               SizedBox(
                 height: AppDimensions.buttonHeight,
                 child: ElevatedButton(
@@ -449,7 +449,7 @@ class _CheckoutBar extends StatelessWidget {
                     disabledBackgroundColor: AppColors.textMuted,
                     foregroundColor: AppColors.white,
                     elevation: 0,
-                    shape: const StadiumBorder(),
+                    shape: StadiumBorder(),
                     padding: const EdgeInsets.symmetric(horizontal: 28),
                   ),
                   child: Text(
@@ -460,16 +460,16 @@ class _CheckoutBar extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppDimensions.gapS),
+          SizedBox(height: AppDimensions.gapS),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.verified_outlined,
                 size: 14,
                 color: AppColors.textSecondary,
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: 4),
               Text(
                 'Garansi Aman Pecah Belah DinoyoCraft 100%',
                 style: AppTextStyles.caption,

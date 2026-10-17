@@ -6,7 +6,7 @@ import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
 class WriteReviewScreen extends StatefulWidget {
-  const WriteReviewScreen({
+const   WriteReviewScreen({
     super.key,
     this.orderId = '#DNC-001',
     this.productName = 'Vas Keramik Minimalis',
@@ -109,7 +109,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       size: 19,
                     ),
@@ -125,7 +125,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  SizedBox(width: 48),
                 ],
               ),
             ),
@@ -134,11 +134,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
                 children: [
                   _buildProductCard(),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _buildRatingCard(),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _buildAttributesCard(),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _buildWrittenReviewCard(),
                 ],
               ),
@@ -171,7 +171,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,7 +186,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                         color: AppColors.ink,
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     Text(
                       widget.receivedDate,
                       style: GoogleFonts.plusJakartaSans(
@@ -196,7 +196,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   widget.productName,
                   style: GoogleFonts.plusJakartaSans(
@@ -212,15 +212,15 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.storefront_rounded,
                       size: 12,
                       color: AppColors.textSecondary,
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4),
                     Text(
                       widget.studioName,
                       style: GoogleFonts.plusJakartaSans(
@@ -261,7 +261,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               color: AppColors.ink,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             'Sentuh bintang untuk memberikan penilaian keseluruhan',
             textAlign: TextAlign.center,
@@ -270,7 +270,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(5, (i) {
@@ -288,7 +288,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               );
             }),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           if (hasRating) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -303,12 +303,12 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: _amber,
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Text(
                     '${_ratingLabels[_rating - 1]} $_rating/5 ★',
                     style: GoogleFonts.plusJakartaSans(
@@ -321,7 +321,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               ),
             ),
           ],
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
@@ -332,7 +332,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -357,9 +357,9 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         side: BorderSide(
           color: selected ? AppColors.black : AppColors.borderAlt,
         ),
-        shape: const StadiumBorder(),
+        shape: StadiumBorder(),
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        minimumSize: const Size(0, 34),
+        minimumSize: Size(0, 34),
       ),
       child: Text(
         '${selected ? '✓' : '+'} $label',
@@ -386,7 +386,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         children: [
           for (final (i, (title, desc)) in _attributes.indexed) ...[
             if (i > 0)
-              const Divider(
+              Divider(
                 height: 1,
                 color: Color(0x99CFC4C5),
               ),
@@ -406,7 +406,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                             color: AppColors.ink,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           desc,
                           style: GoogleFonts.plusJakartaSans(
@@ -417,7 +417,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: List.generate(5, (star) {
@@ -487,19 +487,19 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               contentPadding: const EdgeInsets.all(13),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.borderAlt),
+                borderSide: BorderSide(color: AppColors.borderAlt),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.borderAlt),
+                borderSide: BorderSide(color: AppColors.borderAlt),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.ink),
+                borderSide: BorderSide(color: AppColors.ink),
               ),
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Align(
             alignment: Alignment.centerRight,
             child: Text(
@@ -510,7 +510,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Text(
             'Tambahkan Foto Produk',
             style: GoogleFonts.plusJakartaSans(
@@ -519,7 +519,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               color: AppColors.ink,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Row(
             children: [
               if (_photos.length < _mockPhotos.length)
@@ -541,12 +541,12 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.photo_camera_outlined,
                           size: 20,
                           color: AppColors.textSecondary,
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           'Tambah',
                           style: GoogleFonts.plusJakartaSans(
@@ -560,7 +560,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   ),
                 ),
               for (final photo in _photos) ...[
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 GestureDetector(
                   onTap: () => setState(() => _photos.remove(photo)),
                   child: Stack(
@@ -579,11 +579,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                         right: 4,
                         child: Container(
                           padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.black,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.close_rounded,
                             size: 12,
                             color: AppColors.white,
@@ -610,7 +610,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         20,
         12 + MediaQuery.paddingOf(context).bottom,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.white,
         boxShadow: [
           BoxShadow(

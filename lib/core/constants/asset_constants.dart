@@ -1,4 +1,4 @@
-﻿abstract final class AppAssets {
+abstract final class AppAssets {
   // ── Images ─────────────────────────────────────────────────────────────
   static const String logoApp = 'assets/images/logo_app.png';
   static const String logoBlack = 'assets/images/logo_black.png';
@@ -37,6 +37,7 @@
   static const String iconPlus = 'assets/icons/icon_plus.svg';
   static const String iconStar = 'assets/icons/icon_star.svg';
   static const String iconArrowRight = 'assets/icons/arrow_right.svg';
+  static const String iconFloatingCS = 'assets/icons/icon_floatingCS.svg';
 
   // ── Nav Icons ───────────────────────────────────────────────────────────
   static const String navBeranda = 'assets/icons/nav_beranda_active.svg';

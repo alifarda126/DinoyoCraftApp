@@ -6,7 +6,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 class StoreDetailPage extends StatefulWidget {
-  const StoreDetailPage({super.key, this.storeId = '1'});
+const   StoreDetailPage({super.key, this.storeId = '1'});
   final String storeId;
   @override
   State<StoreDetailPage> createState() => _StoreDetailPageState();
@@ -50,7 +50,7 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
             leading: _CircleBackBtn(),
             flexibleSpace: FlexibleSpaceBar(
               background: Image.asset(AppAssets.storeDinoyo, fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const ColoredBox(color: AppColors.inputBg)),
+                errorBuilder: (_, _, _) => ColoredBox(color: AppColors.inputBg)),
             ),
           ),
 
@@ -62,39 +62,39 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                 children: [
                   // Rating
                   Row(children: [
-                    const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                    const SizedBox(width: 4),
+                    Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                    SizedBox(width: 4),
                     Text(_rating.toStringAsFixed(1), style: AppTextStyles.ratingBadge),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     Text('($_reviewCount Ulasan)', style: AppTextStyles.caption),
                   ]),
-                  const SizedBox(height: AppDimensions.gapS),
+                  SizedBox(height: AppDimensions.gapS),
                   Text(_storeName, style: AppTextStyles.sectionTitle),
-                  const SizedBox(height: AppDimensions.gapM),
+                  SizedBox(height: AppDimensions.gapM),
                   Text(_storeDesc, style: AppTextStyles.bodySmall),
-                  const SizedBox(height: AppDimensions.paddingL),
+                  SizedBox(height: AppDimensions.paddingL),
 
                   // Action buttons
                   Row(children: [
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () { /* TODO: navigate to store profile */ },
-                        style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.border), shape: const StadiumBorder()),
-                        icon: const Icon(Icons.storefront_outlined, size: 16, color: AppColors.ink),
+                        style: OutlinedButton.styleFrom(side: BorderSide(color: AppColors.border), shape: StadiumBorder()),
+                        icon: Icon(Icons.storefront_outlined, size: 16, color: AppColors.ink),
                         label: Text('Profil Toko', style: AppTextStyles.seeAll),
                       ),
                     ),
-                    const SizedBox(width: AppDimensions.gapS),
+                    SizedBox(width: AppDimensions.gapS),
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () { /* TODO: context.push('/chat/store') */ },
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.black, foregroundColor: AppColors.white, elevation: 0, shape: const StadiumBorder()),
-                        icon: const Icon(Icons.chat_bubble_outline, size: 16),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.black, foregroundColor: AppColors.white, elevation: 0, shape: StadiumBorder()),
+                        icon: Icon(Icons.chat_bubble_outline, size: 16),
                         label: Text('Chat Toko', style: AppTextStyles.buttonLabel),
                       ),
                     ),
                   ]),
-                  const SizedBox(height: AppDimensions.paddingL),
+                  SizedBox(height: AppDimensions.paddingL),
 
                   // Search in store
                   TextField(
@@ -102,20 +102,20 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                     decoration: InputDecoration(
                       hintText: 'Cari produk di toko ini...',
                       hintStyle: AppTextStyles.fieldHint,
-                      prefixIcon: const Icon(Icons.search, color: AppColors.textMuted, size: 20),
+                      prefixIcon: Icon(Icons.search, color: AppColors.textMuted, size: 20),
                       filled: true, fillColor: AppColors.inputBg,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusL), borderSide: BorderSide.none),
                       contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
-                  const SizedBox(height: AppDimensions.paddingL),
+                  SizedBox(height: AppDimensions.paddingL),
 
                   Row(children: [
                     Text('Katalog', style: AppTextStyles.cardTitle),
-                    const Spacer(),
+                    Spacer(),
                     Text('Menampilkan ${_filtered.length} Produk', style: AppTextStyles.caption),
                   ]),
-                  const SizedBox(height: AppDimensions.paddingM),
+                  SizedBox(height: AppDimensions.paddingM),
                 ],
               ),
             ),
@@ -124,7 +124,7 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(AppDimensions.pageHorizontal, 0, AppDimensions.pageHorizontal, AppDimensions.bottomNavClearance),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 16, crossAxisSpacing: 14, childAspectRatio: 0.62),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 16, crossAxisSpacing: 14, childAspectRatio: 0.62),
               delegate: SliverChildBuilderDelegate(
                 (context, i) {
                   final p = _filtered[i];
@@ -146,11 +146,11 @@ class _CircleBackBtn extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.all(8),
     child: Material(
-      color: AppColors.white, shape: const CircleBorder(), elevation: 2, shadowColor: Colors.black12,
+      color: AppColors.white, shape: CircleBorder(), elevation: 2, shadowColor: Colors.black12,
       child: InkWell(
-        customBorder: const CircleBorder(),
+        customBorder: CircleBorder(),
         onTap: () => Navigator.of(context).maybePop(),
-        child: const Padding(padding: EdgeInsets.all(8), child: Icon(Icons.arrow_back, size: 20, color: AppColors.ink)),
+        child: Padding(padding: EdgeInsets.all(8), child: Icon(Icons.arrow_back, size: 20, color: AppColors.ink)),
       ),
     ),
   );
@@ -173,22 +173,22 @@ class _StoreProductCard extends StatelessWidget {
             ClipRRect(borderRadius: BorderRadius.circular(AppDimensions.radiusCard),
               child: ColoredBox(color: AppColors.inputBg,
                 child: Image.asset(imagePath, width: double.infinity, height: double.infinity, fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const Center(child: Icon(Icons.image_not_supported_outlined, color: AppColors.textMuted))))),
+                  errorBuilder: (_, _, _) => Center(child: Icon(Icons.image_not_supported_outlined, color: AppColors.textMuted))))),
             if (isHot)
               Positioned(top: 8, left: 8,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(color: AppColors.black, borderRadius: BorderRadius.circular(20)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.local_fire_department, size: 10, color: Colors.orangeAccent),
-                    const SizedBox(width: 3),
+                    Icon(Icons.local_fire_department, size: 10, color: Colors.orangeAccent),
+                    SizedBox(width: 3),
                     Text('Hot', style: AppTextStyles.badge),
                   ]),
                 )),
           ]),
         ),
       ),
-      const SizedBox(height: AppDimensions.gapS),
+      SizedBox(height: AppDimensions.gapS),
       Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.subTitle),
       Text(price, style: AppTextStyles.price),
     ],

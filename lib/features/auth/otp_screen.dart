@@ -5,11 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_settings.dart';
 import '../../core/theme/app_colors.dart';
 
 /// Halaman Verifikasi OTP — disesuaikan dengan desain Verifikasi_Daftar_Akun.png.
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({super.key, this.from = 'register', this.email});
+const   OtpScreen({super.key, this.from = 'register', this.email});
 
   final String from;
 
@@ -51,7 +52,7 @@ class _OtpScreenState extends State<OtpScreen> {
   void _startTimer() {
     _timer?.cancel();
     setState(() => _seconds = _resendDelay);
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+    _timer = Timer.periodic(Duration(seconds: 1), (t) {
       if (!mounted) return;
       if (_seconds <= 1) {
         t.cancel();
@@ -81,11 +82,15 @@ class _OtpScreenState extends State<OtpScreen> {
   void _continue() {
     if (!_complete) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lengkapi 6 digit kode verifikasi')),
+        SnackBar(content: Text('Lengkapi 6 digit kode verifikasi')),
       );
       return;
     }
-    if (widget.from == 'forgot') {
+    if (widget.from == 'login') {
+      // Verifikasi 2FA berhasil — login berikutnya tidak minta OTP lagi.
+      AppSettings.instance.consumeOtpRequirement();
+      context.go('/home');
+    } else if (widget.from == 'forgot') {
       context.go('/login');
     } else {
       context.go('/home');
@@ -95,7 +100,7 @@ class _OtpScreenState extends State<OtpScreen> {
   void _resend() {
     _startTimer();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Kode baru telah dikirim (mock)')),
+      SnackBar(content: Text('Kode baru telah dikirim (mock)')),
     );
   }
 
@@ -122,8 +127,8 @@ class _OtpScreenState extends State<OtpScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
-            const SizedBox(width: 10),
+            Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
+            SizedBox(width: 10),
             Text(
               'Kembali',
               style: GoogleFonts.plusJakartaSans(
@@ -138,15 +143,15 @@ class _OtpScreenState extends State<OtpScreen> {
       actions: [
         IconButton(
           onPressed: () => context.push('/help'),
-          icon: const Icon(
+          icon: Icon(
             Icons.help_outline_rounded,
             size: 22,
             color: AppColors.textMuted,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
       ],
-      bottom: const PreferredSize(
+      bottom: PreferredSize(
         preferredSize: Size.fromHeight(1),
         child: Divider(height: 1, thickness: 1, color: AppColors.border),
       ),
@@ -162,7 +167,7 @@ class _OtpScreenState extends State<OtpScreen> {
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.black, width: 2),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: Color(0x1A000000),
             blurRadius: 4,
@@ -186,7 +191,7 @@ class _OtpScreenState extends State<OtpScreen> {
             fontWeight: FontWeight.w700,
             color: AppColors.ink,
           ),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             isDense: true,
             counterText: '',
             border: InputBorder.none,
@@ -210,6 +215,7 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     final isForgot = widget.from == 'forgot';
+    final isLogin = widget.from == 'login';
     final grayStyle = GoogleFonts.plusJakartaSans(
       fontSize: 12,
       color: AppColors.textSecondary,
@@ -232,11 +238,15 @@ class _OtpScreenState extends State<OtpScreen> {
                   fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               // ── Judul + deskripsi ──
               Text(
-                isForgot ? 'Verifikasi Lupa Password' : 'Verifikasi Akun',
+                isLogin
+                    ? 'Verifikasi Keamanan'
+                    : isForgot
+                        ? 'Verifikasi Lupa Password'
+                        : 'Verifikasi Akun',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
@@ -245,7 +255,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   color: AppColors.ink,
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Text.rich(
                 TextSpan(
                   style: GoogleFonts.plusJakartaSans(
@@ -254,11 +264,11 @@ class _OtpScreenState extends State<OtpScreen> {
                     color: AppColors.textSecondary,
                   ),
                   children: [
-                    const TextSpan(
+                    TextSpan(
                       text: 'Masukkan kode verifikasi 6 digit yang telah kami\n'
                           'kirimkan ke email ',
                     ),
-                    const WidgetSpan(
+                    WidgetSpan(
                       alignment: PlaceholderAlignment.middle,
                       child: Padding(
                         padding: EdgeInsets.only(right: 4),
@@ -282,19 +292,19 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
 
               // ── 6 kotak OTP ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   for (var i = 0; i < 6; i++) ...[
-                    if (i > 0) const SizedBox(width: 10),
+                    if (i > 0) SizedBox(width: 10),
                     _otpBox(i),
                   ],
                 ],
               ),
-              const SizedBox(height: 26),
+              SizedBox(height: 26),
 
               // ── Hitung mundur kirim ulang ──
               Text(
@@ -302,7 +312,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 textAlign: TextAlign.center,
                 style: grayStyle,
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               if (_seconds > 0)
                 Text.rich(
                   TextSpan(
@@ -311,7 +321,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       color: AppColors.ink,
                     ),
                     children: [
-                      const TextSpan(text: 'Kirim ulang kode dalam '),
+                      TextSpan(text: 'Kirim ulang kode dalam '),
                       TextSpan(
                         text: _timerText,
                         style: GoogleFonts.robotoMono(
@@ -340,7 +350,7 @@ class _OtpScreenState extends State<OtpScreen> {
                     ),
                   ),
                 ),
-              const SizedBox(height: 25),
+              SizedBox(height: 25),
 
               // ── Tombol Konfirmasi ──
               SizedBox(
@@ -350,7 +360,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.black,
                     foregroundColor: AppColors.white,
-                    shape: const StadiumBorder(),
+                    shape: StadiumBorder(),
                     elevation: 0,
                   ),
                   child: Text(
@@ -363,7 +373,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               // ── Salah memasukkan email? ──
               Text(
@@ -371,7 +381,7 @@ class _OtpScreenState extends State<OtpScreen> {
                 textAlign: TextAlign.center,
                 style: grayStyle,
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Center(
                 child: GestureDetector(
                   onTap: _back,

@@ -8,7 +8,7 @@ import '../../core/widgets/dc_text_field.dart';
 
 /// Halaman Lupa Password — disesuaikan dengan desain Lupa_Password.png.
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+const   ForgotPasswordScreen({super.key});
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
@@ -55,8 +55,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
-            const SizedBox(width: 10),
+            Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
+            SizedBox(width: 10),
             Text(
               'Kembali',
               style: GoogleFonts.plusJakartaSans(
@@ -71,15 +71,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       actions: [
         IconButton(
           onPressed: () => context.push('/help'),
-          icon: const Icon(
+          icon: Icon(
             Icons.help_outline_rounded,
             size: 22,
             color: AppColors.textMuted,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
       ],
-      bottom: const PreferredSize(
+      bottom: PreferredSize(
         preferredSize: Size.fromHeight(1),
         child: Divider(height: 1, thickness: 1, color: AppColors.border),
       ),
@@ -114,7 +114,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             fit: BoxFit.contain,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
 
                         // ── Judul ──
                         Text(
@@ -127,7 +127,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             color: AppColors.ink,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
 
                         // ── Deskripsi ──
                         Text(
@@ -140,7 +140,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: 24),
 
                         // ── Field email ──
                         DcTextField(
@@ -153,7 +153,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ? 'Email wajib diisi'
                               : null,
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         Text(
                           'Pastikan email aktif untuk menerima 6 digit kode OTP.',
                           style: GoogleFonts.plusJakartaSans(
@@ -161,7 +161,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             color: AppColors.textMuted,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
 
                         // ── Tombol Kirim Kode Verifikasi ──
                         SizedBox(
@@ -171,7 +171,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.black,
                               foregroundColor: AppColors.white,
-                              shape: const StadiumBorder(),
+                              shape: StadiumBorder(),
                               elevation: 0,
                             ),
                             child: Text(
@@ -184,12 +184,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        SizedBox(height: 18),
 
                         // ── Pemisah "atau" ──
                         Row(
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Divider(
                                 height: 1,
                                 thickness: 1,
@@ -207,7 +207,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 ),
                               ),
                             ),
-                            const Expanded(
+                            Expanded(
                               child: Divider(
                                 height: 1,
                                 thickness: 1,
@@ -216,7 +216,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 18),
+                        SizedBox(height: 18),
 
                         // ── Tombol Masuk Sekarang (outline) ──
                         SizedBox(
@@ -226,8 +226,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.ink,
                               backgroundColor: AppColors.white,
-                              shape: const StadiumBorder(),
-                              side: const BorderSide(
+                              shape: StadiumBorder(),
+                              side: BorderSide(
                                 color: AppColors.border,
                                 width: 1,
                               ),
@@ -243,8 +243,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           ),
                         ),
 
-                        const Spacer(),
-                        const SizedBox(height: 32),
+                        Spacer(),
+                        SizedBox(height: 32),
 
                         // ── Butuh Bantuan? Customer Service ──
                         Center(
@@ -258,7 +258,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   color: AppColors.textSecondary,
                                 ),
                                 children: [
-                                  const TextSpan(text: 'Butuh Bantuan? '),
+                                  TextSpan(text: 'Butuh Bantuan? '),
                                   TextSpan(
                                     text: 'Customer Service',
                                     style: GoogleFonts.plusJakartaSans(

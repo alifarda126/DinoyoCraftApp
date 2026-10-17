@@ -21,7 +21,7 @@ Future<void> showModalPilihVariasi(
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x73000000),
+    barrierColor: Color(0x73000000),
     builder: (_) => _ModalPilihVariasi(product: product, mode: mode),
   );
 }
@@ -79,7 +79,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
 
     return Container(
       margin: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.15),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
@@ -95,7 +95,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
             width: 48,
             height: 5,
             decoration: BoxDecoration(
-              color: const Color(0xFFD4D4D4),
+              color: Color(0xFFD4D4D4),
               borderRadius: BorderRadius.circular(9999),
             ),
           ),
@@ -120,20 +120,20 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                     width: 32,
                     height: 32,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: Color(0xFFF5F5F5),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close, size: 16, color: Color(0xFF404040)),
+                    child: Icon(Icons.close, size: 16, color: Color(0xFF404040)),
                   ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 20),
-          const Divider(height: 1, thickness: 1, color: _borderColor),
-          const SizedBox(height: 16),
+          SizedBox(height: 20),
+          Divider(height: 1, thickness: 1, color: _borderColor),
+          SizedBox(height: 16),
 
           // ── Pilihan warna/glaze ──
           Padding(
@@ -149,34 +149,34 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF262626),
+                        color: Color(0xFF262626),
                       ),
                     ),
                     Text(
                       '${_variasiList[_selectedVariasi].label} ${_variasiList[_selectedVariasi].sublabel}',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
-                        color: const Color(0xFF737373),
+                        color: Color(0xFF737373),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _buildVariasiRow(0, 1),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _buildVariasiRow(2, 3),
               ],
             ),
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           // Divider inset (mengikuti padding konten)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 20),
             child: Divider(height: 1, thickness: 1, color: _borderColor),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
 
           // ── Jumlah produk ──
           Padding(
@@ -193,21 +193,21 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF262626),
+                          color: Color(0xFF262626),
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         'Stok tersisa $_stokVariasi buah untuk varian ini',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
-                          color: const Color(0xFF737373),
+                          color: Color(0xFF737373),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 _JumlahCounter(
                   value: _jumlah,
                   min: 1,
@@ -218,8 +218,8 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
             ),
           ),
 
-          const SizedBox(height: 14),
-          const Divider(height: 1, thickness: 1, color: _borderColor),
+          SizedBox(height: 14),
+          Divider(height: 1, thickness: 1, color: _borderColor),
 
           // ── Bottom action bar ──
           Container(
@@ -236,7 +236,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                       'Subtotal Estimasi:',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
-                        color: const Color(0xFF737373),
+                        color: Color(0xFF737373),
                       ),
                     ),
                     Text(
@@ -249,7 +249,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
 
                 // Tombol aksi
                 SizedBox(
@@ -258,7 +258,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                   child: widget.mode == ModalVariasiMode.keranjang
                       ? OutlinedButton.icon(
                           onPressed: _onKeranjang,
-                          icon: const Icon(Icons.shopping_cart_outlined, size: 18),
+                          icon: Icon(Icons.shopping_cart_outlined, size: 18),
                           label: Text(
                             'Tambah ke Keranjang',
                             style: GoogleFonts.plusJakartaSans(
@@ -268,8 +268,8 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.ink,
-                            shape: const StadiumBorder(),
-                            side: const BorderSide(color: AppColors.ink, width: 2),
+                            shape: StadiumBorder(),
+                            side: BorderSide(color: AppColors.ink, width: 2),
                           ),
                         )
                       : FilledButton(
@@ -278,7 +278,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                             backgroundColor: AppColors.black,
                             foregroundColor: AppColors.white,
                             elevation: 0,
-                            shape: const StadiumBorder(),
+                            shape: StadiumBorder(),
                           ),
                           child: Text(
                             'Beli Langsung',
@@ -316,7 +316,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
     return Row(
       children: [
         item(left),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         item(right),
       ],
     );
@@ -333,7 +333,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
           '(x$_jumlah) ditambahkan ke keranjang!',
         ),
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
+        duration: Duration(seconds: 2),
       ),
     );
   }
@@ -367,7 +367,7 @@ class _ProductInfoRow extends StatelessWidget {
           width: 72,
           height: 72,
           decoration: BoxDecoration(
-            color: const Color(0xFFF5F5F5),
+            color: Color(0xFFF5F5F5),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: _borderColor),
           ),
@@ -381,7 +381,7 @@ class _ProductInfoRow extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: 16),
 
         // Teks (disisakan ruang di kanan agar tidak menabrak tombol X)
         Expanded(
@@ -394,10 +394,10 @@ class _ProductInfoRow extends StatelessWidget {
                   product.studio,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
-                    color: const Color(0xFF737373),
+                    color: Color(0xFF737373),
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   product.name,
                   style: GoogleFonts.plusJakartaSans(
@@ -406,7 +406,7 @@ class _ProductInfoRow extends StatelessWidget {
                     color: AppColors.ink,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
@@ -419,25 +419,25 @@ class _ProductInfoRow extends StatelessWidget {
                         color: AppColors.ink,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Text(
                       MockData.formatPrice(originalPrice),
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
-                        color: const Color(0xFFA3A3A3),
+                        color: Color(0xFFA3A3A3),
                         decoration: TextDecoration.lineThrough,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Row(
                   children: [
                     Text(
                       'Stok Pengrajin: ',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
-                        color: const Color(0xFF737373),
+                        color: Color(0xFF737373),
                       ),
                     ),
                     Text(
@@ -494,7 +494,7 @@ class _VariasiCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: variasi.color,
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFD4D4D4)),
+                  border: Border.all(color: Color(0xFFD4D4D4)),
                 ),
               ),
               if (isSelected)
@@ -505,7 +505,7 @@ class _VariasiCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -527,7 +527,7 @@ class _VariasiCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 10,
-                    color: const Color(0xFF737373),
+                    color: Color(0xFF737373),
                   ),
                 ),
               ],
@@ -619,12 +619,12 @@ class _StepBtn extends StatelessWidget {
     final Border? border;
 
     if (filled) {
-      bg = enabled ? AppColors.black : const Color(0xFFE5E5E5);
-      fg = enabled ? Colors.white : const Color(0xFFAAAAAA);
+      bg = enabled ? AppColors.black : Color(0xFFE5E5E5);
+      fg = enabled ? Colors.white : Color(0xFFAAAAAA);
       border = null;
     } else {
       bg = Colors.white;
-      fg = enabled ? AppColors.ink : const Color(0xFF525252);
+      fg = enabled ? AppColors.ink : Color(0xFF525252);
       border = Border.all(color: _borderColor);
     }
 

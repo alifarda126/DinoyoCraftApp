@@ -7,7 +7,7 @@ import '../../core/assets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key, required this.navigationShell});
+const   MainShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
@@ -114,17 +114,17 @@ class _DraggableFabButton extends StatelessWidget {
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.25),
               blurRadius: 12,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             ),
           ],
         ),
         child: Center(
           child: SvgPicture.asset(
-            AppAssets.iconChat,
-            width: 24,
-            height: 24,
+            AppAssets.iconFloatingCS,
+            width: 28,
+            height: 28,
             colorFilter:
-                const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                ColorFilter.mode(Colors.white, BlendMode.srcIn),
           ),
         ),
       ),

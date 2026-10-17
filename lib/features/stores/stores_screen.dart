@@ -9,7 +9,7 @@ import '../../core/widgets/dc_app_header.dart';
 import '../../data/mock_data.dart';
 
 class StoresScreen extends StatefulWidget {
-  const StoresScreen({super.key});
+const   StoresScreen({super.key});
 
   @override
   State<StoresScreen> createState() => _StoresScreenState();
@@ -28,7 +28,7 @@ class _StoresScreenState extends State<StoresScreen> {
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-        const SliverPinnedDcHeader(),
+        SliverPinnedDcHeader(),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -43,7 +43,7 @@ class _StoresScreenState extends State<StoresScreen> {
                     color: AppColors.ink,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Jelajahi studio pengrajin keramik Dinoyo.',
                   style: GoogleFonts.plusJakartaSans(
@@ -51,7 +51,7 @@ class _StoresScreenState extends State<StoresScreen> {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 TextField(
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
@@ -66,7 +66,7 @@ class _StoresScreenState extends State<StoresScreen> {
                         AppAssets.iconSearch,
                         width: 20,
                         height: 20,
-                        colorFilter: const ColorFilter.mode(
+                        colorFilter: ColorFilter.mode(
                           AppColors.textMuted,
                           BlendMode.srcIn,
                         ),
@@ -81,7 +81,7 @@ class _StoresScreenState extends State<StoresScreen> {
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
               ],
             ),
           ),
@@ -89,7 +89,7 @@ class _StoresScreenState extends State<StoresScreen> {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
           sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               mainAxisSpacing: 14,
               crossAxisSpacing: 12,
@@ -139,7 +139,7 @@ class _StoresScreenState extends State<StoresScreen> {
                                 color: AppColors.ink,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               store.location,
                               maxLines: 1, // fix ke 1 baris agar konsisten
@@ -149,7 +149,7 @@ class _StoresScreenState extends State<StoresScreen> {
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: 6),
                             Row(
                               children: [
                                 SvgPicture.asset(
@@ -157,7 +157,7 @@ class _StoresScreenState extends State<StoresScreen> {
                                   width: 12,
                                   height: 12,
                                 ),
-                                const SizedBox(width: 4),
+                                SizedBox(width: 4),
                                 Text(
                                   store.rating.toStringAsFixed(1),
                                   style: GoogleFonts.plusJakartaSans(

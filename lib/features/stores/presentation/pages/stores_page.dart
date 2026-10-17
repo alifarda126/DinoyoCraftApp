@@ -6,7 +6,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 class StoreItem {
-  const StoreItem({
+const   StoreItem({
     required this.id,
     required this.name,
     required this.address,
@@ -21,7 +21,7 @@ class StoreItem {
 }
 
 class StoresPage extends StatefulWidget {
-  const StoresPage({super.key});
+const   StoresPage({super.key});
   @override
   State<StoresPage> createState() => _StoresPageState();
 }
@@ -44,7 +44,7 @@ class _StoresPageState extends State<StoresPage> {
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
-        const SliverPadding(padding: EdgeInsets.only(top: 0)),
+        SliverPadding(padding: EdgeInsets.only(top: 0)),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(AppDimensions.pageHorizontal, 56, AppDimensions.pageHorizontal, 0),
@@ -52,22 +52,22 @@ class _StoresPageState extends State<StoresPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Temukan Toko', style: AppTextStyles.sectionTitle),
-                const SizedBox(height: AppDimensions.gapS),
+                SizedBox(height: AppDimensions.gapS),
                 Text('Kenali toko dan pengrajin keramik lokal di Dinoyo.', style: AppTextStyles.bodySmall),
-                const SizedBox(height: AppDimensions.paddingL),
+                SizedBox(height: AppDimensions.paddingL),
                 TextField(
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
                     hintText: 'Cari toko atau pengrajin...',
                     hintStyle: AppTextStyles.fieldHint,
-                    prefixIcon: const Icon(Icons.search, color: AppColors.textMuted, size: 20),
+                    prefixIcon: Icon(Icons.search, color: AppColors.textMuted, size: 20),
                     filled: true,
                     fillColor: AppColors.inputBg,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusL), borderSide: BorderSide.none),
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
-                const SizedBox(height: AppDimensions.paddingL),
+                SizedBox(height: AppDimensions.paddingL),
               ],
             ),
           ),
@@ -108,25 +108,25 @@ class _StoreTile extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(AppDimensions.radiusM),
               child: Image.asset(store.imagePath, width: 64, height: 64, fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => ColoredBox(color: AppColors.inputBg, child: const SizedBox(width: 64, height: 64))),
+                errorBuilder: (_, _, _) => ColoredBox(color: AppColors.inputBg, child: SizedBox(width: 64, height: 64))),
             ),
-            const SizedBox(width: AppDimensions.gapM),
+            SizedBox(width: AppDimensions.gapM),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(store.name, style: AppTextStyles.subTitle),
                   Text(store.address, style: AppTextStyles.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Row(children: [
-                    const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
-                    const SizedBox(width: 4),
+                    Icon(Icons.star_rounded, size: 14, color: Colors.amber),
+                    SizedBox(width: 4),
                     Text(store.rating.toStringAsFixed(1), style: AppTextStyles.ratingBadge),
                   ]),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.textMuted),
+            Icon(Icons.chevron_right, color: AppColors.textMuted),
           ],
         ),
       ),

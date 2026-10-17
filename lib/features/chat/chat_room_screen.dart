@@ -8,7 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../data/mock_data.dart';
 
 class ChatRoomScreen extends StatefulWidget {
-  const ChatRoomScreen({super.key, this.storeName = 'Dinoyo Ceramic Studio'});
+const   ChatRoomScreen({super.key, this.storeName = 'Dinoyo Ceramic Studio'});
 
   final String storeName;
 
@@ -41,7 +41,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       isMine: false,
       time: '14:12',
       text:
-          'Halo Kak Mochammad! Terima kasih sudah menghubungi Dinoyo Ceramic '
+          'Halo Kak Customer! Terima kasih sudah menghubungi Dinoyo Ceramic '
           'Studio. Ada yang bisa kami bantu terkait produk tembikar dan '
           'keramik kami? 😊',
     ),
@@ -94,7 +94,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
+          duration: Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }
@@ -123,7 +123,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetCtx) => SafeArea(
@@ -141,7 +141,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   color: AppColors.ink,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 'Pilih foto dari galeri contoh (demo).',
                 style: GoogleFonts.plusJakartaSans(
@@ -149,13 +149,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   color: AppColors.textMuted,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               SizedBox(
                 height: 92,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: assets.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 10),
+                  separatorBuilder: (_, _) => SizedBox(width: 10),
                   itemBuilder: (context, i) => GestureDetector(
                     onTap: () {
                       Navigator.of(sheetCtx).pop();
@@ -188,7 +188,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetCtx) => SafeArea(
@@ -197,7 +197,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           child: GridView.builder(
             shrinkWrap: true,
             itemCount: emojis.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
               mainAxisSpacing: 8,
               crossAxisSpacing: 8,
@@ -219,7 +219,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 );
               },
               child: Center(
-                child: Text(emojis[i], style: const TextStyle(fontSize: 24)),
+                child: Text(emojis[i], style: TextStyle(fontSize: 24)),
               ),
             ),
           ),
@@ -233,16 +233,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetCtx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.storefront_outlined, size: 22),
+              leading: Icon(Icons.storefront_outlined, size: 22),
               title: Text(
                 'Lihat Profil Toko',
                 style: GoogleFonts.plusJakartaSans(
@@ -259,7 +259,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, size: 22),
+              leading: Icon(Icons.delete_outline_rounded, size: 22),
               title: Text(
                 'Hapus Percakapan',
                 style: GoogleFonts.plusJakartaSans(
@@ -274,7 +274,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.flag_outlined, size: 22),
+              leading: Icon(Icons.flag_outlined, size: 22),
               title: Text(
                 'Laporkan Percakapan',
                 style: GoogleFonts.plusJakartaSans(
@@ -286,7 +286,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               onTap: () {
                 Navigator.of(sheetCtx).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content: Text('Terima kasih, laporanmu kami terima.'),
                   ),
                 );
@@ -320,7 +320,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         child: Column(
           children: [
             _buildHeader(),
-            const Divider(height: 1, color: Color(0xFFEEEEEE)),
+            Divider(height: 1, color: Color(0xFFEEEEEE)),
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
@@ -346,7 +346,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         children: [
           IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19),
           ),
           Stack(
             clipBehavior: Clip.none,
@@ -370,7 +370,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
             ],
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               widget.storeName,
@@ -385,7 +385,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ),
           IconButton(
             onPressed: _openChatMenu,
-            icon: const Icon(Icons.more_vert_rounded, size: 20),
+            icon: Icon(Icons.more_vert_rounded, size: 20),
           ),
         ],
       ),
@@ -458,7 +458,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   radius: 12,
                   backgroundImage: AssetImage(_storeImage),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
               ],
               Flexible(
                 child: Container(
@@ -468,7 +468,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           horizontal: 14,
                           vertical: 10,
                         ),
-                  constraints: const BoxConstraints(maxWidth: 260),
+                  constraints: BoxConstraints(maxWidth: 260),
                   decoration: BoxDecoration(
                     color: message.isMine
                         ? AppColors.black
@@ -483,7 +483,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -497,8 +497,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                 ),
                 if (message.isMine) ...[
-                  const SizedBox(width: 3),
-                  const Icon(
+                  SizedBox(width: 3),
+                  Icon(
                     Icons.done_all_rounded,
                     size: 12,
                     color: AppColors.textMuted,
@@ -514,7 +514,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   Widget _buildInputBar() {
     return Container(
-      color: const Color(0xFFFAF9F9),
+      color: Color(0xFFFAF9F9),
       padding: EdgeInsets.fromLTRB(
         16,
         10,
@@ -535,7 +535,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: _inputController,
@@ -570,27 +570,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(999),
-                  borderSide: const BorderSide(color: AppColors.borderAlt),
+                  borderSide: BorderSide(color: AppColors.borderAlt),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(999),
-                  borderSide: const BorderSide(color: AppColors.borderAlt),
+                  borderSide: BorderSide(color: AppColors.borderAlt),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(999),
-                  borderSide: const BorderSide(color: AppColors.ink),
+                  borderSide: BorderSide(color: AppColors.ink),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           InkWell(
             onTap: _send,
             borderRadius: BorderRadius.circular(22),
             child: Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.black,
                 shape: BoxShape.circle,
               ),

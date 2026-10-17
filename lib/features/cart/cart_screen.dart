@@ -13,7 +13,7 @@ Future<void> showCartModal(BuildContext context) {
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x73000000),
+    barrierColor: Color(0x73000000),
     builder: (_) => const _CartSheet(),
   );
 }
@@ -46,12 +46,12 @@ Future<bool> _confirmRemoveCartItemDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogCtx).pop(false),
-          child: const Text('Batal'),
+          child: Text('Batal'),
         ),
         TextButton(
           onPressed: () => Navigator.of(dialogCtx).pop(true),
           style: TextButton.styleFrom(foregroundColor: Colors.red),
-          child: const Text('Hapus'),
+          child: Text('Hapus'),
         ),
       ],
     ),
@@ -60,7 +60,7 @@ Future<bool> _confirmRemoveCartItemDialog(
 }
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({super.key});
+const   CartScreen({super.key});
   @override
   State<CartScreen> createState() => _CartScreenState();
 }
@@ -105,18 +105,18 @@ class _CartScreenState extends State<CartScreen> {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   if (_items.isEmpty) ...[
-                    const SizedBox(height: 72),
+                    SizedBox(height: 72),
                     Center(
                       child: Column(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.shopping_cart_outlined,
                             size: 48,
                             color: AppColors.textMuted,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           Text(
                             'Keranjangmu masih kosong',
                             style: GoogleFonts.plusJakartaSans(
@@ -125,7 +125,7 @@ class _CartScreenState extends State<CartScreen> {
                               color: AppColors.ink,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Yuk, jelajahi produk keramik dan tambahkan '
                             'ke keranjang.',
@@ -151,7 +151,7 @@ class _CartScreenState extends State<CartScreen> {
                         onPlus: () => setState(() => _quantities[index]++),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -160,8 +160,8 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.local_shipping_outlined, size: 20),
-                          const SizedBox(width: 10),
+                          Icon(Icons.local_shipping_outlined, size: 20),
+                          SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               'Pengiriman dan metode pembayaran dipilih pada halaman checkout.',
@@ -189,7 +189,7 @@ class _CartScreenState extends State<CartScreen> {
                     BoxShadow(
                       color: Colors.black.withValues(alpha: .08),
                       blurRadius: 14,
-                      offset: const Offset(0, -4),
+                      offset: Offset(0, -4),
                     ),
                   ],
                 ),
@@ -223,8 +223,8 @@ class _CartScreenState extends State<CartScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.black,
                         padding: const EdgeInsets.symmetric(horizontal: 36),
-                        minimumSize: const Size(0, 50),
-                        shape: const StadiumBorder(),
+                        minimumSize: Size(0, 50),
+                        shape: StadiumBorder(),
                       ),
                       child: Text(
                         'Checkout',
@@ -255,7 +255,7 @@ class _CartHeader extends StatelessWidget {
       children: [
         IconButton(
           onPressed: onBack,
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19),
         ),
         Expanded(
           child: Text(
@@ -267,7 +267,7 @@ class _CartHeader extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 48),
+        SizedBox(width: 48),
       ],
     ),
   );
@@ -304,7 +304,7 @@ class _CartItem extends StatelessWidget {
               fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,7 +316,7 @@ class _CartItem extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   item.product.studio,
                   style: GoogleFonts.plusJakartaSans(
@@ -324,7 +324,7 @@ class _CartItem extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 9),
+                SizedBox(height: 9),
                 Text(
                   MockData.formatPrice(item.product.price),
                   style: GoogleFonts.plusJakartaSans(
@@ -435,7 +435,7 @@ class _CartSheetState extends State<_CartSheet> {
 
     return Container(
       height: modalH,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(24),
@@ -480,7 +480,7 @@ class _CartSheetState extends State<_CartSheet> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -508,13 +508,13 @@ class _CartSheetState extends State<_CartSheet> {
                     height: 32,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFF4F3F3),
+                      color: Color(0xFFF4F3F3),
                       border: Border.all(
-                        color: const Color(0xFFE5E5E5),
+                        color: Color(0xFFE5E5E5),
                         width: 0.8,
                       ),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Icon(
                         Icons.close_rounded,
                         size: 16,
@@ -526,7 +526,7 @@ class _CartSheetState extends State<_CartSheet> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           // Daftar item / empty state
           Expanded(
             child: _items.isEmpty
@@ -534,12 +534,12 @@ class _CartSheetState extends State<_CartSheet> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.shopping_cart_outlined,
                           size: 48,
                           color: AppColors.textMuted,
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         Text(
                           'Keranjangmu masih kosong',
                           style: GoogleFonts.plusJakartaSans(
@@ -548,7 +548,7 @@ class _CartSheetState extends State<_CartSheet> {
                             color: AppColors.ink,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           'Yuk, jelajahi produk keramik dan tambahkan '
                           'ke keranjang.',
@@ -583,7 +583,7 @@ class _CartSheetState extends State<_CartSheet> {
           if (_items.isNotEmpty)
             Container(
               padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + bottomPad),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.white,
                 boxShadow: [
                   BoxShadow(
@@ -621,8 +621,8 @@ class _CartSheetState extends State<_CartSheet> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.black,
                       padding: const EdgeInsets.symmetric(horizontal: 36),
-                      minimumSize: const Size(0, 50),
-                      shape: const StadiumBorder(),
+                      minimumSize: Size(0, 50),
+                      shape: StadiumBorder(),
                     ),
                     child: Text(
                       'Checkout',

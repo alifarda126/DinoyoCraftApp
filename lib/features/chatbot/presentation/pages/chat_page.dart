@@ -5,7 +5,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 class ChatMessage {
-  const ChatMessage({required this.text, required this.isMe, required this.time, this.senderName});
+const   ChatMessage({required this.text, required this.isMe, required this.time, this.senderName});
   final String text;
   final bool isMe;
   final String time;
@@ -15,7 +15,7 @@ class ChatMessage {
 /// Halaman chat dengan toko.
 /// Terima [storeId] dan [storeName] agar bisa dipakai untuk semua toko.
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, this.storeName = 'Dinoyo Ceramic Studio', this.storeId = '1'});
+const   ChatPage({super.key, this.storeName = 'Dinoyo Ceramic Studio', this.storeId = '1'});
   final String storeName;
   final String storeId;
   @override
@@ -26,7 +26,7 @@ class _ChatPageState extends State<ChatPage> {
   final _ctrl = TextEditingController();
   final _scrollCtrl = ScrollController();
 
-  final List<ChatMessage> _messages = const [
+  final List<ChatMessage> _messages = [
     ChatMessage(text: 'Ini foto kemasan standar kami kak sebelum dikirim.', isMe: false, time: '14:17', senderName: 'Dinoyo Ceramic Studio'),
     ChatMessage(text: 'Siap kak, untuk pesanan cangkir kopi handmade bisa kami proses hari ini.', isMe: false, time: 'Kemarin', senderName: 'Karya Tanah'),
     ChatMessage(text: 'Baik kak, silakan kirimkan alamat lengkap untuk cek ongkos kirim.', isMe: false, time: '18 Feb', senderName: 'Ruang Tanah'),
@@ -54,11 +54,11 @@ class _ChatPageState extends State<ChatPage> {
         backgroundColor: AppColors.bg,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: AppColors.ink), onPressed: () => Navigator.of(context).maybePop()),
+        leading: IconButton(icon: Icon(Icons.arrow_back, color: AppColors.ink), onPressed: () => Navigator.of(context).maybePop()),
         title: Row(children: [
           CircleAvatar(radius: 18, backgroundColor: AppColors.inputBg,
-            child: const Icon(Icons.store_outlined, size: 16, color: AppColors.textMuted)),
-          const SizedBox(width: 10),
+            child: Icon(Icons.store_outlined, size: 16, color: AppColors.textMuted)),
+          SizedBox(width: 10),
           Text(widget.storeName, style: AppTextStyles.appBarTitle),
         ]),
       ),
@@ -112,7 +112,7 @@ class _ChatBubble extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(message.text, style: AppTextStyles.bodySmall.copyWith(color: message.isMe ? AppColors.white : AppColors.ink)),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(message.time, style: AppTextStyles.caption.copyWith(color: message.isMe ? AppColors.white.withValues(alpha: 0.7) : AppColors.textMuted)),
               ],
             ),
@@ -133,7 +133,7 @@ class _ChatInput extends StatelessWidget {
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(AppDimensions.pageHorizontal, AppDimensions.paddingS, AppDimensions.paddingS, AppDimensions.paddingS + bottomPad),
-      decoration: const BoxDecoration(color: AppColors.white, border: Border(top: BorderSide(color: AppColors.border, width: 0.5))),
+      decoration: BoxDecoration(color: AppColors.white, border: Border(top: BorderSide(color: AppColors.border, width: 0.5))),
       child: Row(children: [
         Expanded(
           child: TextField(
@@ -148,13 +148,13 @@ class _ChatInput extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: AppDimensions.gapS),
+        SizedBox(width: AppDimensions.gapS),
         Material(
-          color: AppColors.black, shape: const CircleBorder(),
+          color: AppColors.black, shape: CircleBorder(),
           child: InkWell(
-            customBorder: const CircleBorder(),
+            customBorder: CircleBorder(),
             onTap: onSend,
-            child: const Padding(padding: EdgeInsets.all(12), child: Icon(Icons.send_rounded, size: 20, color: AppColors.white)),
+            child: Padding(padding: EdgeInsets.all(12), child: Icon(Icons.send_rounded, size: 20, color: AppColors.white)),
           ),
         ),
       ]),
