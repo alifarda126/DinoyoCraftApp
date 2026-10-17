@@ -28,11 +28,8 @@ class CategoryChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
-            color: selected ? AppColors.black : Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: selected ? AppColors.black : AppColors.borderAlt,
-            ),
+            color: selected ? AppColors.black : AppColors.inputBg,
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             label,
