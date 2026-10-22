@@ -3,7 +3,7 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.13+-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web%20%7C%20Windows-blue)](https://flutter.dev)
-[![Tests](https://img.shields.io/badge/Tests-34%20Passed-success)](https://github.com/alifarda126/DinoyoCraftApp)
+[![Tests](https://img.shields.io/badge/Tests-37%20Passed-success)](https://github.com/alifarda126/DinoyoCraftApp)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 > **Platform Marketplace & Discovery Keramik Lokal Sentra Keramik Dinoyo, Kota Malang.**  
@@ -33,6 +33,10 @@
 ## 🌟 Fitur Utama
 
 ### 1. Autentikasi & Onboarding
+- **Motion Graphic Logo Splash & Entrance Otentik**:
+  - Animasi pembuka dinamis menggunakan siluet otentik `logo_white.png` yang terdekonstruksi menjadi 3 kepingan: *Leher & Bibir Vas (Atas)*, *Tangan Pengrajin (Kiri Bawah)*, dan *Helai Daun Keramik (Kanan Bawah)*.
+  - Kepingan meluncur dari 3 sudut berbeda, bertaut secara magnetik (*kintsugi golden glow*), menampilkan teks identitas merek *"DinoyoCraft"*, lalu melesat melengkung dan mengunci presisi ke dalam *frosted glass badge* di sudut kiri atas Onboarding.
+  - Dilengkapi tombol *Lewati (Skip)* interaktif untuk pengalaman pengguna yang gesit.
 - **Onboarding Interaktif**:
   - Animasi masuk bertahap (*staggered entrance*) untuk gambar latar, badge merek, judul artistik, deskripsi, tombol aksi (*scale bounce*), dan tautan daftar.
 - **Login Fleksibel**:

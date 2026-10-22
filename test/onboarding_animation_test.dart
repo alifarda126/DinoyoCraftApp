@@ -10,7 +10,8 @@ void main() {
     AppColors.isDark = false;
   });
 
-  testWidgets('Elemen teks, logo header, dan tombol onboarding tampil dengan animasi masuk',
+  testWidgets(
+      'Animasi masuk motion graphic logo: 3 pecahan bergerak dan menyatu, lalu berpindah ke badge onboarding',
       (tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
@@ -23,19 +24,73 @@ void main() {
       ),
     );
 
-    // Langsung merender halaman onboarding tanpa splash
-    expect(find.byKey(const Key('app_splash_overlay')), findsNothing);
+    // Frame awal: animasi intro berjalan dengan 3 kepingan logo sesuai goresan garis pemisah
+    expect(find.byKey(const Key('logo_motion_intro')), findsOneWidget);
+    expect(find.byKey(const Key('logo_piece_top')), findsOneWidget);
+    expect(find.byKey(const Key('logo_piece_hand')), findsOneWidget);
+    expect(find.byKey(const Key('logo_piece_leaf')), findsOneWidget);
+    expect(find.byKey(const Key('logo_intro_skip_btn')), findsOneWidget);
+
+    // Majukan ke detik saat kepingan menyatu dan brand reveal tampil di tengah (1300ms)
+    await tester.pump(const Duration(milliseconds: 1300));
+    expect(find.byKey(const Key('logo_motion_intro')), findsOneWidget);
+    expect(find.text('DinoyoCraft'), findsAtLeast(1));
+
+    // Selesaikan seluruh durasi animasi sampai transisi meluncur ke badge onboarding selesai
+    await tester.pump(const Duration(milliseconds: 1400));
+    await tester.pumpAndSettle();
+
+    // Halaman onboarding utama tampil utuh dengan tombol yang dapat diklik
+    expect(find.byKey(const Key('logo_motion_intro')), findsNothing);
     expect(find.text('DinoyoCraft'), findsOneWidget);
     expect(find.textContaining('Temukan Cerita di Balik Setiap'), findsOneWidget);
     expect(find.text('Mulai Menjelajah'), findsOneWidget);
     expect(find.textContaining('Daftar'), findsOneWidget);
+  });
 
-    // Jalankan seluruh durasi animasi bertahap (1100ms)
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump(const Duration(milliseconds: 600));
+  testWidgets('Tombol lewati (skip) langsung mempercepat ke halaman onboarding',
+      (tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const OnboardingScreen(),
+      ),
+    );
+
+    expect(find.byKey(const Key('logo_intro_skip_btn')), findsOneWidget);
+
+    // Tap tombol Lewati
+    await tester.tap(find.byKey(const Key('logo_intro_skip_btn')));
     await tester.pumpAndSettle();
 
+    // Langsung berada pada halaman onboarding
+    expect(find.byKey(const Key('logo_motion_intro')), findsNothing);
     expect(find.text('Mulai Menjelajah'), findsOneWidget);
+    expect(find.textContaining('Temukan Cerita di Balik Setiap'), findsOneWidget);
+  });
+
+  testWidgets(
+      'OnboardingScreen dengan showEntranceAnimation: false langsung tampil tanpa intro',
+      (tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const OnboardingScreen(showEntranceAnimation: false),
+      ),
+    );
+
+    // Langsung merender halaman onboarding tanpa intro
+    expect(find.byKey(const Key('logo_motion_intro')), findsNothing);
+    expect(find.text('Mulai Menjelajah'), findsOneWidget);
+    expect(find.textContaining('Temukan Cerita di Balik Setiap'), findsOneWidget);
   });
 
   testWidgets('Animasi onboarding berjalan mulus pada mode gelap',
@@ -54,8 +109,11 @@ void main() {
       ),
     );
 
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump(const Duration(milliseconds: 600));
+    // Verifikasi intro di mode gelap
+    expect(find.byKey(const Key('logo_motion_intro')), findsOneWidget);
+
+    // Tunggu sampai animasi selesai
+    await tester.pump(const Duration(milliseconds: 2700));
     await tester.pumpAndSettle();
 
     expect(find.text('Mulai Menjelajah'), findsOneWidget);
