@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/category_chip.dart';
@@ -10,7 +11,7 @@ import '../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
 
 class ProductsScreen extends StatefulWidget {
-const   ProductsScreen({super.key, this.initialCategory = 'Semua'});
+  const ProductsScreen({super.key, this.initialCategory = 'Semua'});
 
   final String initialCategory;
 
@@ -38,17 +39,31 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
   }
 
+  Future<void> _handleRefresh() async {
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final items = MockData.filterProducts(category: _category, query: _query);
+    final topHeaderHeight = MediaQuery.paddingOf(context).top + 48.0;
 
     return Scaffold(
       // Scaffold diperlukan sebagai ancestor Material untuk TextField;
       // tanpa ini halaman melempar error rendering.
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-        SliverPinnedDcHeader(),
+      backgroundColor: AppColors.bg,
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: AppColors.ink,
+        backgroundColor: AppColors.surfaceElevated,
+        edgeOffset: topHeaderHeight,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          slivers: [
+            SliverPinnedDcHeader(),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -56,7 +71,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Produk Keramik',
+                  'Produk Keramik'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
@@ -67,7 +82,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 TextField(
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
-                    hintText: 'Cari produk atau studio...',
+                    hintText: 'Cari produk atau studio...'.tr,
                     hintStyle: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       color: AppColors.textMuted,
@@ -132,6 +147,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

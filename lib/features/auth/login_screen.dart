@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -51,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // ═══ Header: ← Kembali ........ (?) ═════════════════════════════════════
   PreferredSizeWidget _buildHeader() {
     return AppBar(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -66,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
             SizedBox(width: 10),
             Text(
-              'Kembali',
+              'Kembali'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -139,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
           decoration: InputDecoration(
             isDense: true,
             filled: true,
-            fillColor: AppColors.white,
+            fillColor: AppColors.surface,
             hintText: hint,
             hintStyle: GoogleFonts.plusJakartaSans(
               fontSize: 13,
@@ -156,8 +157,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             enabledBorder: border(AppColors.ink),
             focusedBorder: border(AppColors.ink),
-            errorBorder: border(Color(0xFFD32F2F)),
-            focusedErrorBorder: border(Color(0xFFD32F2F)),
+            errorBorder: border(AppColors.danger),
+            focusedErrorBorder: border(AppColors.danger),
           ),
         ),
       ],
@@ -167,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.bg,
       appBar: _buildHeader(),
       body: SafeArea(
         child: Form(
@@ -218,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          'Silahkan Login Terlebih Dahulu',
+                          'Silahkan Login Terlebih Dahulu'.tr,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 22,
@@ -230,7 +231,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Masuk untuk melanjutkan ke DinoyoCraft.',
+                        'Masuk untuk melanjutkan ke DinoyoCraft.'.tr,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
@@ -241,27 +242,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // ── Form ──
                       _field(
-                        label: 'Email',
-                        hint: 'Masukkan email kamu',
+                        label: 'Email'.tr,
+                        hint: 'Masukkan email kamu'.tr,
                         controller: _email,
                         icon: Icons.mail_outline_rounded,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Email wajib diisi'
+                            ? 'Email wajib diisi'.tr
                             : null,
                       ),
                       SizedBox(height: 16),
                       _field(
-                        label: 'Password',
-                        hint: 'Masukkan password',
+                        label: 'Password'.tr,
+                        hint: 'Masukkan password'.tr,
                         controller: _password,
                         icon: Icons.lock_outline_rounded,
                         obscureText: _obscure,
                         textInputAction: TextInputAction.done,
                         onFieldSubmitted: (_) => _submit(),
                         validator: (v) => (v == null || v.isEmpty)
-                            ? 'Password wajib diisi'
+                            ? 'Password wajib diisi'.tr
                             : null,
                         suffix: GestureDetector(
                           behavior: HitTestBehavior.opaque,
@@ -285,7 +286,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Text(
-                              'Lupa password?',
+                              'Lupa password?'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -300,20 +301,26 @@ class _LoginScreenState extends State<LoginScreen> {
                       // ── Tombol Masuk ──
                       SizedBox(
                         height: 48,
-                        child: FilledButton(
-                          onPressed: _submit,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.black,
-                            foregroundColor: AppColors.white,
-                            shape: StadiumBorder(),
-                            elevation: 0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: AppColors.darkButtonShadow,
                           ),
-                          child: Text(
-                            'Masuk',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.white,
+                          child: FilledButton(
+                            onPressed: _submit,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.black,
+                              foregroundColor: AppColors.white,
+                              shape: AppColors.stadiumButtonShape,
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              'Masuk'.tr,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -329,7 +336,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: Text(
-                              'atau',
+                              'atau'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
@@ -349,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: OutlinedButton(
                           onPressed: () => context.go('/home'),
                           style: OutlinedButton.styleFrom(
-                            backgroundColor: AppColors.white,
+                            backgroundColor: AppColors.surface,
                             side: BorderSide(color: AppColors.border),
                             shape: StadiumBorder(),
                             foregroundColor: AppColors.ink,
@@ -363,12 +370,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 height: 18,
                               ),
                               SizedBox(width: 10),
-                              Text(
-                                'Masuk dengan Google',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.ink,
+                              Flexible(
+                                child: Text(
+                                  'Masuk dengan Google'.tr,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.ink,
+                                  ),
                                 ),
                               ),
                             ],
@@ -392,9 +403,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: AppColors.textSecondary,
                                 ),
                                 children: [
-                                  TextSpan(text: 'Belum punya akun? '),
+                                  TextSpan(text: 'Belum punya akun? '.tr),
                                   TextSpan(
-                                    text: 'Daftar',
+                                    text: 'Daftar'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,

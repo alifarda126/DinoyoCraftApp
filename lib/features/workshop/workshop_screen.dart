@@ -2,29 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
 import '../../core/widgets/dc_button.dart';
 
 class WorkshopScreen extends StatelessWidget {
-const   WorkshopScreen({super.key});
+  const WorkshopScreen({super.key});
 
   Future<void> _openWhatsApp(BuildContext context) async {
     final uri = Uri.parse('https://wa.me/6281234567890');
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tidak dapat membuka WhatsApp')),
+        SnackBar(content: Text('Tidak dapat membuka WhatsApp'.tr)),
       );
     }
   }
 
+  Future<void> _handleRefresh() async {
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverPinnedDcHeader(),
+    final topHeaderHeight = MediaQuery.paddingOf(context).top + 48.0;
+
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      color: AppColors.ink,
+      backgroundColor: AppColors.surfaceElevated,
+      edgeOffset: topHeaderHeight,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        slivers: [
+          SliverPinnedDcHeader(),
         SliverPadding(
           padding: const EdgeInsets.only(bottom: 100),
           sliver: SliverList(
@@ -35,7 +50,7 @@ const   WorkshopScreen({super.key});
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Workshop Keramik',
+                'Workshop Keramik'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
@@ -73,7 +88,7 @@ const   WorkshopScreen({super.key});
                       right: 16,
                       bottom: 16,
                       child: Text(
-                        'Rasakan pengalaman membentuk tanah liat bersama pengrajin Dinoyo',
+                        'Rasakan pengalaman membentuk tanah liat bersama pengrajin Dinoyo'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -87,11 +102,11 @@ const   WorkshopScreen({super.key});
               ),
               SizedBox(height: 18),
               _InfoCard(
-                title: 'Pengalaman Workshop',
+                title: 'Pengalaman Workshop'.tr,
                 child: Text(
                   'Sesi 2 jam: pengenalan tanah liat, teknik dasar throwing/handbuilding, '
                   'glazing intro, dan hasil karya bisa dibawa pulang setelah pembakaran '
-                  '(estimasi 7–14 hari). Cocok untuk pemula & komunitas.',
+                  '(estimasi 7–14 hari). Cocok untuk pemula & komunitas.'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     height: 1.5,
@@ -101,7 +116,7 @@ const   WorkshopScreen({super.key});
               ),
               SizedBox(height: 12),
               _InfoCard(
-                title: 'Contact Person',
+                title: 'Contact Person'.tr,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -127,7 +142,7 @@ const   WorkshopScreen({super.key});
               ),
               SizedBox(height: 20),
               DcButton(
-                label: 'Reservasi via WhatsApp',
+                label: 'Reservasi via WhatsApp'.tr,
                 trailingIcon: Icons.open_in_new,
                 onPressed: () => _openWhatsApp(context),
               ),
@@ -138,8 +153,9 @@ const   WorkshopScreen({super.key});
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 }
 
 class _InfoCard extends StatelessWidget {

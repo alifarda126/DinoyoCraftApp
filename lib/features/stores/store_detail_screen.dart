@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
 
-const Color _borderColor = Color(0xFFE5E5E5);
+Color get _borderColor => AppColors.border;
 const double _padH = 24;
 
 class StoreDetailScreen extends StatefulWidget {
@@ -41,7 +42,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
         .toList();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -56,7 +57,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                   ),
                   Expanded(
                     child: Text(
-                      'Profil Toko',
+                      'Profil Toko'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -68,7 +69,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                     icon: Icon(
                       Icons.help_outline_rounded,
                       size: 22,
-                      color: Color(0xFF404040),
+                      color: AppColors.ink,
                     ),
                   ),
                 ],
@@ -98,9 +99,9 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                           width: 72,
                           height: 72,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.surface,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white, width: 3),
+                            border: Border.all(color: AppColors.surface, width: 3),
                             boxShadow: [
                               BoxShadow(
                                 color: Color(0x26000000),
@@ -136,7 +137,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: AppColors.surface,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: _borderColor),
                             ),
@@ -192,7 +193,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.surface,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: _borderColor),
                           ),
@@ -201,7 +202,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               height: 1.5,
-                              color: Color(0xFF404040),
+                              color: AppColors.ink,
                             ),
                           ),
                         ),
@@ -220,7 +221,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                               size: 16,
                             ),
                             label: Text(
-                              'Chat Toko',
+                              'Chat Toko'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -248,16 +249,16 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             decoration: InputDecoration(
                               isDense: true,
                               filled: true,
-                              fillColor: Color(0xFFF7F7F7),
-                              hintText: 'Cari produk di toko ini...',
+                              fillColor: AppColors.surfaceSubtle,
+                              hintText: 'Cari produk di toko ini...'.tr,
                               hintStyle: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
-                                color: Color(0xFF737373),
+                                color: AppColors.textZinc,
                               ),
                               prefixIcon: Icon(
                                 Icons.search_rounded,
                                 size: 18,
-                                color: Color(0xFFA3A3A3),
+                                color: AppColors.textMuted,
                               ),
                               suffixIcon: _query.isEmpty
                                   ? null
@@ -270,7 +271,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                                       icon: Icon(
                                         Icons.close_rounded,
                                         size: 16,
-                                        color: Color(0xFFA3A3A3),
+                                        color: AppColors.textMuted,
                                       ),
                                     ),
                               contentPadding:
@@ -297,14 +298,14 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Text(
-                              'Katalog',
+                              'Katalog'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
                             Text(
-                              'Menampilkan ${shownProducts.length} Produk',
+                              '${'Menampilkan'.tr} ${shownProducts.length} ${'Produk'.tr}',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 color: AppColors.textSecondary,
@@ -319,7 +320,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 32),
                             child: Center(
                               child: Text(
-                                'Produk tidak ditemukan',
+                                'Produk tidak ditemukan'.tr,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
                                   color: AppColors.textSecondary,

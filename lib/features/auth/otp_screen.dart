@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
 /// Halaman Verifikasi OTP — disesuaikan dengan desain Verifikasi_Daftar_Akun.png.
@@ -22,7 +23,7 @@ const   OtpScreen({super.key, this.from = 'register', this.email});
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  static const String _illustration = 'assets/images/Icon_verifikasi_OTP.png';
+  static const String _illustration = AppAssets.iconVerifikasiOtp;
   static const int _resendDelay = 60; // detik
 
   final _controllers = List.generate(6, (_) => TextEditingController());
@@ -93,7 +94,12 @@ class _OtpScreenState extends State<OtpScreen> {
     } else if (widget.from == 'forgot') {
       context.go('/login');
     } else {
-      context.go('/home');
+      // Verifikasi pendaftaran berhasil — arahkan ke Login untuk masuk,
+      // bukan langsung ke dalam aplikasi.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pendaftaran berhasil! Silakan masuk.')),
+      );
+      context.go('/login');
     }
   }
 
@@ -115,7 +121,7 @@ class _OtpScreenState extends State<OtpScreen> {
   // ═══ Header: ← Kembali ........ (?) ═════════════════════════════════════
   PreferredSizeWidget _buildHeader() {
     return AppBar(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -164,9 +170,9 @@ class _OtpScreenState extends State<OtpScreen> {
       width: 40,
       height: 52,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.black, width: 2),
+        border: Border.all(color: AppColors.ink, width: 2),
         boxShadow: [
           BoxShadow(
             color: Color(0x1A000000),
@@ -222,7 +228,7 @@ class _OtpScreenState extends State<OtpScreen> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.bg,
       appBar: _buildHeader(),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -355,20 +361,26 @@ class _OtpScreenState extends State<OtpScreen> {
               // ── Tombol Konfirmasi ──
               SizedBox(
                 height: 52,
-                child: FilledButton(
-                  onPressed: _continue,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.black,
-                    foregroundColor: AppColors.white,
-                    shape: StadiumBorder(),
-                    elevation: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: AppColors.darkButtonShadow,
                   ),
-                  child: Text(
-                    'Konfirmasi',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.white,
+                  child: FilledButton(
+                    onPressed: _continue,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.black,
+                      foregroundColor: AppColors.white,
+                      shape: AppColors.stadiumButtonShape,
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Konfirmasi',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.white,
+                      ),
                     ),
                   ),
                 ),

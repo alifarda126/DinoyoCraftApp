@@ -92,7 +92,7 @@ const   ProductCard({super.key, required this.product, this.onAdd});
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.white.withValues(alpha: 0.92),
+                        color: AppColors.surface.withValues(alpha: 0.92),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(

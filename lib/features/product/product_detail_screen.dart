@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/mock_data.dart';
 import 'presentation/modal_pilih_variasi.dart';
@@ -34,7 +35,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final originalPrice = ((product.price * 1.3) / 1000).round() * 1000;
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -131,7 +132,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                         SizedBox(height: 22),
 
-                        Text('Deskripsi Produk', style: _sectionStyle),
+                        Text('Deskripsi Produk'.tr, style: _sectionStyle),
                         SizedBox(height: 8),
                         Text(
                           'Vas keramik stoneware buatan tangan pengrajin lokal '
@@ -200,7 +201,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             Container(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: AppColors.surface,
                 border: Border(
                   top: BorderSide(color: AppColors.border),
                 ),
@@ -242,7 +243,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                         icon: Icon(Icons.shopping_cart_outlined, size: 17),
                         label: Text(
-                          'Keranjang',
+                          'Keranjang'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -263,23 +264,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   Expanded(
                     child: SizedBox(
                       height: 46,
-                      child: FilledButton(
-                        onPressed: () => showModalPilihVariasi(
-                          context,
-                          product: product,
-                          mode: ModalVariasiMode.beliLangsung,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: AppColors.darkButtonShadow,
                         ),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.black,
-                          foregroundColor: AppColors.white,
-                          elevation: 0,
-                          shape: StadiumBorder(),
-                        ),
-                        child: Text(
-                          'Beli Langsung',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                        child: FilledButton(
+                          onPressed: () => showModalPilihVariasi(
+                            context,
+                            product: product,
+                            mode: ModalVariasiMode.beliLangsung,
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.black,
+                            foregroundColor: AppColors.white,
+                            elevation: 0,
+                            shape: AppColors.stadiumButtonShape,
+                          ),
+                          child: Text(
+                            'Beli Langsung'.tr,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
@@ -390,28 +397,41 @@ class _MetaRow extends StatelessWidget {
       children: [
         Icon(Icons.star_rounded, size: 18, color: AppColors.ink),
         SizedBox(width: 3),
-        Text(
-          rating.toStringAsFixed(1),
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: AppColors.ink,
-          ),
-        ),
-        _dot(),
-        GestureDetector(
-          onTap: () =>
-              context.push('/reviews?store=${Uri.encodeComponent(store)}'),
+        Flexible(
           child: Text(
-            '128 Ulasan',
-            style: style.copyWith(
-              decoration: TextDecoration.underline,
-              decorationColor: AppColors.textSecondary,
+            rating.toStringAsFixed(1),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
             ),
           ),
         ),
         _dot(),
-        Text('Terjual 340+', style: style),
+        Flexible(
+          child: GestureDetector(
+            onTap: () =>
+                context.push('/reviews?store=${Uri.encodeComponent(store)}'),
+            child: Text(
+              '128 Ulasan'.tr,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: style.copyWith(
+                decoration: TextDecoration.underline,
+                decorationColor: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ),
+        _dot(),
+        Flexible(
+          child: Text('Terjual 340+'.tr,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: style),
+        ),
       ],
     );
   }
@@ -497,7 +517,7 @@ class _StoreCard extends StatelessWidget {
             side: BorderSide(color: AppColors.ink, width: 1.2),
           ),
           child: Text(
-            'Kunjungi Toko',
+            'Kunjungi Toko'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -543,23 +563,23 @@ class _SpecCard extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Spesifikasi Detail', style: _sectionStyle),
+        Text('Spesifikasi Detail'.tr, style: _sectionStyle),
         SizedBox(height: 14),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _cell('Bahan Utama', 'Tanah Liat Dinoyo (Stoneware)'),
+            _cell('Bahan Utama'.tr, 'Tanah Liat Dinoyo (Stoneware)'.tr),
             SizedBox(width: 12),
-            _cell('Finishing', 'Matte Glaze Alami'),
+            _cell('Finishing'.tr, 'Matte Glaze Alami'.tr),
           ],
         ),
         SizedBox(height: 14),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _cell('Dimensi Produk', 'T 18cm × D 9cm'),
+            _cell('Dimensi Produk'.tr, 'T 18cm × D 9cm'),
             SizedBox(width: 12),
-            _cell('Berat Bersih', '600 gram'),
+            _cell('Berat Bersih'.tr, '600 gram'),
           ],
         ),
       ],
@@ -588,12 +608,16 @@ class _GuaranteeCard extends StatelessWidget {
             Icon(Icons.local_shipping_outlined,
                 size: 18, color: AppColors.ink),
             SizedBox(width: 8),
-            Text(
-              'Garansi Kemasan Aman Dinoyo',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
+            Flexible(
+              child: Text(
+                'Garansi Kemasan Aman Dinoyo'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink,
+                ),
               ),
             ),
           ],
@@ -602,8 +626,7 @@ class _GuaranteeCard extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 26),
           child: Text(
-            'Setiap keramik dibalut triple bubble wrap & kotak kardus tebal '
-            'untuk memastikan produk sampai utuh.',
+            'Setiap keramik dibalut triple bubble wrap & kotak kardus tebal untuk memastikan produk sampai utuh.'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 12,
               height: 1.5,
@@ -649,7 +672,7 @@ class _RatingSummary extends StatelessWidget {
             child: LinearProgressIndicator(
               value: value,
               minHeight: 6,
-              backgroundColor: Color(0xFFE8E8E8),
+              backgroundColor: AppColors.border,
               valueColor: AlwaysStoppedAnimation(AppColors.black),
             ),
           ),
@@ -723,12 +746,16 @@ class _RatingSummary extends StatelessWidget {
               Icon(Icons.thumb_up_alt_outlined,
                   size: 17, color: AppColors.ink),
               SizedBox(width: 8),
-              Text(
-                '98% pembeli merekomendasikan produk ini',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink,
+              Flexible(
+                child: Text(
+                  '98% pembeli merekomendasikan produk ini'.tr,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
                 ),
               ),
             ],
@@ -965,11 +992,16 @@ class _ReviewCardState extends State<_ReviewCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _helpfulPill(),
-                Text(
-                  'Membantu ${review.helpfulCount} orang',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
+                Flexible(
+                  child: Text(
+                    'Membantu ${review.helpfulCount} orang',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -979,11 +1011,16 @@ class _ReviewCardState extends State<_ReviewCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _helpfulPill(),
-                Text(
-                  'Apakah ulasan ini bermanfaat?',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
+                Flexible(
+                  child: Text(
+                    'Apakah ulasan ini bermanfaat?'.tr,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -1022,12 +1059,16 @@ class _ReviewCardState extends State<_ReviewCard> {
                       Icon(Icons.storefront_outlined,
                           size: 14, color: AppColors.ink),
                       SizedBox(width: 6),
-                      Text(
-                        review.replyAuthor ?? '',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+                      Flexible(
+                        child: Text(
+                          review.replyAuthor ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                          ),
                         ),
                       ),
                       SizedBox(width: 6),

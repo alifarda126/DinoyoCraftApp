@@ -3,14 +3,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/widgets/dc_app_header.dart';
 import '../../core/widgets/dc_button.dart';
 import '../../data/mock_data.dart';
 
 class HelpScreen extends StatefulWidget {
-const   HelpScreen({super.key});
+  const HelpScreen({super.key});
 
   @override
   State<HelpScreen> createState() => _HelpScreenState();
@@ -18,6 +18,42 @@ const   HelpScreen({super.key});
 
 class _HelpScreenState extends State<HelpScreen> {
   String _query = '';
+
+  Widget _buildHeader() {
+    return SizedBox(
+      height: 54,
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            },
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 19,
+              color: AppColors.ink,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              'Bantuan'.tr,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+          ),
+          SizedBox(width: 48),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,22 +67,18 @@ class _HelpScreenState extends State<HelpScreen> {
         .toList();
 
     return Scaffold(
-      // Scaffold diperlukan sebagai ancestor Material untuk TextField/
-      // ExpansionTile/InkWell; tanpa ini halaman melempar error rendering.
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-        SliverPinnedDcHeader(),
-        SliverPadding(
-          padding: const EdgeInsets.only(bottom: 100),
-          sliver: SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
                 children: [
                   Text(
-                    'Butuh Bantuan?',
+                    'Butuh Bantuan?'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
@@ -55,7 +87,7 @@ class _HelpScreenState extends State<HelpScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Temukan jawaban cepat atau hubungi tim kami.',
+                    'Temukan jawaban cepat atau hubungi tim kami.'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       color: AppColors.textSecondary,
@@ -65,7 +97,7 @@ class _HelpScreenState extends State<HelpScreen> {
                   TextField(
                     onChanged: (v) => setState(() => _query = v),
                     decoration: InputDecoration(
-                      hintText: 'Cari pertanyaan...',
+                      hintText: 'Cari pertanyaan...'.tr,
                       hintStyle: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         color: AppColors.textMuted,
@@ -96,6 +128,7 @@ class _HelpScreenState extends State<HelpScreen> {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
                     ),
                   ),
                   SizedBox(height: 8),
@@ -143,10 +176,11 @@ class _HelpScreenState extends State<HelpScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Kontak Customer Service',
+                          'Kontak Customer Service'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
                           ),
                         ),
                         SizedBox(height: 8),
@@ -163,16 +197,15 @@ class _HelpScreenState extends State<HelpScreen> {
                   ),
                   SizedBox(height: 16),
                   DcButton(
-                    label: 'ClayBot Asisten',
+                    label: 'ClayBot Asisten'.tr,
                     trailingIconPath: AppAssets.iconChat,
                     onPressed: () => context.push('/chatbot'),
                   ),
                 ],
               ),
             ),
-          ),
+          ],
         ),
-        ],
       ),
     );
   }

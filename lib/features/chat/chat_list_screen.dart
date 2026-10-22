@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
 class ChatListScreen extends StatelessWidget {
-const   ChatListScreen({super.key});
+  const ChatListScreen({super.key});
 
   static const Color _onlineGreen = Color(0xFF059669);
 
@@ -30,7 +31,7 @@ const   ChatListScreen({super.key});
                   ),
                   Expanded(
                     child: Text(
-                      'Pesan',
+                      'Pesan'.tr,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 16,
@@ -136,7 +137,7 @@ class _ChatCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: chat.unread ? AppColors.black : AppColors.borderAlt,
@@ -273,15 +274,17 @@ class _ChatCard extends StatelessWidget {
                   Row(
                     children: [
                       if (chat.productChip != null) ...[
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(6, 4, 10, 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.inputBg,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.borderAlt),
-                          ),
-                          child: Row(
-                            children: [
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(6, 4, 10, 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.inputBg,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.borderAlt),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(4),
                                 child: Image.asset(
@@ -292,23 +295,32 @@ class _ChatCard extends StatelessWidget {
                                 ),
                               ),
                               SizedBox(width: 6),
-                              Text(
-                                chat.productChip!,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF4C4546),
+                              Flexible(
+                                child: Text(
+                                  chat.productChip!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ] else
-                        Text(
-                          chat.contextLabel!,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                        Flexible(
+                          child: Text(
+                            chat.contextLabel!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ),
                       Spacer(),

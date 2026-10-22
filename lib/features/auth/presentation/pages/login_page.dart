@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -48,7 +48,10 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 Center(
                   child: Image.asset(
-                    AppAssets.logoBlack,
+                    Theme.of(context).brightness == Brightness.dark ||
+                            AppColors.isDark
+                        ? AppAssets.logoWhite
+                        : AppAssets.logoBlack,
                     width: 72,
                     height: 72,
                     fit: BoxFit.contain,

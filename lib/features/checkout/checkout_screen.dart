@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/mock_data.dart';
@@ -142,7 +143,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.surfaceElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -163,7 +164,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Pilih Alamat Pengiriman',
+                            'Pilih Alamat Pengiriman'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -318,7 +319,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         },
                         icon: Icon(Icons.add, size: 18),
                         label: Text(
-                          'Tambah Alamat Baru',
+                          'Tambah Alamat Baru'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -352,7 +353,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Hapus Produk?',
+          'Hapus Produk?'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -371,12 +372,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: Text('Batal'),
+            child: Text('Batal'.tr),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text('Hapus'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: Text('Hapus'.tr),
           ),
         ],
       ),
@@ -397,7 +398,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Pembayaran berhasil',
+          'Pembayaran berhasil'.tr,
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
         ),
         content: Text(
@@ -416,7 +417,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               context.go('/home');
             },
             child: Text(
-              'Kembali ke Beranda',
+              'Kembali ke Beranda'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w700,
                 color: AppColors.ink,
@@ -431,7 +432,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   // ═══ AppBar: ← Checkout ........ (?) ═══════════════════════════════════
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -453,7 +454,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       ),
       title: Text(
-        'Checkout',
+        'Checkout'.tr,
         style: GoogleFonts.plusJakartaSans(
           fontSize: 17,
           fontWeight: FontWeight.w600,
@@ -483,7 +484,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final totalQty = _qtys.fold<int>(0, (s, q) => s + q);
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.bg,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -494,7 +495,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 // ─── Alamat Pengiriman ──────────────────────────────────
                 _SectionHeader(
                   icon: Icons.location_on_outlined,
-                  title: 'Alamat Pengiriman',
+                  title: 'Alamat Pengiriman'.tr,
                 ),
                 _Card(
                   child: Column(
@@ -541,7 +542,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   ),
                                   SizedBox(width: 4),
                                   Text(
-                                    'Ubah Alamat',
+                                    'Ubah Alamat'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 12,
                                       color: AppColors.ink,
@@ -621,7 +622,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   ),
                                   SizedBox(width: 4),
                                   Text(
-                                    'Tambah Alamat Baru',
+                                    'Tambah Alamat Baru'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
@@ -642,7 +643,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 // ─── Produk yang Dibeli ─────────────────────────────────
                 _SectionHeader(
                   icon: Icons.inventory_2_outlined,
-                  title: 'Produk yang Dibeli ($totalQty)',
+                  title: '${'Produk yang Dibeli'.tr} ($totalQty)',
                   trailing: Text(
                     '${MockData.mockCart.length} Penjual Terpilih',
                     style: GoogleFonts.plusJakartaSans(
@@ -786,27 +787,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 SizedBox(height: 12),
 
                 // ─── Metode Pengiriman ──────────────────────────────────
-                const _SectionHeader(
+                _SectionHeader(
                   icon: Icons.local_shipping_outlined,
-                  title: 'Metode Pengiriman',
+                  title: 'Metode Pengiriman'.tr,
                 ),
                 _ShippingTile(
-                  title: 'Reguler',
-                  subtitle: 'Estimasi 2–4 hari kerja',
+                  title: 'Reguler'.tr,
+                  subtitle: 'Estimasi 2–4 hari kerja'.tr,
                   price: 'Rp15.000',
                   selected: _shipping == 'Regular',
                   onTap: () => setState(() => _shipping = 'Regular'),
                 ),
                 _ShippingTile(
-                  title: 'Hemat',
-                  subtitle: 'Estimasi 4–7 hari kerja',
+                  title: 'Hemat'.tr,
+                  subtitle: 'Estimasi 4–7 hari kerja'.tr,
                   price: 'Rp10.000',
                   selected: _shipping == 'Hemat',
                   onTap: () => setState(() => _shipping = 'Hemat'),
                 ),
                 _ShippingTile(
-                  title: 'Express',
-                  subtitle: 'Estimasi 1–2 hari kerja (Prioritas)',
+                  title: 'Express'.tr,
+                  subtitle: 'Estimasi 1–2 hari kerja (Prioritas)'.tr,
                   price: 'Rp25.000',
                   selected: _shipping == 'Express',
                   onTap: () => setState(() => _shipping = 'Express'),
@@ -814,9 +815,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 SizedBox(height: 14),
 
                 // ─── Metode Pembayaran ──────────────────────────────────
-                const _SectionHeader(
+                _SectionHeader(
                   icon: Icons.account_balance_wallet_outlined,
-                  title: 'Metode Pembayaran',
+                  title: 'Metode Pembayaran'.tr,
                 ),
                 _PaymentCard(
                   icon: Icons.qr_code_scanner_rounded,
@@ -849,9 +850,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 SizedBox(height: 14),
 
                 // ─── Catatan untuk Penjual ──────────────────────────────
-                const _SectionHeader(
+                _SectionHeader(
                   icon: Icons.notes_rounded,
-                  title: 'Catatan untuk Penjual (Opsional)',
+                  title: 'Catatan untuk Penjual (Opsional)'.tr,
                   titleSize: 14,
                 ),
                 Container(
@@ -860,7 +861,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.border),
                   ),
@@ -892,7 +893,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                 // ─── Ringkasan Pembayaran ───────────────────────────────
                 Text(
-                  'Ringkasan Pembayaran',
+                  'Ringkasan Pembayaran'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -905,15 +906,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   child: Column(
                     children: [
                       _RowLine(
-                        'Subtotal Produk',
+                        'Subtotal Produk'.tr,
                         MockData.formatPrice(_subtotal),
                       ),
                       _RowLine(
-                        'Biaya Pengiriman (${_shippingLabel()})',
+                        '${'Biaya Pengiriman'.tr} (${_shippingLabel()})',
                         MockData.formatPrice(_shippingFee),
                       ),
                       _RowLine(
-                        'Biaya Layanan',
+                        'Biaya Layanan'.tr,
                         MockData.formatPrice(_serviceFee),
                       ),
                       Padding(
@@ -925,7 +926,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ),
                       _RowLine(
-                        'Total Pembayaran',
+                        'Total Pembayaran'.tr,
                         MockData.formatPrice(_total),
                         bold: true,
                       ),
@@ -939,7 +940,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           // ─── Sticky footer ─────────────────────────────────────────────
           Container(
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: AppColors.surface,
               border: Border(top: BorderSide(color: AppColors.border)),
             ),
             child: SafeArea(
@@ -954,7 +955,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Total Tagihan',
+                            'Total Tagihan'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.textSecondary,
@@ -976,20 +977,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     SizedBox(
                       width: 162,
                       height: 50,
-                      child: FilledButton(
-                        onPressed: MockData.mockCart.isEmpty ? null : _pay,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.black,
-                          foregroundColor: AppColors.white,
-                          elevation: 0,
-                          shape: StadiumBorder(),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: AppColors.darkButtonShadow,
                         ),
-                        child: Text(
-                          'Bayar Sekarang',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.white,
+                        child: FilledButton(
+                          onPressed: MockData.mockCart.isEmpty ? null : _pay,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.black,
+                            foregroundColor: AppColors.white,
+                            elevation: 0,
+                            shape: AppColors.stadiumButtonShape,
+                          ),
+                          child: Text(
+                            'Bayar Sekarang'.tr,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -1061,7 +1068,7 @@ class _Card extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
@@ -1232,7 +1239,7 @@ class _ShippingTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected ? AppColors.black : AppColors.border,
@@ -1316,7 +1323,7 @@ class _PaymentCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected ? AppColors.black : AppColors.border,
@@ -1469,7 +1476,7 @@ class _BrandChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: AppColors.border),
       ),
@@ -1623,13 +1630,13 @@ class _AddressFormState extends State<_AddressForm> {
       ),
       prefixIcon: Icon(icon, size: 18, color: AppColors.textSecondary),
       filled: true,
-      fillColor: AppColors.white,
+      fillColor: AppColors.surface,
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       enabledBorder: border(AppColors.border),
       focusedBorder: border(AppColors.ink, 1.2),
-      errorBorder: border(Colors.red.shade400),
-      focusedErrorBorder: border(Colors.red.shade400, 1.5),
+      errorBorder: border(AppColors.danger),
+      focusedErrorBorder: border(AppColors.danger, 1.5),
       errorStyle: GoogleFonts.plusJakartaSans(fontSize: 11),
     );
   }
@@ -1692,7 +1699,7 @@ class _AddressFormState extends State<_AddressForm> {
             activeThumbColor: AppColors.white,
             activeTrackColor: AppColors.black,
             inactiveThumbColor: AppColors.white,
-            inactiveTrackColor: Color(0xFFE4E2E2),
+            inactiveTrackColor: AppColors.border,
             trackOutlineColor: const WidgetStatePropertyAll<Color?>(
               Colors.transparent,
             ),
@@ -1713,7 +1720,7 @@ class _AddressFormState extends State<_AddressForm> {
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
@@ -1772,7 +1779,7 @@ class _AddressFormState extends State<_AddressForm> {
                   ],
                 ),
               ),
-              Divider(height: 1, color: Color(0xFFEEEEEE)),
+              Divider(height: 1, color: AppColors.divider),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
@@ -1918,20 +1925,26 @@ class _AddressFormState extends State<_AddressForm> {
                     SizedBox(
                       width: double.infinity,
                       height: 50,
-                      child: FilledButton(
-                        onPressed: _save,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.black,
-                          foregroundColor: AppColors.white,
-                          elevation: 0,
-                          shape: StadiumBorder(),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: AppColors.darkButtonShadow,
                         ),
-                        child: Text(
-                          isEdit ? 'Simpan Perubahan' : 'Simpan Alamat Baru',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.white,
+                        child: FilledButton(
+                          onPressed: _save,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.black,
+                            foregroundColor: AppColors.white,
+                            elevation: 0,
+                            shape: AppColors.stadiumButtonShape,
+                          ),
+                          child: Text(
+                            isEdit ? 'Simpan Perubahan' : 'Simpan Alamat Baru',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.white,
+                            ),
                           ),
                         ),
                       ),

@@ -15,7 +15,7 @@ const   NewPasswordScreen({super.key});
 }
 
 class _NewPasswordScreenState extends State<NewPasswordScreen> {
-  static const String _illustration = 'assets/images/Icon_lupa_password.jpg';
+  static const String _illustration = AppAssets.iconLupaPassword;
 
   final _formKey = GlobalKey<FormState>();
   final _password = TextEditingController();
@@ -85,7 +85,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   // ═══ Header: ← Kembali ........ (?) ═════════════════════════════════════
   PreferredSizeWidget _buildHeader() {
     return AppBar(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -136,7 +136,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
           Icon(
             isMet ? Icons.check_circle : Icons.circle_outlined,
             size: 16,
-            color: isMet ? Colors.green : AppColors.border,
+            color: isMet ? AppColors.successText : AppColors.border,
           ),
           SizedBox(width: 8),
           Expanded(
@@ -156,7 +156,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.bg,
       appBar: _buildHeader(),
       body: SafeArea(
         child: LayoutBuilder(
@@ -240,7 +240,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                           decoration: BoxDecoration(
                             border: Border.all(color: AppColors.border),
                             borderRadius: BorderRadius.circular(12),
-                            color: AppColors.white,
+                            color: AppColors.surface,
                           ),
                           padding: const EdgeInsets.all(16),
                           child: Column(
@@ -249,19 +249,24 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    'KRITERIA KATA SANDI:',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.ink,
+                                  Flexible(
+                                    child: Text(
+                                      'KRITERIA KATA SANDI:',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.ink,
+                                      ),
                                     ),
                                   ),
+                                  SizedBox(width: 12),
                                   Text(
                                     _isCriteriaMet ? 'Terpenuhi' : 'Belum Terpenuhi',
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 12,
-                                      color: _isCriteriaMet ? Colors.green : AppColors.textSecondary,
+                                      color: _isCriteriaMet ? AppColors.successText : AppColors.textSecondary,
                                     ),
                                   ),
                                 ],
@@ -278,20 +283,26 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                         // ── Tombol Simpan ──
                         SizedBox(
                           height: 52,
-                          child: FilledButton(
-                            onPressed: _submit,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.black,
-                              foregroundColor: AppColors.white,
-                              shape: StadiumBorder(),
-                              elevation: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              boxShadow: AppColors.darkButtonShadow,
                             ),
-                            child: Text(
-                              'Simpan Kata Sandi Baru',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.white,
+                            child: FilledButton(
+                              onPressed: _submit,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.black,
+                                foregroundColor: AppColors.white,
+                                shape: AppColors.stadiumButtonShape,
+                                elevation: 0,
+                              ),
+                              child: Text(
+                                'Simpan Kata Sandi Baru',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.white,
+                                ),
                               ),
                             ),
                           ),

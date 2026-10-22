@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'theme/app_colors.dart';
+
 /// Mode tema aplikasi.
 enum AppThemeMode { system, light, dark }
 
@@ -24,7 +26,9 @@ class AppSettings extends ChangeNotifier {
 
   static final AppSettings instance = AppSettings._();
 
-  AppThemeMode themeMode = AppThemeMode.system;
+  /// Default terang: tampilan utama memakai light mode; pengguna tetap
+  /// bisa memilih gelap/ikuti sistem dari Kelola Pengaturan.
+  AppThemeMode themeMode = AppThemeMode.light;
 
   /// 'id' | 'en'
   String locale = 'id';
@@ -59,6 +63,11 @@ class AppSettings extends ChangeNotifier {
 
   void setThemeMode(AppThemeMode mode) {
     themeMode = mode;
+    // Selaraskan token warna saat interaksi dilakukan. Untuk mode sistem,
+    // nilai final tetap disinkronkan oleh MaterialApp setelah tema dipilih.
+    if (mode != AppThemeMode.system) {
+      AppColors.isDark = mode == AppThemeMode.dark;
+    }
     notifyListeners();
   }
 

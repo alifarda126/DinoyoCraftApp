@@ -3,6 +3,7 @@
 *.log
 *.pyc
 *.swp
+*.err
 .DS_Store
 .atom/
 .build/
@@ -32,6 +33,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+test/failures/
 
 # Symbolication related
 app.*.symbols

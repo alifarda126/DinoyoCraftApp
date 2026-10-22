@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
+import '../../core/theme/app_colors.dart';
+
 /// Menampilkan modal notifikasi sesuai desain Figma (Notif.dart)
 /// Menggunakan useRootNavigator: true agar berada di atas navbar dan FAB
 Future<void> showNotificationsModal(BuildContext context) {
@@ -59,15 +62,19 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
   final Set<String> _readIds = {'3', '4', '5'};
 
   static const Color _black = Color(0xFF000000);
-  static const Color _textDark = Color(0xFF1A1C1C);
-  static const Color _textGray = Color(0xFF5F5E5E);
-  static const Color _textDesc = Color(0xFF4C4546);
-  static const Color _cardBgUnread = Color(0xB0F4F3F3);
-  static const Color _cardBgRead = Color(0xFFFFFFFF);
-  static const Color _borderRead = Color(0xFFEEEEEE);
-  static const Color _chipInactiveBg = Color(0xFFF4F3F3);
-  static const Color _chipInactiveBorder = Color(0xFFCFC4C5);
-  static const Color _handleBarColor = Color(0xFFCFC4C5);
+  Color get _textDark => AppColors.ink;
+  Color get _textGray => AppColors.textSecondary;
+  Color get _textDesc => AppColors.textSecondary;
+  Color get _cardBgUnread => AppColors.surfaceSubtle;
+  Color get _cardBgRead => AppColors.surface;
+  Color get _borderRead => AppColors.divider;
+  Color get _chipInactiveBg => AppColors.surfaceSubtle;
+  Color get _chipInactiveBorder => AppColors.borderAlt;
+  Color get _handleBarColor => AppColors.borderAlt;
+  Color get _cardBorderUnread =>
+      AppColors.isDark ? Colors.white.withValues(alpha: 0.3) : _black;
+  Color get _unreadDotColor =>
+      AppColors.isDark ? Colors.white : _black;
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +89,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
     return Container(
       height: modalH,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -120,7 +127,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 Row(
                   children: [
                     Text(
-                      'Notifikasi',
+                      'Notifikasi'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         color: _textDark,
                         fontSize: 18,
@@ -136,9 +143,15 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(9999),
                         color: _black,
+                        border: AppColors.isDark
+                            ? Border.all(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 1,
+                              )
+                            : null,
                       ),
                       child: Text(
-                        '3 Baru',
+                        '3 Baru'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
                           fontSize: 11,
@@ -155,9 +168,9 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     height: 32,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFFF4F3F3),
+                      color: AppColors.surfaceSubtle,
                       border: Border.all(
-                        color: Color(0xFFE5E5E5),
+                        color: AppColors.border,
                         width: 0.8,
                       ),
                     ),
@@ -272,21 +285,27 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
           borderRadius: BorderRadius.circular(9999),
           color: isSelected ? _black : _chipInactiveBg,
           border: Border.all(
-            color: isSelected ? _black : _chipInactiveBorder,
+            color: isSelected
+                ? (AppColors.isDark
+                    ? Colors.white.withValues(alpha: 0.35)
+                    : _black)
+                : _chipInactiveBorder,
             width: 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Color(0x1A000000),
+                    color: AppColors.isDark
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : const Color(0x1A000000),
                     blurRadius: 4,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ]
               : null,
         ),
         child: Text(
-          label,
+          label.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -306,7 +325,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
         color: isUnread ? _cardBgUnread : _cardBgRead,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isUnread ? _black : _borderRead,
+          color: isUnread ? _cardBorderUnread : _borderRead,
           width: 1,
         ),
       ),
@@ -318,9 +337,9 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Color(0xFFE5E5E5)),
+              border: Border.all(color: AppColors.border),
             ),
             child: Icon(
               Icons.local_offer_outlined,
@@ -336,18 +355,22 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'DISKON PENGRAJIN',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: _textGray,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                    Flexible(
+                      child: Text(
+                        'DISKON PENGRAJIN'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: _textGray,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     Row(
                       children: [
                         Text(
-                          '2 jam lalu',
+                          AppText.isEnglish ? '2 hours ago' : '2 jam lalu',
                           style: GoogleFonts.plusJakartaSans(
                             color: _textGray,
                             fontSize: 12,
@@ -360,7 +383,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                             height: 8,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _black,
+                              color: _unreadDotColor,
                             ),
                           ),
                         ],
@@ -370,7 +393,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Voucher Diskon Keramik 15%',
+                  'Voucher Diskon Keramik 15%'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     color: _textDark,
                     fontSize: 14,
@@ -381,7 +404,9 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 Text.rich(
                   TextSpan(
                     children: [
-                      TextSpan(text: 'Gunakan kode '),
+                      TextSpan(
+                        text: AppText.isEnglish ? 'Use code ' : 'Gunakan kode ',
+                      ),
                       WidgetSpan(
                         alignment: PlaceholderAlignment.middle,
                         child: Container(
@@ -391,16 +416,18 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                           ),
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: Color(0xFFCFC4C5),
+                              color: AppColors.borderAlt,
                               width: 1,
                             ),
                             borderRadius: BorderRadius.circular(4),
-                            color: Color(0xFFEEEEEE),
+                            color: AppColors.isDark
+                                ? const Color(0xFF2E2E2E)
+                                : AppColors.divider,
                           ),
                           child: Text(
                             'DINOYOKARYA',
                             style: GoogleFonts.plusJakartaSans(
-                              color: _black,
+                              color: _textDark,
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.3,
@@ -409,8 +436,9 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                         ),
                       ),
                       TextSpan(
-                        text:
-                            ' untuk potongan belanja produk tembikar buatan pengrajin Dinoyo.',
+                        text: AppText.isEnglish
+                            ? ' for discounts on pottery made by Dinoyo artisans.'
+                            : ' untuk potongan belanja produk tembikar buatan pengrajin Dinoyo.',
                       ),
                     ],
                   ),
@@ -430,7 +458,9 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Kode voucher DINOYOKARYA berhasil disalin!',
+                          AppText.isEnglish
+                              ? 'Voucher code DINOYOKARYA successfully copied!'
+                              : 'Kode voucher DINOYOKARYA berhasil disalin!',
                           style: GoogleFonts.plusJakartaSans(),
                         ),
                         behavior: SnackBarBehavior.floating,
@@ -445,18 +475,18 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Salin Voucher',
+                        'Salin Voucher'.tr,
                         style: GoogleFonts.plusJakartaSans(
-                          color: _black,
+                          color: _textDark,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      SizedBox(width: 5),
+                      const SizedBox(width: 5),
                       Icon(
                         Icons.copy_rounded,
                         size: 13,
-                        color: _black,
+                        color: _textDark,
                       ),
                     ],
                   ),
@@ -478,7 +508,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
         color: isUnread ? _cardBgUnread : _cardBgRead,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isUnread ? _black : _borderRead,
+          color: isUnread ? _cardBorderUnread : _borderRead,
           width: 1,
         ),
       ),
@@ -490,9 +520,9 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Color(0xFFE5E5E5)),
+              border: Border.all(color: AppColors.border),
             ),
             child: Icon(
               Icons.calendar_today_outlined,
@@ -508,18 +538,23 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'WISATA KREATIF',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: _textGray,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                    Flexible(
+                      child: Text(
+                        'WISATA KREATIF'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: _textGray,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
+                    SizedBox(width: 8),
                     Row(
                       children: [
                         Text(
-                          'Kemarin, 14:20',
+                          AppText.isEnglish ? 'Yesterday, 14:20' : 'Kemarin, 14:20',
                           style: GoogleFonts.plusJakartaSans(
                             color: _textGray,
                             fontSize: 12,
@@ -532,7 +567,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                             height: 8,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _black,
+                              color: _unreadDotColor,
                             ),
                           ),
                         ],
@@ -542,7 +577,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Jadwal Workshop Pembuatan Keramik',
+                  'Jadwal Workshop Pembuatan Keramik'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     color: _textDark,
                     fontSize: 14,
@@ -551,7 +586,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Kelas seni putar tanah liat akhir pekan ini di Studio Dinoyo dibuka. Kuota tersisa 3 orang!',
+                  'Kelas seni putar tanah liat akhir pekan ini di Studio Dinoyo dibuka. Kuota tersisa 3 orang!'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     color: _textDesc,
                     fontSize: 12,
@@ -568,19 +603,23 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        'Lihat Detail Workshop',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: _black,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                      Flexible(
+                        child: Text(
+                          'Lihat Detail Workshop'.tr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: _textDark,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Icon(
                         Icons.arrow_forward_rounded,
                         size: 14,
-                        color: _black,
+                        color: _textDark,
                       ),
                     ],
                   ),
@@ -612,9 +651,9 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Color(0xFFF9F9F9),
+              color: AppColors.surfaceSubtle,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Color(0xFFEEEEEE)),
+              border: Border.all(color: AppColors.divider),
             ),
             child: Icon(
               Icons.check_circle_outline_rounded,
@@ -631,7 +670,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'PEMBAYARAN',
+                      'PEMBAYARAN'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         color: _textGray,
                         fontSize: 11,
@@ -639,7 +678,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                       ),
                     ),
                     Text(
-                      '2 hari lalu',
+                      AppText.isEnglish ? '2 days ago' : '2 hari lalu',
                       style: GoogleFonts.plusJakartaSans(
                         color: _textGray,
                         fontSize: 12,
@@ -649,7 +688,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Pembayaran Dikonfirmasi',
+                  'Pembayaran Dikonfirmasi'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     color: _textDark,
                     fontSize: 14,
@@ -658,7 +697,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Pembayaran via GoPay untuk pesanan Cangkir Speckle sebesar Rp70.000 telah berhasil diverifikasi.',
+                  'Pembayaran via GoPay untuk pesanan Cangkir Speckle sebesar Rp70.000 telah berhasil diverifikasi.'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     color: _textDesc,
                     fontSize: 12,
@@ -692,9 +731,9 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Color(0xFFF9F9F9),
+              color: AppColors.surfaceSubtle,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Color(0xFFEEEEEE)),
+              border: Border.all(color: AppColors.divider),
             ),
             child: Icon(
               Icons.local_shipping_outlined,
@@ -710,16 +749,21 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'STATUS PESANAN',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: _textGray,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                    Flexible(
+                      child: Text(
+                        'STATUS PESANAN'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: _textGray,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
+                    SizedBox(width: 8),
                     Text(
-                      '3 hari lalu',
+                      AppText.isEnglish ? '3 days ago' : '3 hari lalu',
                       style: GoogleFonts.plusJakartaSans(
                         color: _textGray,
                         fontSize: 12,
@@ -729,7 +773,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Pesanan Sedang Dikemas',
+                  'Pesanan Sedang Dikemas'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     color: _textDark,
                     fontSize: 14,
@@ -738,7 +782,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Penjual Dinoyo Ceramic Studio sedang menyiapkan pesanan #DNC-001 milikmu.',
+                  'Penjual Dinoyo Ceramic Studio sedang menyiapkan pesanan #DNC-001 milikmu.'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     color: _textDesc,
                     fontSize: 12,
@@ -772,9 +816,9 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Color(0xFFF9F9F9),
+              color: AppColors.surfaceSubtle,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Color(0xFFEEEEEE)),
+              border: Border.all(color: AppColors.divider),
             ),
             child: Icon(
               Icons.shield_outlined,
@@ -790,16 +834,21 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'KEAMANAN AKUN',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: _textGray,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                    Flexible(
+                      child: Text(
+                        'KEAMANAN AKUN'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: _textGray,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
+                    SizedBox(width: 8),
                     Text(
-                      '5 hari lalu',
+                      AppText.isEnglish ? '5 days ago' : '5 hari lalu',
                       style: GoogleFonts.plusJakartaSans(
                         color: _textGray,
                         fontSize: 12,
@@ -809,7 +858,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Masuk dari Perangkat Baru',
+                  'Masuk dari Perangkat Baru'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     color: _textDark,
                     fontSize: 14,
@@ -818,7 +867,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Akun @customer terdeteksi masuk dari perangkat baru pada 12 Feb 2025.',
+                  'Akun @customer terdeteksi masuk dari perangkat baru pada 12 Feb 2025.'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     color: _textDesc,
                     fontSize: 12,

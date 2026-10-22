@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/mock_data.dart';
@@ -122,7 +123,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     ];
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -134,7 +135,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Kirim Foto',
+                'Kirim Foto'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
@@ -143,7 +144,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
               SizedBox(height: 4),
               Text(
-                'Pilih foto dari galeri contoh (demo).',
+                'Pilih foto dari galeri contoh (demo).'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   color: AppColors.textMuted,
@@ -187,7 +188,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     ];
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -232,7 +233,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final router = GoRouter.of(context);
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -244,7 +245,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ListTile(
               leading: Icon(Icons.storefront_outlined, size: 22),
               title: Text(
-                'Lihat Profil Toko',
+                'Lihat Profil Toko'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -261,7 +262,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ListTile(
               leading: Icon(Icons.delete_outline_rounded, size: 22),
               title: Text(
-                'Hapus Percakapan',
+                'Hapus Percakapan'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -276,7 +277,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ListTile(
               leading: Icon(Icons.flag_outlined, size: 22),
               title: Text(
-                'Laporkan Percakapan',
+                'Laporkan Percakapan'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -287,7 +288,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 Navigator.of(sheetCtx).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Terima kasih, laporanmu kami terima.'),
+                    content: Text('Terima kasih, laporanmu kami terima.'.tr),
                   ),
                 );
               },
@@ -320,7 +321,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         child: Column(
           children: [
             _buildHeader(),
-            Divider(height: 1, color: Color(0xFFEEEEEE)),
+            Divider(height: 1, color: AppColors.divider),
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
@@ -398,12 +399,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: AppColors.borderAlt),
         ),
         child: Text(
-          'Hari ini, 14:10',
+          'Hari ini, 14:10'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 11,
             color: AppColors.textSecondary,
@@ -472,7 +473,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   decoration: BoxDecoration(
                     color: message.isMine
                         ? AppColors.black
-                        : AppColors.white,
+                        : AppColors.surface,
                     borderRadius: bubbleRadius,
                     border: message.isMine
                         ? null
@@ -514,7 +515,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   Widget _buildInputBar() {
     return Container(
-      color: Color(0xFFFAF9F9),
+      color: AppColors.surfaceSubtle,
       padding: EdgeInsets.fromLTRB(
         16,
         10,
@@ -546,7 +547,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 color: AppColors.ink,
               ),
               decoration: InputDecoration(
-                hintText: 'Ketik pesan...',
+                hintText: 'Ketik pesan...'.tr,
                 hintStyle: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   color: AppColors.textMuted,
@@ -563,7 +564,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                 ),
                 filled: true,
-                fillColor: AppColors.white,
+                fillColor: AppColors.surface,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 11,

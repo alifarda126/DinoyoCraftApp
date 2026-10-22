@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -14,14 +14,27 @@ const   ProfileScreen({super.key});
 class _ProfileScreenState extends State<ProfileScreen> {
   String _orderTab = 'Dikemas';
 
+  Future<void> _handleRefresh() async {
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabs = ['Dikemas', 'Dikirim', 'Diterima'];
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: CustomScrollView(
-        slivers: [
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: AppColors.ink,
+        backgroundColor: AppColors.surfaceElevated,
+        edgeOffset: MediaQuery.paddingOf(context).top + kToolbarHeight,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          slivers: [
           // AppBar
           SliverAppBar(
             backgroundColor: AppColors.bg,
@@ -454,7 +467,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 }
 

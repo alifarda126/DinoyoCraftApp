@@ -128,7 +128,7 @@ class _DcTextFieldState extends State<DcTextField> {
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.redAccent),
+              borderSide: BorderSide(color: AppColors.danger),
             ),
           ),
         ),

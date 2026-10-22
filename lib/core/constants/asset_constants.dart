@@ -21,6 +21,8 @@ abstract final class AppAssets {
   // ── Store Images ────────────────────────────────────────────────────────
   static const String storeDinoyo = 'assets/images/store_dinoyo.jpg';
   static const String storeRuangTanah = 'assets/images/store_ruang_tanah.jpg';
+  static const String iconLupaPassword = 'assets/images/Icon_lupa_password.png';
+  static const String iconVerifikasiOtp = 'assets/images/Icon_verifikasi_OTP.png';
 
   // ── Icons ───────────────────────────────────────────────────────────────
   static const String iconSearch = 'assets/icons/icon_search.svg';
