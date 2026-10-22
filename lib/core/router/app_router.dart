@@ -112,7 +112,8 @@ final GoRouter appRouter = GoRouter(
       path: '/verify-otp',
       builder: (context, state) {
         final from = state.uri.queryParameters['from'] ?? 'register';
-        return _live(() => OtpScreen(from: from));
+        final email = state.uri.queryParameters['email'];
+        return _live(() => OtpScreen(from: from, email: email));
       },
     ),
     StatefulShellRoute.indexedStack(

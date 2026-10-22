@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_settings.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_text_field.dart';
@@ -36,7 +37,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
-      context.push('/verify-otp?from=forgot');
+      final email = _email.text.trim();
+      AppSettings.instance.lastAuthEmail = email;
+      final uri = Uri(
+        path: '/verify-otp',
+        queryParameters: {
+          'from': 'forgot',
+          if (email.isNotEmpty) 'email': email,
+        },
+      );
+      context.push(uri.toString());
     }
   }
 

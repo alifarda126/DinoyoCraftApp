@@ -40,6 +40,9 @@ class AppSettings extends ChangeNotifier {
   /// (jika 2FA aktif) harus melewati verifikasi OTP.
   bool requireOtpNextLogin = false;
 
+  /// Email terakhir yang didaftarkan atau dimasukkan saat autentikasi.
+  String? lastAuthEmail;
+
   /// Simulasi ukuran cache (±26 MB); 0 setelah dibersihkan.
   int cacheBytes = 26214400;
 

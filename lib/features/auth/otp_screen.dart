@@ -71,11 +71,18 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   String get _maskedEmail {
-    final e = widget.email;
-    if (e == null || !e.contains('@')) return 'm●●●●●@email.com';
+    final raw = (widget.email?.trim().isNotEmpty ?? false)
+        ? widget.email!.trim()
+        : AppSettings.instance.lastAuthEmail?.trim();
+    if (raw == null || raw.isEmpty || !raw.contains('@')) {
+      return 'm●●●●●@email.com';
+    }
+    final e = raw.toLowerCase();
     final parts = e.split('@');
-    final first = parts.first.isEmpty ? '' : parts.first[0];
-    return '$first●●●●●@${parts.last}';
+    final name = parts.first;
+    final domain = parts.sublist(1).join('@');
+    final first = name.isEmpty ? 'm' : name[0];
+    return '$first●●●●●@$domain';
   }
 
   bool get _complete => _controllers.every((c) => c.text.trim().isNotEmpty);

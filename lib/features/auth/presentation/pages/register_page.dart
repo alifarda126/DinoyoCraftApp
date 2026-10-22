@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/app_settings.dart';
 import '../../../../core/assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/dc_button.dart';
@@ -66,7 +67,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       return;
     }
-    context.push('/verify-otp?from=register');
+    final email = _email.text.trim();
+    AppSettings.instance.lastAuthEmail = email;
+    final uri = Uri(
+      path: '/verify-otp',
+      queryParameters: {
+        'from': 'register',
+        if (email.isNotEmpty) 'email': email,
+      },
+    );
+    context.push(uri.toString());
   }
 
   @override
