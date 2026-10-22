@@ -4,11 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
 class PengaturanScreen extends StatefulWidget {
-const   PengaturanScreen({super.key});
+  const PengaturanScreen({super.key});
 
   @override
   State<PengaturanScreen> createState() => _PengaturanScreenState();
@@ -20,23 +21,26 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
   static const String _maskedEmail = 'cus***@gmail.com';
   bool _orderNotification = true;
   bool _whatsAppNotification = true;
-  String _lastPasswordChanged = 'Terakhir diubah 3 bulan lalu';
+  bool _passwordRecentlyChanged = false;
+  String get _lastPasswordChanged => _passwordRecentlyChanged
+      ? 'Baru saja diubah'.tr
+      : 'Terakhir diubah 3 bulan lalu'.tr;
 
   /// Sumber kebenaran tema/bahasa/2FA/perangkat/cache ada di AppSettings
   /// agar seluruh aplikasi ikut berubah saat diubah dari sini.
   AppSettings get _settings => AppSettings.instance;
 
   String get _selectedTheme => switch (_settings.themeMode) {
-        AppThemeMode.light => 'Terang (Light Mode)',
-        AppThemeMode.dark => 'Gelap (Dark Mode)',
-        AppThemeMode.system => 'Mengikuti Sistem',
+        AppThemeMode.light => 'Terang (Light Mode)'.tr,
+        AppThemeMode.dark => 'Gelap (Dark Mode)'.tr,
+        AppThemeMode.system => 'Mengikuti Sistem'.tr,
       };
 
   String get _selectedLanguage =>
       _settings.locale == 'en' ? 'English' : 'Bahasa Indonesia';
   String get _selectedLanguageCode => _settings.locale == 'en' ? 'EN' : 'ID';
 
-  String get _cacheSize => '${_settings.cacheLabel} file sementara';
+  String get _cacheSize => '${_settings.cacheLabel} ${'file sementara'.tr}';
   bool get _isCacheCleaned => _settings.cacheBytes <= 0;
 
   IconData get _currentThemeIcon => switch (_settings.themeMode) {
@@ -85,7 +89,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
     final res = await context.push<bool>('/new-password');
     if (res == true && mounted) {
       setState(() {
-        _lastPasswordChanged = 'Baru saja diubah';
+        _passwordRecentlyChanged = true;
       });
     }
   }
@@ -136,7 +140,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                 _showFeedback('Autentikasi 2 Langkah dinonaktifkan.');
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFBA1A1A),
+                backgroundColor: AppColors.danger,
                 foregroundColor: AppColors.white,
                 shape: StadiumBorder(),
                 elevation: 0,
@@ -158,7 +162,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         builder: (sheetContext) {
           return Container(
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: AppColors.surfaceElevated,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -233,7 +237,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: AppColors.white,
+                            color: AppColors.surfaceElevated,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
@@ -273,7 +277,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: Color(0xFFD4EDDA),
+                            color: AppColors.successSurface,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
@@ -281,7 +285,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF155724),
+                              color: AppColors.successText,
                             ),
                           ),
                         ),
@@ -295,9 +299,9 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: Color(0xFFF9F9F9),
+                      color: AppColors.surfaceSubtle,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Color(0xFFEEEEEE)),
+                      border: Border.all(color: AppColors.divider),
                     ),
                     child: Row(
                       children: [
@@ -364,7 +368,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           builder: (ctx, setSheetState) {
             return Container(
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: AppColors.surfaceElevated,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -431,7 +435,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: AppColors.white,
+                              color: AppColors.surfaceElevated,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
@@ -447,12 +451,16 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    Text(
-                                      'Smartphone Ini',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.ink,
+                                    Flexible(
+                                      child: Text(
+                                        'Smartphone Ini',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.ink,
+                                        ),
                                       ),
                                     ),
                                     SizedBox(width: 8),
@@ -462,7 +470,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Color(0xFFD4EDDA),
+                                        color: AppColors.successSurface,
                                         borderRadius: BorderRadius.circular(
                                           999,
                                         ),
@@ -472,7 +480,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
-                                          color: Color(0xFF155724),
+                                          color: AppColors.successText,
                                         ),
                                       ),
                                     ),
@@ -498,7 +506,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: AppColors.surface,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: AppColors.borderAlt),
                         ),
@@ -553,9 +561,9 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 );
                               },
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Color(0xFFBA1A1A),
+                                foregroundColor: AppColors.danger,
                                 side: BorderSide(
-                                  color: Color(0xFFBA1A1A),
+                                  color: AppColors.danger,
                                 ),
                                 shape: StadiumBorder(),
                                 minimumSize: Size(0, 32),
@@ -597,8 +605,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Color(0xFFBA1A1A),
-                            side: BorderSide(color: Color(0xFFBA1A1A)),
+                            foregroundColor: AppColors.danger,
+                            side: BorderSide(color: AppColors.danger),
                             shape: StadiumBorder(),
                           ),
                         ),
@@ -631,12 +639,12 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       {
         'name': 'Bahasa Indonesia',
         'code': 'ID',
-        'desc': 'Bahasa default sistem aplikasi',
+        'desc': 'Bahasa default sistem aplikasi'.tr,
       },
       {
         'name': 'English',
         'code': 'EN',
-        'desc': 'International English localization',
+        'desc': 'International English localization'.tr,
       },
     ];
 
@@ -644,7 +652,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       builder: (sheetContext) {
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -672,7 +680,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Pilih Bahasa Aplikasi',
+                            'Pilih Bahasa Aplikasi'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -681,7 +689,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Bahasa tampilan menu & pemberitahuan',
+                            'Bahasa tampilan menu & pemberitahuan'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.textSecondary,
@@ -705,11 +713,14 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     pillText: lang['code']!,
                     isSelected: _selectedLanguage == lang['name'],
                     onTap: () {
-                      _settings.setLocale(lang['code'] == 'EN' ? 'en' : 'id');
+                      final isEn = lang['code'] == 'EN';
+                      _settings.setLocale(isEn ? 'en' : 'id');
                       setState(() {});
                       Navigator.pop(sheetContext);
                       _showFeedback(
-                        'Bahasa aplikasi diubah ke ${lang['name']}.',
+                        isEn
+                            ? 'App language changed to English.'
+                            : 'Bahasa aplikasi diubah ke Bahasa Indonesia.',
                       );
                     },
                   ),
@@ -747,7 +758,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       builder: (sheetContext) {
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -775,7 +786,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Pilih Tema Tampilan',
+                            'Pilih Tema Tampilan'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -784,7 +795,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Sesuaikan kenyamanan visual Anda',
+                            'Sesuaikan kenyamanan visual layar'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.textSecondary,
@@ -803,9 +814,14 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                 for (final th in themes) ...[
                   _buildRadioOptionTile(
                     icon: th['icon'] as IconData,
-                    title: th['name'] as String,
-                    subtitle: th['desc'] as String,
-                    isSelected: _selectedTheme == th['name'],
+                    title: (th['name'] as String).tr,
+                    subtitle: (th['desc'] as String).tr,
+                    isSelected: _settings.themeMode ==
+                        (switch (th['name'] as String) {
+                          'Gelap (Dark Mode)' => AppThemeMode.dark,
+                          'Mengikuti Sistem' => AppThemeMode.system,
+                          _ => AppThemeMode.light,
+                        }),
                     onTap: () {
                       final mode = switch (th['name'] as String) {
                         'Gelap (Dark Mode)' => AppThemeMode.dark,
@@ -815,7 +831,11 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       _settings.setThemeMode(mode);
                       setState(() {});
                       Navigator.pop(sheetContext);
-                      _showFeedback('Tema diubah ke ${th['name']}.');
+                      _showFeedback(
+                        AppText.isEnglish
+                            ? 'Theme changed to ${(th['name'] as String).tr}.'
+                            : 'Tema diubah ke ${th['name']}.',
+                      );
                     },
                   ),
                   SizedBox(height: 10),
@@ -1047,7 +1067,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         return Container(
           height: MediaQuery.of(sheetContext).size.height * 0.82,
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: SafeArea(
@@ -1123,7 +1143,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     ],
                   ),
                 ),
-                Divider(height: 20, color: Color(0xFFEEEEEE)),
+                Divider(height: 20, color: AppColors.divider),
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(20, 6, 20, 20),
@@ -1271,7 +1291,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               _showFeedback('Anda telah berhasil keluar dari akun.');
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFBA1A1A),
+              backgroundColor: AppColors.danger,
               foregroundColor: AppColors.white,
               shape: StadiumBorder(),
               elevation: 0,
@@ -1298,35 +1318,63 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final isDark = AppColors.isDark;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Color(0xFFF9F9F9) : AppColors.white,
+          color: isSelected
+              ? (isDark ? const Color(0xFF2E2E33) : AppColors.surfaceSubtle)
+              : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? AppColors.black : AppColors.borderAlt,
-            width: isSelected ? 1.5 : 1,
+            color: isSelected
+                ? (isDark ? Colors.white : AppColors.black)
+                : AppColors.borderAlt,
+            width: isSelected ? 1.6 : 1,
           ),
+          boxShadow: isSelected && isDark
+              ? [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    blurRadius: 10,
+                    spreadRadius: 0.5,
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                color: AppColors.inputBg,
+                color: isSelected
+                    ? (isDark
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : AppColors.black)
+                    : AppColors.inputBg,
                 borderRadius: BorderRadius.circular(10),
+                border: isSelected && isDark
+                    ? Border.all(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        width: 1.2,
+                      )
+                    : null,
               ),
               child: Icon(
                 icon,
-                size: 18,
-                color: isSelected ? AppColors.black : AppColors.ink,
+                size: 19,
+                color: isSelected
+                    ? Colors.white
+                    : AppColors.ink,
               ),
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1340,7 +1388,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     ),
                   ),
                   if (subtitle != null) ...[
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: GoogleFonts.plusJakartaSans(
@@ -1359,26 +1407,38 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                   vertical: 3,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.inputBg,
+                  color: isSelected
+                      ? (isDark
+                          ? Colors.white.withValues(alpha: 0.16)
+                          : AppColors.black)
+                      : AppColors.inputBg,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AppColors.borderAlt),
+                  border: Border.all(
+                    color: isSelected
+                        ? (isDark
+                            ? Colors.white.withValues(alpha: 0.35)
+                            : AppColors.black)
+                        : AppColors.borderAlt,
+                  ),
                 ),
                 child: Text(
                   pillText,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
+                    color: isSelected ? Colors.white : AppColors.ink,
                   ),
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
             ],
             Icon(
               isSelected
                   ? Icons.check_circle_rounded
                   : Icons.radio_button_unchecked_rounded,
-              color: isSelected ? AppColors.black : AppColors.textMuted,
+              color: isSelected
+                  ? (isDark ? Colors.white : AppColors.black)
+                  : AppColors.textMuted,
               size: 20,
             ),
           ],
@@ -1390,68 +1450,71 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
   // ── BUILD UTAMA ───────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
-                children: [
-                  // 1. AKUN & KEAMANAN
-                  _buildGroup(
-                    'AKUN & KEAMANAN',
-                    [
-                      _SettingTile(
-                        icon: Icons.lock_outline_rounded,
-                        title: 'Ubah Kata Sandi',
-                        subtitle: _lastPasswordChanged,
-                        route: '/new-password',
-                        onTap: _navigateToNewPassword,
+    return ListenableBuilder(
+      listenable: _settings,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: AppColors.bg,
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
+                    children: [
+                      // 1. AKUN & KEAMANAN
+                      _buildGroup(
+                        'AKUN & KEAMANAN'.tr,
+                        [
+                          _SettingTile(
+                            icon: Icons.lock_outline_rounded,
+                            title: 'Ubah Kata Sandi'.tr,
+                            subtitle: _lastPasswordChanged,
+                            route: '/new-password',
+                            onTap: _navigateToNewPassword,
+                          ),
+                          _SettingTile(
+                            icon: Icons.verified_user_outlined,
+                            title: 'Autentikasi 2 Langkah (2FA)'.tr,
+                            subtitle: _settings.twoFactorEnabled
+                                ? '${'Aktif via Email'.tr} ($_maskedEmail)'
+                                : 'Tingkatkan keamanan akun via Email OTP'.tr,
+                            onTap: _toggleTwoFactor,
+                            trailing: Switch(
+                              value: _settings.twoFactorEnabled,
+                              activeThumbColor: AppColors.black,
+                              onChanged: (_) => _toggleTwoFactor(),
+                            ),
+                          ),
+                          _SettingTile(
+                            icon: Icons.devices_outlined,
+                            title: 'Perangkat Terhubung'.tr,
+                            subtitle: _settings.hasOtherDevices
+                                ? '${_settings.otherDevices.length + 1} '
+                                    '${'perangkat aktif saat ini'.tr}'
+                                : '1 perangkat aktif saat ini'.tr,
+                            onTap: _openConnectedDevicesModal,
+                          ),
+                          _SettingTile(
+                            icon: Icons.delete_outline_rounded,
+                            title: 'Hapus Akun'.tr,
+                            subtitle: 'Nonaktifkan akun secara permanen'.tr,
+                            destructive: true,
+                            route: '/hapus-akun',
+                          ),
+                        ],
                       ),
-                      _SettingTile(
-                        icon: Icons.verified_user_outlined,
-                        title: 'Autentikasi 2 Langkah (2FA)',
-                        subtitle: _settings.twoFactorEnabled
-                            ? 'Aktif via Email ($_maskedEmail)'
-                            : 'Tingkatkan keamanan akun via Email OTP',
-                        onTap: _toggleTwoFactor,
-                        trailing: Switch(
-                          value: _settings.twoFactorEnabled,
-                          activeThumbColor: AppColors.black,
-                          onChanged: (_) => _toggleTwoFactor(),
-                        ),
-                      ),
-                      _SettingTile(
-                        icon: Icons.devices_outlined,
-                        title: 'Perangkat Terhubung',
-                        subtitle: _settings.hasOtherDevices
-                            ? '${_settings.otherDevices.length + 1} '
-                                'perangkat aktif saat ini'
-                            : '1 perangkat aktif saat ini',
-                        onTap: _openConnectedDevicesModal,
-                      ),
-                      const _SettingTile(
-                        icon: Icons.delete_outline_rounded,
-                        title: 'Hapus Akun',
-                        subtitle: 'Nonaktifkan akun secara permanen',
-                        destructive: true,
-                        route: '/hapus-akun',
-                      ),
-                    ],
-                  ),
                   SizedBox(height: 18),
 
                   // 2. NOTIFIKASI
                   _buildGroup(
-                    'NOTIFIKASI',
+                    'NOTIFIKASI'.tr,
                     [
                       _SettingTile(
                         icon: Icons.local_shipping_outlined,
-                        title: 'Status Pesanan & Pengiriman',
-                        subtitle: 'Update resi pengiriman tembikar & keramik',
+                        title: 'Status Pesanan & Pengiriman'.tr,
+                        subtitle: 'Notifikasi status pesanan dan pengiriman'.tr,
                         onTap: () {
                           setState(
                             () => _orderNotification = !_orderNotification,
@@ -1477,8 +1540,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       ),
                       _SettingTile(
                         icon: Icons.chat_bubble_outline_rounded,
-                        title: 'Notifikasi via WhatsApp',
-                        subtitle: 'Terima nota dan update pengiriman via WA',
+                        title: 'Notifikasi via WhatsApp'.tr,
+                        subtitle: 'Terima update pesanan melalui WhatsApp'.tr,
                         onTap: () {
                           setState(
                             () =>
@@ -1509,28 +1572,28 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
 
                   // 3. PREFERENSI APLIKASI
                   _buildGroup(
-                    'PREFERENSI APLIKASI',
+                    'PREFERENSI APLIKASI'.tr,
                     [
                       _SettingTile(
                         icon: Icons.language_outlined,
-                        title: 'Bahasa Aplikasi',
+                        title: 'Bahasa Aplikasi'.tr,
                         subtitle: _selectedLanguage,
                         trailingPill: _selectedLanguageCode,
                         onTap: _openLanguageModal,
                       ),
                       _SettingTile(
                         icon: _currentThemeIcon,
-                        title: 'Tema Tampilan',
+                        title: 'Tema Tampilan'.tr,
                         subtitle: _selectedTheme,
                         onTap: _openThemeModal,
                       ),
                       _SettingTile(
                         icon: Icons.cleaning_services_outlined,
-                        title: 'Bersihkan Cache',
+                        title: 'Bersihkan Cache'.tr,
                         subtitle: _cacheSize,
                         trailingPillAction: _isCacheCleaned
-                            ? 'Bersih'
-                            : 'Bersihkan',
+                            ? 'Bersih'.tr
+                            : 'Bersihkan'.tr,
                         onPillAction: _clearCache,
                         onTap: _clearCache,
                       ),
@@ -1540,22 +1603,22 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
 
                   // 4. PRIVASI & LEGALITAS
                   _buildGroup(
-                    'PRIVASI & LEGALITAS',
+                    'PRIVASI & LEGALITAS'.tr,
                     [
                       _SettingTile(
                         icon: Icons.privacy_tip_outlined,
-                        title: 'Kebijakan Privasi',
+                        title: 'Kebijakan Privasi'.tr,
                         onTap: _openPrivacyPolicyModal,
                       ),
                       _SettingTile(
                         icon: Icons.description_outlined,
-                        title: 'Syarat & Ketentuan Penggunaan',
+                        title: 'Syarat & Ketentuan Penggunaan'.tr,
                         onTap: _openTermsModal,
                       ),
                       _SettingTile(
                         icon: Icons.gavel_outlined,
                         svgPath: AppAssets.iconGaransi,
-                        title: 'Kebijakan Garansi Barang Pecah Belah',
+                        title: 'Kebijakan Garansi Barang Pecah Belah'.tr,
                         onTap: _openWarrantyModal,
                       ),
                     ],
@@ -1571,24 +1634,24 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       icon: Icon(
                         Icons.logout_rounded,
                         size: 20,
-                        color: Colors.redAccent,
+                        color: AppColors.danger,
                       ),
                       label: Text(
-                        'Keluar dari Akun',
+                        'Keluar dari Akun'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: Colors.redAccent,
+                          color: AppColors.danger,
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                          color: Colors.redAccent,
+                          color: AppColors.danger,
                           width: 1.5,
                         ),
                         shape: StadiumBorder(),
                         padding: const EdgeInsets.symmetric(horizontal: 24),
-                        backgroundColor: Colors.white,
+                        backgroundColor: AppColors.surface,
                       ),
                     ),
                   ),
@@ -1606,7 +1669,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                   SizedBox(height: 3),
                   Center(
                     child: Text(
-                      'Sentra Keramik Dinoyo Malang • Jawa Timur',
+                      'Sentra Keramik Dinoyo Malang • Jawa Timur'.tr,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
@@ -1620,6 +1683,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 
@@ -1640,7 +1705,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           ),
           Expanded(
             child: Text(
-              'Kelola Pengaturan',
+              'Kelola Pengaturan'.tr,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
@@ -1670,7 +1735,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.borderAlt),
           ),
@@ -1681,7 +1746,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                   Divider(
                     height: 1,
                     indent: 60,
-                    color: Color(0xFFEEEEEE),
+                    color: AppColors.divider,
                   ),
                 tiles[i],
               ],
@@ -1722,6 +1787,8 @@ class _SettingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
     final titleColor = destructive ? _destructiveColor : AppColors.ink;
 
     final effectiveTap =
@@ -1738,7 +1805,7 @@ class _SettingTile extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppColors.inputBg,
+                color: isDark ? const Color(0xFF2A2A2A) : AppColors.inputBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: svgPath != null
@@ -1844,7 +1911,7 @@ class _SettingTile extends StatelessWidget {
     );
   }
 
-  static const Color _destructiveColor = Color(0xFFBA1A1A);
+  Color get _destructiveColor => AppColors.danger;
 }
 
 class _LegalSection {

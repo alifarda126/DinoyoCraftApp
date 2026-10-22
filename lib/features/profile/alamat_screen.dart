@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 
 class Alamat {
@@ -53,7 +54,7 @@ const   AlamatScreen({super.key});
 }
 
 class _AlamatScreenState extends State<AlamatScreen> {
-  static const Color _destructive = Color(0xFFBA1A1A);
+  Color get _destructive => AppColors.danger;
 
   final List<Alamat> _addresses = [
     Alamat(
@@ -127,7 +128,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
-          'Hapus Alamat?',
+          'Hapus Alamat?'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 17,
             fontWeight: FontWeight.w800,
@@ -135,7 +136,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
           ),
         ),
         content: Text(
-          'Apakah Anda yakin ingin menghapus alamat "${addr.label}" (${addr.recipient})? Tindakan ini tidak dapat dibatalkan.',
+          'Apakah Anda yakin ingin menghapus alamat "${addr.label.tr}" (${addr.recipient})? Tindakan ini tidak dapat dibatalkan.',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 13,
             height: 1.5,
@@ -146,7 +147,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
             child: Text(
-              'Batal',
+              'Batal'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
@@ -164,7 +165,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                   _addresses[0] = _addresses[0].copyWith(isPrimary: true);
                 }
               });
-              _showFeedback('Alamat "${addr.label}" berhasil dihapus.');
+              _showFeedback('Alamat "${addr.label.tr}" berhasil dihapus.');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: _destructive,
@@ -173,7 +174,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
               elevation: 0,
             ),
             child: Text(
-              'Hapus',
+              'Hapus'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
@@ -192,7 +193,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
       barrierColor: Color(0x73000000),
       builder: (sheetCtx) => Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surfaceElevated,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -223,7 +224,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     ),
                     child: Icon(
                       Icons.location_on_rounded,
-                      color: Color(0xFFBA1A1A),
+                      color: AppColors.danger,
                       size: 22,
                     ),
                   ),
@@ -233,7 +234,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Titik Peta Terverifikasi',
+                          'Titik Peta Terverifikasi'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -241,7 +242,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                           ),
                         ),
                         Text(
-                          '${addr.label} • ${addr.recipient}',
+                          '${addr.label.tr} • ${addr.recipient}',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             color: AppColors.textSecondary,
@@ -273,15 +274,15 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         Icon(
                           Icons.gps_fixed_rounded,
                           size: 16,
-                          color: Color(0xFF155724),
+                          color: AppColors.successText,
                         ),
                         SizedBox(width: 6),
                         Text(
-                          'Koordinat GPS Terhubung',
+                          'Koordinat GPS Terhubung'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF155724),
+                            color: AppColors.successText,
                           ),
                         ),
                       ],
@@ -310,19 +311,25 @@ class _AlamatScreenState extends State<AlamatScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 48,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(sheetCtx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.black,
-                    foregroundColor: AppColors.white,
-                    shape: StadiumBorder(),
-                    elevation: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: AppColors.darkButtonShadow,
                   ),
-                  child: Text(
-                    'Tutup',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(sheetCtx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.black,
+                      foregroundColor: AppColors.white,
+                      shape: AppColors.stadiumButtonShape,
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Tutup'.tr,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
@@ -383,7 +390,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                 maxHeight: MediaQuery.of(context).size.height * 0.88,
               ),
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: AppColors.surfaceElevated,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: SafeArea(
@@ -412,8 +419,8 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               children: [
                                 Text(
                                   isEditing
-                                      ? 'Ubah Alamat Pengiriman'
-                                      : 'Tambah Alamat Baru',
+                                      ? 'Ubah Alamat Pengiriman'.tr
+                                      : 'Tambah Alamat Baru'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
@@ -422,7 +429,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                 ),
                                 SizedBox(height: 2),
                                 Text(
-                                  'Pastikan rincian alamat tepat untuk kurir keramik',
+                                  'Pastikan rincian alamat tepat untuk kurir keramik'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     color: AppColors.textSecondary,
@@ -438,7 +445,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         ],
                       ),
                     ),
-                    Divider(height: 1, color: Color(0xFFEEEEEE)),
+                    Divider(height: 1, color: AppColors.divider),
                     Expanded(
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
@@ -450,14 +457,14 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: Color(0xFFFFDAD6),
+                                color: AppColors.dangerSurface,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     Icons.error_outline_rounded,
-                                    color: Color(0xFFBA1A1A),
+                                    color: AppColors.danger,
                                     size: 18,
                                   ),
                                   SizedBox(width: 8),
@@ -466,7 +473,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                       errorMessage!,
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 12,
-                                        color: Color(0xFFBA1A1A),
+                                        color: AppColors.danger,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -479,7 +486,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
 
                           // Label Alamat Chips
                           Text(
-                            'LABEL ALAMAT',
+                            'LABEL ALAMAT'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
@@ -493,7 +500,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                             children: labelOptions.map((opt) {
                               final isSelected = selectedLabel == opt;
                               return ChoiceChip(
-                                label: Text(opt),
+                                label: Text(opt.tr),
                                 labelPadding: const EdgeInsets.symmetric(
                                   horizontal: 10,
                                 ),
@@ -526,8 +533,8 @@ class _AlamatScreenState extends State<AlamatScreen> {
 
                           // Nama Penerima
                           _buildFormField(
-                            label: 'NAMA PENERIMA',
-                            hint: 'Masukkan nama lengkap penerima',
+                            label: 'NAMA PENERIMA'.tr,
+                            hint: 'Masukkan nama lengkap penerima'.tr,
                             controller: recipientCtrl,
                             icon: Icons.person_outline_rounded,
                           ),
@@ -535,7 +542,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
 
                           // Nomor Telepon
                           _buildFormField(
-                            label: 'NOMOR TELEPON / WHATSAPP',
+                            label: 'NOMOR TELEPON / WHATSAPP'.tr,
                             hint: '+62 8xx-xxxx-xxxx',
                             controller: phoneCtrl,
                             icon: Icons.phone_outlined,
@@ -545,9 +552,9 @@ class _AlamatScreenState extends State<AlamatScreen> {
 
                           // Alamat Lengkap
                           _buildFormField(
-                            label: 'ALAMAT LENGKAP',
+                            label: 'ALAMAT LENGKAP'.tr,
                             hint:
-                                'Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota & kode pos',
+                                'Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan, kota & kode pos'.tr,
                             controller: addressCtrl,
                             icon: Icons.location_on_outlined,
                             maxLines: 3,
@@ -556,9 +563,9 @@ class _AlamatScreenState extends State<AlamatScreen> {
 
                           // Catatan untuk Kurir
                           _buildFormField(
-                            label: 'CATATAN UNTUK KURIR (OPSIONAL)',
+                            label: 'CATATAN UNTUK KURIR (OPSIONAL)'.tr,
                             hint:
-                                'cth: Pagar hitam depan studio keramik, titip satpam',
+                                'cth: Pagar hitam depan studio keramik, titip satpam'.tr,
                             controller: courierNoteCtrl,
                             icon: Icons.note_outlined,
                             maxLines: 2,
@@ -572,7 +579,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               vertical: 10,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.white,
+                              color: AppColors.surface,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(color: AppColors.border),
                             ),
@@ -590,7 +597,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Verifikasi Titik Peta GPS',
+                                        'Verifikasi Titik Peta GPS'.tr,
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
@@ -598,7 +605,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                         ),
                                       ),
                                       Text(
-                                        'Mempermudah kurir melacak alamat akurat',
+                                        'Mempermudah kurir melacak alamat akurat'.tr,
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 11,
                                           color: AppColors.textSecondary,
@@ -612,7 +619,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                   activeThumbColor: AppColors.white,
                                   activeTrackColor: AppColors.black,
                                   inactiveThumbColor: AppColors.white,
-                                  inactiveTrackColor: Color(0xFFE4E2E2),
+                                  inactiveTrackColor: AppColors.border,
                                   trackOutlineColor:
                                       const WidgetStatePropertyAll<Color?>(
                                     Colors.transparent,
@@ -632,7 +639,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               vertical: 10,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.white,
+                              color: AppColors.surface,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(color: AppColors.border),
                             ),
@@ -650,7 +657,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Jadikan Alamat Utama',
+                                        'Jadikan Alamat Utama'.tr,
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
@@ -658,7 +665,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                         ),
                                       ),
                                       Text(
-                                        'Alamat prioritas saat checkout belanjaan',
+                                        'Alamat prioritas saat checkout belanjaan'.tr,
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 11,
                                           color: AppColors.textSecondary,
@@ -672,7 +679,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                   activeThumbColor: AppColors.white,
                                   activeTrackColor: AppColors.black,
                                   inactiveThumbColor: AppColors.white,
-                                  inactiveTrackColor: Color(0xFFE4E2E2),
+                                  inactiveTrackColor: AppColors.border,
                                   trackOutlineColor:
                                       const WidgetStatePropertyAll<Color?>(
                                     Colors.transparent,
@@ -689,7 +696,12 @@ class _AlamatScreenState extends State<AlamatScreen> {
                           SizedBox(
                             width: double.infinity,
                             height: 50,
-                            child: ElevatedButton(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(999),
+                                boxShadow: AppColors.darkButtonShadow,
+                              ),
+                              child: ElevatedButton(
                               onPressed: () {
                                 final r = recipientCtrl.text.trim();
                                 final p = phoneCtrl.text.trim();
@@ -778,13 +790,13 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.black,
                                 foregroundColor: AppColors.white,
-                                shape: StadiumBorder(),
+                                shape: AppColors.stadiumButtonShape,
                                 elevation: 0,
                               ),
                               child: Text(
                                 isEditing
-                                    ? 'Simpan Perubahan'
-                                    : 'Simpan Alamat Baru',
+                                    ? 'Simpan Perubahan'.tr
+                                    : 'Simpan Alamat Baru'.tr,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
@@ -792,6 +804,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               ),
                             ),
                           ),
+                        ),
                         ],
                       ),
                     ),
@@ -828,7 +841,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.border),
           ),
@@ -886,11 +899,15 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            'Alamat Pengiriman Terdaftar',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
+                          Flexible(
+                            child: Text(
+                              'Alamat Pengiriman Terdaftar'.tr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ),
                           Spacer(),
@@ -905,7 +922,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               border: Border.all(color: AppColors.borderAlt),
                             ),
                             child: Text(
-                              '${_addresses.length} dari 5 alamat',
+                              '${_addresses.length} ${'dari 5 alamat'.tr}',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -936,7 +953,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               ),
                               SizedBox(height: 16),
                               Text(
-                                'Belum Ada Alamat Tersimpan',
+                                'Belum Ada Alamat Tersimpan'.tr,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -945,7 +962,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                               ),
                               SizedBox(height: 6),
                               Text(
-                                'Tambahkan alamat pengiriman untuk memudahkan proses pembelian tembikar dan keramik Dinoyo.',
+                                'Tambahkan alamat pengiriman untuk memudahkan proses pembelian tembikar dan keramik Dinoyo.'.tr,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 13,
@@ -972,7 +989,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         14 + MediaQuery.paddingOf(context).bottom,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.white.withValues(alpha: 0.9),
+                        color: AppColors.bg.withValues(alpha: 0.9),
                         boxShadow: [
                           BoxShadow(
                             color: Color(0x0D000000),
@@ -987,26 +1004,32 @@ class _AlamatScreenState extends State<AlamatScreen> {
                           SizedBox(
                             width: double.infinity,
                             height: 48,
-                            child: FilledButton.icon(
-                              onPressed: () => _openAddressFormSheet(),
-                              icon: Icon(Icons.add_rounded, size: 18),
-                              label: Text(
-                                'Tambah Alamat Baru',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.white,
-                                ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(999),
+                                boxShadow: AppColors.darkButtonShadow,
                               ),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.black,
-                                shape: StadiumBorder(),
+                              child: FilledButton.icon(
+                                onPressed: () => _openAddressFormSheet(),
+                                icon: Icon(Icons.add_rounded, size: 18),
+                                label: Text(
+                                  'Tambah Alamat Baru'.tr,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.white,
+                                  ),
+                                ),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.black,
+                                  shape: AppColors.stadiumButtonShape,
+                                ),
                               ),
                             ),
                           ),
                           SizedBox(height: 8),
                           Text(
-                            'Maksimal 5 alamat tersimpan untuk kemudahan checkout.',
+                            'Maksimal 5 alamat tersimpan untuk kemudahan checkout.'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.textSecondary,
@@ -1042,7 +1065,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
           ),
           Expanded(
             child: Text(
-              'Kelola Alamat',
+              'Kelola Alamat'.tr,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
@@ -1062,7 +1085,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: addr.isPrimary ? AppColors.black : AppColors.borderAlt,
@@ -1103,7 +1126,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                       ),
                       SizedBox(width: 4),
                       Text(
-                        'Utama',
+                        'Utama'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -1121,12 +1144,12 @@ class _AlamatScreenState extends State<AlamatScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Color(0xFFFAF9F9),
+                  color: AppColors.surfaceSubtle,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(color: AppColors.borderAlt),
                 ),
                 child: Text(
-                  addr.label,
+                  addr.label.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -1176,7 +1199,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                           ),
                           SizedBox(width: 10),
                           Text(
-                            'Jadikan Utama',
+                            'Jadikan Utama'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -1196,7 +1219,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         ),
                         SizedBox(width: 10),
                         Text(
-                          'Ubah Alamat',
+                          'Ubah Alamat'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -1216,7 +1239,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         ),
                         SizedBox(width: 10),
                         Text(
-                          'Salin Alamat',
+                          'Salin Alamat'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -1236,7 +1259,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         ),
                         SizedBox(width: 10),
                         Text(
-                          'Hapus Alamat',
+                          'Hapus Alamat'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -1292,7 +1315,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Catatan untuk kurir:',
+                    'Catatan untuk kurir:'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -1304,7 +1327,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       height: 1.5,
-                      color: Color(0xFF4C4546),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -1316,33 +1339,40 @@ class _AlamatScreenState extends State<AlamatScreen> {
           if (addr.isPrimary)
             Row(
               children: [
-                InkWell(
-                  onTap: () => _showPinpointModal(addr),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 4,
-                      horizontal: 2,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          addr.verifiedPin
-                              ? 'Titik Peta\nTerverifikasi'
-                              : 'Atur Titik\nPeta GPS',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            height: 1.3,
+                Flexible(
+                  child: InkWell(
+                    onTap: () => _showPinpointModal(addr),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 4,
+                        horizontal: 2,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 16,
                             color: AppColors.textSecondary,
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              addr.verifiedPin
+                                  ? 'Titik Peta\nTerverifikasi'.tr
+                                  : 'Atur Titik\nPeta GPS'.tr,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                height: 1.3,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1361,7 +1391,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                   ),
                   child: Text(
-                    'Ubah Alamat',
+                    'Ubah Alamat'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -1387,7 +1417,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                   child: GestureDetector(
                     onTap: () => _makePrimary(index),
                     child: Text(
-                      'Jadikan Alamat Utama',
+                      'Jadikan Alamat Utama'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -1430,7 +1460,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       child: Text(
-                        'Ubah',
+                        'Ubah'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -1450,7 +1480,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       child: Text(
-                        'Hapus',
+                        'Hapus'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

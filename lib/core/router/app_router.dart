@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../app_settings.dart';
 import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/new_password_screen.dart';
@@ -29,41 +30,101 @@ import '../../features/workshop/workshop_screen.dart';
 
 final GlobalKey<NavigatorState> _rootKey = GlobalKey<NavigatorState>();
 
+/// Membungkus setiap layar dengan pendengar [AppSettings]: saat tema/bahasa
+/// diganti, layar dibangun ulang dengan instance BARU sehingga seluruh token
+/// warna (AppColors) ikut terbaca ulang — tanpa hot reload dan tanpa kehilangan
+/// state navigasi (cabang shell bertahan lewat GlobalKey go_router).
+///
+/// Setiap re-render diberi animasi fade-in singkat agar perpindahan tema
+/// terasa halus, bukan "melompat".
+Widget _live(Widget Function() build) => _LiveScreen(build: build);
+
+class _LiveScreen extends StatefulWidget {
+  const _LiveScreen({required this.build});
+
+  final Widget Function() build;
+
+  @override
+  State<_LiveScreen> createState() => _LiveScreenState();
+}
+
+class _LiveScreenState extends State<_LiveScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fade = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 280),
+    value: 1,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    AppSettings.instance.addListener(_onSettingsChanged);
+  }
+
+  @override
+  void dispose() {
+    AppSettings.instance.removeListener(_onSettingsChanged);
+    _fade.dispose();
+    super.dispose();
+  }
+
+  void _onSettingsChanged() {
+    setState(() {});
+    // Fade-in dari 25% agar teks tidak menghilang total saat transisi.
+    _fade.forward(from: 0.25);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: _fade, curve: Curves.easeOut),
+      child: widget.build(),
+    );
+  }
+}
+
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootKey,
   initialLocation: '/',
   routes: [
-    GoRoute(path: '/', builder: (context, state) => OnboardingScreen()),
-    GoRoute(path: '/login', builder: (context, state) => LoginScreen()),
+    GoRoute(
+      path: '/',
+      builder: (context, state) => _live(OnboardingScreen.new),
+    ),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => _live(LoginScreen.new),
+    ),
     GoRoute(
       path: '/register',
-      builder: (context, state) => RegisterScreen(),
+      builder: (context, state) => _live(RegisterScreen.new),
     ),
     GoRoute(
       path: '/forgot-password',
-      builder: (context, state) => ForgotPasswordScreen(),
+      builder: (context, state) => _live(ForgotPasswordScreen.new),
     ),
     GoRoute(
       path: '/new-password',
-      builder: (context, state) => NewPasswordScreen(),
+      builder: (context, state) => _live(NewPasswordScreen.new),
     ),
     GoRoute(
       path: '/verify-otp',
       builder: (context, state) {
         final from = state.uri.queryParameters['from'] ?? 'register';
-        return OtpScreen(from: from);
+        return _live(() => OtpScreen(from: from));
       },
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
-        return MainShell(navigationShell: navigationShell);
+        return _live(() => MainShell(navigationShell: navigationShell));
       },
       branches: [
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/home',
-              builder: (context, state) => HomeScreen(),
+              builder: (context, state) => _live(HomeScreen.new),
             ),
           ],
         ),
@@ -74,7 +135,7 @@ final GoRouter appRouter = GoRouter(
               builder: (context, state) {
                 final category =
                     state.uri.queryParameters['category'] ?? 'Semua';
-                return ProductsScreen(initialCategory: category);
+                return _live(() => ProductsScreen(initialCategory: category));
               },
             ),
           ],
@@ -83,7 +144,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/stores',
-              builder: (context, state) => StoresScreen(),
+              builder: (context, state) => _live(StoresScreen.new),
             ),
           ],
         ),
@@ -91,7 +152,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/workshop',
-              builder: (context, state) => WorkshopScreen(),
+              builder: (context, state) => _live(WorkshopScreen.new),
             ),
           ],
         ),
@@ -100,7 +161,7 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/profile',
-              builder: (context, state) => ProfileScreen(),
+              builder: (context, state) => _live(ProfileScreen.new),
             ),
           ],
         ),
@@ -108,70 +169,81 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/help',
-      builder: (context, state) => HelpScreen(),
+      builder: (context, state) => _live(HelpScreen.new),
     ),
     GoRoute(
       path: '/checkout',
-      builder: (context, state) => CheckoutScreen(),
+      builder: (context, state) => _live(CheckoutScreen.new),
     ),
-    GoRoute(path: '/cart', builder: (context, state) => CartScreen()),
+    GoRoute(path: '/cart', builder: (context, state) => _live(CartScreen.new)),
     GoRoute(
       path: '/product/:id',
-      builder: (context, state) =>
-          ProductDetailScreen(productId: state.pathParameters['id']!),
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return _live(() => ProductDetailScreen(productId: id));
+      },
     ),
     GoRoute(
       path: '/store/:index',
-      builder: (context, state) => StoreDetailScreen(
-        storeIndex: int.tryParse(state.pathParameters['index'] ?? '') ?? 0,
-      ),
+      builder: (context, state) {
+        final index =
+            int.tryParse(state.pathParameters['index'] ?? '') ?? 0;
+        return _live(() => StoreDetailScreen(storeIndex: index));
+      },
     ),
     GoRoute(
       path: '/notifications',
-      builder: (context, state) => NotificationsScreen(),
+      builder: (context, state) => _live(NotificationsScreen.new),
     ),
     GoRoute(
       path: '/profile/edit',
-      builder: (context, state) =>
-          AccountSettingsScreen(type: AccountScreenType.profile),
+      builder: (context, state) => _live(
+        () => AccountSettingsScreen(type: AccountScreenType.profile),
+      ),
     ),
     GoRoute(
       path: '/addresses',
-      builder: (context, state) =>
-          AccountSettingsScreen(type: AccountScreenType.address),
+      builder: (context, state) => _live(
+        () => AccountSettingsScreen(type: AccountScreenType.address),
+      ),
     ),
     GoRoute(
       path: '/settings',
-      builder: (context, state) =>
-          AccountSettingsScreen(type: AccountScreenType.settings),
+      builder: (context, state) => _live(
+        () => AccountSettingsScreen(type: AccountScreenType.settings),
+      ),
     ),
     GoRoute(
       path: '/chatbot',
-      builder: (context, state) => ChatbotScreen(),
+      builder: (context, state) => _live(ChatbotScreen.new),
     ),
     GoRoute(
       path: '/messages',
-      builder: (context, state) => ChatListScreen(),
+      builder: (context, state) => _live(ChatListScreen.new),
     ),
     GoRoute(
       path: '/chat-room',
-      builder: (context, state) => ChatRoomScreen(
-        storeName: state.uri.queryParameters['store'] ?? 'Dinoyo Ceramic Studio',
-      ),
+      builder: (context, state) {
+        final storeName = state.uri.queryParameters['store'] ??
+            'Dinoyo Ceramic Studio';
+        return _live(() => ChatRoomScreen(storeName: storeName));
+      },
     ),
     GoRoute(
       path: '/reviews',
-      builder: (context, state) => ReviewsScreen(
-        storeName: state.uri.queryParameters['store'] ?? 'Dinoyo Ceramic Studio',
-      ),
+      builder: (context, state) {
+        final storeName = state.uri.queryParameters['store'] ??
+            'Dinoyo Ceramic Studio';
+        return _live(() => ReviewsScreen(storeName: storeName));
+      },
     ),
     GoRoute(
       path: '/review/write',
-      builder: (context, state) => WriteReviewScreen(),
+      builder: (context, state) => _live(WriteReviewScreen.new),
     ),
     GoRoute(
       path: '/hapus-akun',
-      builder: (context, state) => DeleteAccountScreen(),
+      builder: (context, state) => _live(DeleteAccountScreen.new),
     ),
   ],
 );

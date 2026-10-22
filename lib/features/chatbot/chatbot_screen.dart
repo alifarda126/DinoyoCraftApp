@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -71,11 +72,11 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
   final _scroll = ScrollController();
   bool _showQuickReplies = true;
 
-  final List<_ChatMessage> _messages = [
+  late final List<_ChatMessage> _messages = [
     _ChatMessage(
-      text: 'Halo! 👋\n\nSaya ClayBot, asisten DinoyoCraft. '
+      text: ('Halo! 👋\n\nSaya ClayBot, asisten DinoyoCraft. '
           'Saya siap membantu kamu menemukan produk keramik lokal, '
-          'mencari studio toko, info jadwal workshop, hingga bantuan pesananmu.',
+          'mencari studio toko, info jadwal workshop, hingga bantuan pesananmu.').tr,
       isBot: true,
     ),
   ];
@@ -144,7 +145,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
     ];
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -209,7 +210,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
     ];
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -273,7 +274,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
       height: screenH * 0.82,
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -285,7 +286,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Color(0xFFD9D9D9),
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -348,7 +349,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                         ),
                       ),
                       Text(
-                        'Asisten DinoyoCraft',
+                        'Asisten DinoyoCraft'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -366,7 +367,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
               ],
             ),
           ),
-          Divider(height: 1, color: Color(0xFFEEEEEE)),
+          Divider(height: 1, color: AppColors.divider),
 
           // ── messages list ─────────────────────────────────────────────
           Expanded(
@@ -391,7 +392,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      'Apa yang ingin kamu cari?',
+                      'Apa yang ingin kamu cari?'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -408,13 +409,13 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppColors.surface,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                                color: Color(0xFFDDDDDD), width: 1),
+                                color: AppColors.border, width: 1),
                           ),
                           child: Text(
-                            '${qr.$1} ${qr.$2}',
+                            '${qr.$1} ${qr.$2.tr}',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -432,19 +433,25 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
           // ── input bar ─────────────────────────────────────────────────
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
+              border: Border(
+                top: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.5),
+                  width: 1,
+                ),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: Colors.black.withValues(alpha: AppColors.isDark ? 0.2 : 0.04),
                   blurRadius: 8,
-                  offset: Offset(0, -2),
+                  offset: const Offset(0, -2),
                 ),
               ],
             ),
             padding: EdgeInsets.fromLTRB(
-                12,
+                14,
                 10,
-                12,
+                14,
                 // Keyboard inset ATAU gesture nav bar (whichever is taller)
                 10 + (bottomInset > 0
                     ? bottomInset.clamp(0.0, 400.0)
@@ -453,95 +460,137 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // + attachment button
                     GestureDetector(
                       onTap: _openAttachmentSheet,
+                      behavior: HitTestBehavior.opaque,
                       child: Container(
-                        width: 40,
-                        height: 40,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
-                          color: Color(0xFFF5F5F5),
+                          color: AppColors.surfaceSubtle,
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.border.withValues(alpha: 0.6),
+                            width: 1,
+                          ),
                         ),
                         child: Center(
                           child: SvgPicture.asset(
                             AppAssets.iconBerkas,
                             width: 20,
                             height: 20,
+                            colorFilter: ColorFilter.mode(
+                              AppColors.ink,
+                              BlendMode.srcIn,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(width: 10),
-                    // text field
+                    const SizedBox(width: 10),
+                    // text field container
                     Expanded(
                       child: Container(
                         height: 44,
                         decoration: BoxDecoration(
-                          color: Color(0xFFF5F5F5),
+                          color: AppColors.surfaceSubtle,
                           borderRadius: BorderRadius.circular(22),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: TextField(
-                          controller: _input,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            color: AppColors.ink,
+                          border: Border.all(
+                            color: AppColors.border.withValues(alpha: 0.6),
+                            width: 1,
                           ),
-                          decoration: InputDecoration(
-                            hintText: 'Tulis pesan kamu...',
-                            hintStyle: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              color: AppColors.textMuted,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _input,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  color: AppColors.ink,
+                                ),
+                                cursorColor: AppColors.ink,
+                                decoration: InputDecoration(
+                                  hintText: 'Tulis pesan kamu...'.tr,
+                                  hintStyle: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14,
+                                    color: AppColors.textMuted,
+                                  ),
+                                  isDense: true,
+                                  filled: false,
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  focusedErrorBorder: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                onSubmitted: _send,
+                              ),
                             ),
-                            border: InputBorder.none,
-                            isDense: true,
-                            suffixIcon: GestureDetector(
+                            GestureDetector(
                               onTap: _openEmojiSheet,
+                              behavior: HitTestBehavior.opaque,
                               child: Padding(
-                                padding: const EdgeInsets.only(right: 4.0),
+                                padding: const EdgeInsets.only(right: 14, left: 4),
                                 child: SvgPicture.asset(
                                   AppAssets.iconEmoji,
                                   width: 20,
                                   height: 20,
+                                  colorFilter: ColorFilter.mode(
+                                    AppColors.textSecondary,
+                                    BlendMode.srcIn,
+                                  ),
                                 ),
                               ),
                             ),
-                            suffixIconConstraints: BoxConstraints(
-                              minWidth: 32,
-                              minHeight: 32,
-                            ),
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          onSubmitted: _send,
+                          ],
                         ),
                       ),
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     // send button
                     GestureDetector(
                       onTap: () => _send(_input.text),
+                      behavior: HitTestBehavior.opaque,
                       child: Container(
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
                           color: AppColors.black,
                           shape: BoxShape.circle,
+                          border: AppColors.isDark
+                              ? Border.all(
+                                  color: Colors.white.withValues(alpha: 0.35),
+                                  width: 1.2,
+                                )
+                              : null,
+                          boxShadow: AppColors.darkButtonShadow,
                         ),
                         child: Center(
                           child: SvgPicture.asset(
                             AppAssets.iconKirimPesan,
                             width: 16,
                             height: 16,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'ClayBot memiliki batasan tertentu, cerdaslah dalam bertanya...',
                   style: GoogleFonts.plusJakartaSans(
@@ -592,7 +641,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Color(0xFFF5F5F5),
+                  color: AppColors.surfaceSubtle,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(4),
                     topRight: Radius.circular(16),
@@ -685,7 +734,7 @@ const   ChatbotScreen({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.bg,
       body: Builder(
         builder: (ctx) {
           WidgetsBinding.instance.addPostFrameCallback((_) {

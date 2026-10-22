@@ -21,20 +21,28 @@ const   DcAppHeader({
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
+    final logoAsset = isDark ? AppAssets.logoWhite : AppAssets.logoBlack;
+
     Widget content = SafeArea(
       bottom: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 4, 16, 4),
         child: Row(
           children: [
-            Image.asset(AppAssets.logoBlack, width: 36, height: 36),
+            Image.asset(logoAsset, width: 36, height: 36),
             SizedBox(width: 10),
-            Text(
-              'DinoyoCraft',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.ink,
+            Flexible(
+              child: Text(
+                'DinoyoCraft',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                ),
               ),
             ),
             Spacer(),
@@ -76,9 +84,9 @@ const   DcAppHeader({
     if (showBorder) {
       content = Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           border: Border(
-            bottom: BorderSide(color: Color(0xFFEAEAEA)),
+            bottom: BorderSide(color: AppColors.divider),
           ),
         ),
         child: content,
@@ -141,9 +149,9 @@ class _IconBtn extends StatelessWidget {
                   width: dotSize,
                   height: dotSize,
                   decoration: BoxDecoration(
-                    color: AppColors.black,
+                    color: AppColors.ink,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
+                    border: Border.all(color: AppColors.surface, width: 1.5),
                   ),
                 ),
               ),
@@ -155,9 +163,9 @@ class _IconBtn extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   constraints: BoxConstraints(minWidth: 15),
                   decoration: BoxDecoration(
-                    color: AppColors.black,
+                    color: AppColors.ink,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: Colors.white, width: 1.2),
+                    border: Border.all(color: AppColors.surface, width: 1.2),
                   ),
                   child: Text(
                     badge!,
@@ -165,7 +173,7 @@ class _IconBtn extends StatelessWidget {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 8.5,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: AppColors.surface,
                     ),
                   ),
                 ),
@@ -229,12 +237,12 @@ class _DcHeaderDelegate extends SliverPersistentHeaderDelegate {
     return SizedBox(
       height: topPad + contentH,
       child: Material(
-        color: Colors.white, // solid white → konten scroll tidak tembus
+        color: AppColors.surface,
         child: Container(
           // Garis batas tipis agar jelas di mana akhir header.
           decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: Color(0xFFEAEAEA)),
+              bottom: BorderSide(color: AppColors.divider),
             ),
           ),
           child: DcAppHeader(showActions: showActions),
@@ -245,7 +253,8 @@ class _DcHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_DcHeaderDelegate old) =>
-      old.showActions != showActions ||
-      old.topPad != topPad ||
-      old.contentH != contentH;
+      // Selalu rebuild: delegat membaca token warna (AppColors) saat build.
+      // False akan mempertahankan child lama saat tema berganti — header
+      // jadi tidak ikut terang/gelap.
+      true;
 }

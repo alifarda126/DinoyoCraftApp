@@ -8,13 +8,6 @@ import 'core/theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Pastikan konten tidak menembus status bar
-  SystemChrome.setSystemUIOverlayStyle(
-    SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ),
-  );
   runApp(DinoyoCraftApp());
 }
 
@@ -48,15 +41,8 @@ class _DinoyoCraftAppState extends State<DinoyoCraftApp> {
       builder: (context, _) {
         final settings = AppSettings.instance;
 
-        // Sinkronkan flag warna global SEBELUM subtree dibangun.
-        final platformDark =
-            View.of(context).platformDispatcher.platformBrightness ==
-                Brightness.dark;
-        AppColors.isDark = switch (settings.themeMode) {
-          AppThemeMode.light => false,
-          AppThemeMode.dark => true,
-          AppThemeMode.system => platformDark,
-        };
+        // ThemeMode menentukan tema Material. Token warna kustom disinkronkan
+        // kembali di builder MaterialApp dari brightness yang benar-benar aktif.
         final themeMode = switch (settings.themeMode) {
           AppThemeMode.light => ThemeMode.light,
           AppThemeMode.dark => ThemeMode.dark,
@@ -71,6 +57,39 @@ class _DinoyoCraftAppState extends State<DinoyoCraftApp> {
           darkTheme: AppTheme.dark,
           themeMode: themeMode,
           routerConfig: appRouter,
+          builder: (context, child) {
+            // Gunakan brightness dari Theme di dalam MaterialApp, bukan status
+            // lama sebelum perpindahan mode selesai dibangun.
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            AppColors.isDark = isDark;
+
+            // Status bar & navigation bar ikut mode tema — tanpa ini ikon
+            // status bar gelap tak terlihat di mode gelap.
+            SystemChrome.setSystemUIOverlayStyle(
+              SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness:
+                    isDark ? Brightness.light : Brightness.dark,
+                statusBarBrightness:
+                    isDark ? Brightness.dark : Brightness.light,
+                systemNavigationBarColor:
+                    isDark ? const Color(0xFF121212) : Colors.white,
+                systemNavigationBarIconBrightness:
+                    isDark ? Brightness.light : Brightness.dark,
+              ),
+            );
+
+            // Layar membaca token warna (AppColors) saat build. Pergantian
+            // tema/bahasa tidak otomatis membangun ulang subtree di bawah
+            // Router, sehingga warna lama terpakai sampai hot reload. Key
+            // di bawah memaksa seluruh subtree dibangun ulang SAAT mode
+            // berubah — state navigator (route, input, scroll) tetap utuh
+            // karena reparenting GlobalKey milik go_router.
+            return KeyedSubtree(
+              key: ObjectKey((isDark, settings.locale)),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
         );
       },
     );

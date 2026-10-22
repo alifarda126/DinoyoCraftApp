@@ -15,7 +15,7 @@ const   ForgotPasswordScreen({super.key});
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  static const String _illustration = 'assets/images/Icon_lupa_password.jpg';
+  static const String _illustration = AppAssets.iconLupaPassword;
 
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
@@ -43,7 +43,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   // ═══ Header: ← Kembali ........ (?) ═════════════════════════════════════
   PreferredSizeWidget _buildHeader() {
     return AppBar(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -89,7 +89,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.bg,
       appBar: _buildHeader(),
       body: SafeArea(
         child: LayoutBuilder(
@@ -166,20 +166,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         // ── Tombol Kirim Kode Verifikasi ──
                         SizedBox(
                           height: 52,
-                          child: FilledButton(
-                            onPressed: _submit,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.black,
-                              foregroundColor: AppColors.white,
-                              shape: StadiumBorder(),
-                              elevation: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              boxShadow: AppColors.darkButtonShadow,
                             ),
-                            child: Text(
-                              'Kirim Kode Verifikasi',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.white,
+                            child: FilledButton(
+                              onPressed: _submit,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.black,
+                                foregroundColor: AppColors.white,
+                                shape: AppColors.stadiumButtonShape,
+                                elevation: 0,
+                              ),
+                              child: Text(
+                                'Kirim Kode Verifikasi',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -225,7 +231,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             onPressed: () => context.go('/login'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.ink,
-                              backgroundColor: AppColors.white,
+                              backgroundColor: AppColors.surface,
                               shape: StadiumBorder(),
                               side: BorderSide(
                                 color: AppColors.border,

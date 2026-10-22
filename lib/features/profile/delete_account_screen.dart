@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
-const   DeleteAccountScreen({super.key});
+  const DeleteAccountScreen({super.key});
 
   @override
   State<DeleteAccountScreen> createState() => _DeleteAccountScreenState();
 }
 
 class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
-  static const Color _destructive = Color(0xFFBA1A1A);
-  static const Color _bannerBg = Color(0xFFFFDAD6);
-  static const Color _bannerText = Color(0xFF93000A);
+  Color get _destructive => AppColors.danger;
+  Color get _bannerBg => AppColors.dangerSurface;
+  Color get _bannerText => AppColors.dangerText;
 
   static const List<String> _reasons = [
     'Sudah jarang membeli keramik',
@@ -37,7 +38,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Hapus Akun?',
+          'Hapus Akun?'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 17,
             fontWeight: FontWeight.w800,
@@ -45,8 +46,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
           ),
         ),
         content: Text(
-          'Akun DinoyoCraft kamu akan dihapus secara permanen. Tindakan ini '
-          'tidak dapat dibatalkan.',
+          'Akun DinoyoCraft kamu akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 13,
             height: 1.5,
@@ -57,7 +57,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
-              'Batalkan',
+              'Batalkan'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -74,7 +74,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               ),
             ),
             child: Text(
-              'Hapus',
+              'Hapus'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -92,7 +92,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
           behavior: SnackBarBehavior.floating,
           backgroundColor: AppColors.black,
           content: Text(
-            'Permintaan penghapusan akun terkirim (demo).',
+            'Permintaan penghapusan akun terkirim (demo).'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               color: AppColors.white,
@@ -130,7 +130,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   ),
                   Expanded(
                     child: Text(
-                      'Hapus Akun',
+                      'Hapus Akun'.tr,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 16,
@@ -150,7 +150,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   _buildWarningBanner(),
                   SizedBox(height: 20),
                   Text(
-                    'Beri tahu kami alasan kamu (Opsional)',
+                    'Beri tahu kami alasan kamu (Opsional)'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -159,8 +159,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Masukan kamu sangat berharga untuk kemajuan perajin '
-                    'keramik lokal Dinoyo.',
+                    'Masukan kamu sangat berharga untuk kemajuan perajin keramik lokal Dinoyo.'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -173,7 +172,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   _buildConfirmationCard(),
                   SizedBox(height: 20),
                   Text(
-                    'Masukkan Kata Sandi untuk Konfirmasi',
+                    'Masukkan Kata Sandi untuk Konfirmasi'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -190,7 +189,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                       color: AppColors.ink,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Masukkan kata sandi akunmu',
+                      hintText: 'Masukkan kata sandi akunmu'.tr,
                       hintStyle: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
                         color: AppColors.textMuted,
@@ -237,8 +236,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    'Verifikasi keamanan untuk memastikan ini benar-benar '
-                    'pemilik akun.',
+                    'Verifikasi keamanan untuk memastikan ini benar-benar pemilik akun.'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -256,7 +254,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                         color: AppColors.white,
                       ),
                       label: Text(
-                        'Hapus Akun Secara Permanen',
+                        'Hapus Akun Secara Permanen'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -286,7 +284,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       decoration: BoxDecoration(
         color: _bannerBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(0x4DBA1A1A)),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,7 +300,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Apakah kamu yakin ingin menghapus akun?',
+                  'Apakah kamu yakin ingin menghapus akun?'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -321,9 +319,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 color: AppColors.textSecondary,
               ),
               children: [
-                TextSpan(text: 'Tindakan ini bersifat '),
+                TextSpan(text: 'Tindakan ini bersifat '.tr),
                 TextSpan(
-                  text: 'permanen dan tidak dapat dibatalkan',
+                  text: 'permanen dan tidak dapat dibatalkan'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
@@ -332,8 +330,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 ),
                 TextSpan(
                   text:
-                      '. Seluruh data profil, riwayat kurasi produk keramik, '
-                      'serta poin DinoyoCraft kamu akan dihapus selamanya.',
+                      '. Seluruh data profil, riwayat kurasi produk keramik, serta poin DinoyoCraft kamu akan dihapus selamanya.'.tr,
                 ),
               ],
             ),
@@ -357,7 +354,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? AppColors.ink : AppColors.borderAlt,
@@ -370,12 +367,12 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   ? Icons.check_circle_rounded
                   : Icons.circle_outlined,
               size: 18,
-              color: selected ? AppColors.ink : Color(0xFF7E7576),
+              color: selected ? AppColors.ink : AppColors.textMuted,
             ),
             SizedBox(width: 10),
             Expanded(
               child: Text(
-                reason,
+                reason.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   color: AppColors.ink,
@@ -395,7 +392,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _confirmed ? AppColors.ink : AppColors.borderAlt,
@@ -410,9 +407,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               margin: const EdgeInsets.only(top: 1),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4),
-                color: _confirmed ? AppColors.ink : AppColors.white,
+                color: _confirmed ? AppColors.ink : AppColors.surface,
                 border: Border.all(
-                  color: _confirmed ? AppColors.ink : Color(0xFF7E7576),
+                  color: _confirmed ? AppColors.ink : AppColors.textMuted,
                   width: 1.4,
                 ),
               ),
@@ -427,8 +424,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Saya mengerti konsekuensi penghapusan akun DinoyoCraft ini '
-                'dan menyatakan bahwa keputusan ini bersifat final.',
+                'Saya mengerti konsekuensi penghapusan akun DinoyoCraft ini dan menyatakan bahwa keputusan ini bersifat final.'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   height: 1.55,

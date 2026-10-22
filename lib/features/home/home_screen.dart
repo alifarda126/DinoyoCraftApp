@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/category_chip.dart';
@@ -11,7 +12,7 @@ import '../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
 
 class HomeScreen extends StatefulWidget {
-const   HomeScreen({super.key});
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -51,15 +52,29 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  Future<void> _handleRefresh() async {
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final picks = MockData.filterProducts(category: _category)
         .take(4)
         .toList();
+    final topHeaderHeight = MediaQuery.paddingOf(context).top + 48.0;
 
-    return CustomScrollView(
-      slivers: [
-        SliverPinnedDcHeader(),
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      color: AppColors.ink,
+      backgroundColor: AppColors.surfaceElevated,
+      edgeOffset: topHeaderHeight,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        slivers: [
+          SliverPinnedDcHeader(),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
@@ -68,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 // Location label
                 Text(
-                  'Sentra Keramik Dinoyo, Kota Malang',
+                  'Sentra Keramik Dinoyo, Kota Malang'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -78,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(height: 10),
                 // Hero headline — sesuai Proto_Final/Beranda.png
                 Text(
-                  'Tanah liat Dinoyo, dari roda\npemutar langsung ke\ntanganmu.',
+                  'Tanah liat Dinoyo, dari roda\npemutar langsung ke\ntanganmu.'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -90,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(height: 8),
                 // Sub-headline — sesuai Proto_Final/Beranda.png
                 Text(
-                  'Temukan karya keramik lokal dan pengalaman kreatif dari pengrajin Dinoyo.',
+                  'Temukan karya keramik lokal dan pengalaman kreatif dari pengrajin Dinoyo.'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     height: 1.5,
@@ -164,12 +179,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Jelajahi Kategori',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
+                    Flexible(
+                      child: Text(
+                        'Jelajahi Kategori'.tr,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
+                        ),
                       ),
                     ),
                     TextButton(
@@ -179,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         minimumSize: Size(44, 36),
                       ),
                       child: Text(
-                        'Lihat Semua',
+                        'Lihat Semua'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -212,12 +230,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Pilihan Untukmu row
                 Row(
                   children: [
-                    Text(
-                      'Pilihan Untukmu',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
+                    Flexible(
+                      child: Text(
+                        'Pilihan Untukmu'.tr,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
+                        ),
                       ),
                     ),
                     Spacer(),
@@ -228,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         minimumSize: Size(44, 40),
                       ),
                       child: Text(
-                        'Lihat semua',
+                        'Lihat semua'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -239,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 Text(
-                  'Karya keramik favorit dari pengrajin lokal.',
+                  'Karya keramik favorit dari pengrajin lokal.'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -255,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
               child: Text(
-                'Tidak ada produk yang cocok.',
+                'Tidak ada produk yang cocok.'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   color: AppColors.textSecondary,
@@ -282,6 +303,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
       ],
-    );
-  }
+    ),
+  );
+}
 }

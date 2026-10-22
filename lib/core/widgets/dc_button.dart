@@ -5,17 +5,17 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 
 class DcButton extends StatelessWidget {
-  DcButton({
+  const DcButton({
     super.key,
     required this.label,
     required this.onPressed,
     this.trailingIconPath,
     this.trailingIcon,
     this.backgroundColor = AppColors.black,
-    Color? foregroundColor,
+    this.foregroundColor = AppColors.white,
     this.height = 52,
     this.outlined = false,
-  }) : foregroundColor = foregroundColor ?? AppColors.white;
+  });
 
   final String label;
   final VoidCallback? onPressed;
@@ -32,12 +32,16 @@ class DcButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: outlined ? AppColors.ink : foregroundColor,
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: outlined ? AppColors.ink : foregroundColor,
+            ),
           ),
         ),
         if (trailingIconPath != null) ...[
@@ -62,6 +66,14 @@ class DcButton extends StatelessWidget {
       ],
     );
 
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
+    final isDarkButton = isDark &&
+        !outlined &&
+        (backgroundColor == AppColors.black ||
+            backgroundColor == Colors.black ||
+            backgroundColor.computeLuminance() < 0.1);
+
     if (outlined) {
       return SizedBox(
         width: double.infinity,
@@ -70,15 +82,15 @@ class DcButton extends StatelessWidget {
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: AppColors.border),
-            shape: StadiumBorder(),
-            backgroundColor: AppColors.white,
+            shape: const StadiumBorder(),
+            backgroundColor: AppColors.surface,
           ),
           child: child,
         ),
       );
     }
 
-    return SizedBox(
+    final buttonWidget = SizedBox(
       width: double.infinity,
       height: height,
       child: ElevatedButton(
@@ -88,10 +100,43 @@ class DcButton extends StatelessWidget {
           foregroundColor: foregroundColor,
           disabledBackgroundColor: AppColors.textMuted,
           elevation: 0,
-          shape: StadiumBorder(),
+          side: isDarkButton
+              ? BorderSide(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  width: 1.2,
+                )
+              : null,
+          shape: isDarkButton
+              ? StadiumBorder(
+                  side: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 1.2,
+                  ),
+                )
+              : const StadiumBorder(),
         ),
         child: child,
       ),
     );
+
+    if (isDarkButton) {
+      return Container(
+        width: double.infinity,
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.12),
+              blurRadius: 10,
+              spreadRadius: 0.5,
+            ),
+          ],
+        ),
+        child: buttonWidget,
+      );
+    }
+
+    return buttonWidget;
   }
 }

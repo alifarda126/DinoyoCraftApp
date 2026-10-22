@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../app_text.dart';
 import '../theme/app_colors.dart';
 
 /// Pill filter kategori — dipakai di Beranda & halaman Produk agar
 /// ukuran dan gaya selalu konsisten. Container wrap-content sehingga
 /// teks tidak pernah terpotong.
 class CategoryChip extends StatelessWidget {
-const   CategoryChip({
+  const CategoryChip({
     super.key,
     required this.label,
     required this.selected,
@@ -31,7 +32,7 @@ const   CategoryChip({
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
-          label,
+          label.tr,
           maxLines: 1,
           overflow: TextOverflow.visible,
           style: GoogleFonts.plusJakartaSans(

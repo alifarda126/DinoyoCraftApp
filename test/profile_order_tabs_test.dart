@@ -104,4 +104,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Lihat Semua Pesanan'), findsOneWidget);
   });
+
+  testWidgets('halaman profil memiliki RefreshIndicator untuk tarik ke bawah', (
+    tester,
+  ) async {
+    await pump(tester);
+    expect(find.byType(RefreshIndicator), findsOneWidget);
+
+    // Tarik halaman ke bawah (pull down gesture)
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, 300));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Menunggu animasi refresh selesai
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pumpAndSettle();
+    expect(find.byType(RefreshIndicator), findsOneWidget);
+  });
 }

@@ -3,13 +3,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
 import '../../data/mock_data.dart';
 
 class StoresScreen extends StatefulWidget {
-const   StoresScreen({super.key});
+  const StoresScreen({super.key});
 
   @override
   State<StoresScreen> createState() => _StoresScreenState();
@@ -18,17 +19,31 @@ const   StoresScreen({super.key});
 class _StoresScreenState extends State<StoresScreen> {
   String _query = '';
 
+  Future<void> _handleRefresh() async {
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final stores = MockData.filterStores(_query);
+    final topHeaderHeight = MediaQuery.paddingOf(context).top + 48.0;
 
     return Scaffold(
       // Scaffold diperlukan sebagai ancestor Material untuk TextField/InkWell;
       // tanpa ini halaman melempar error rendering.
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-        SliverPinnedDcHeader(),
+      backgroundColor: AppColors.bg,
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: AppColors.ink,
+        backgroundColor: AppColors.surfaceElevated,
+        edgeOffset: topHeaderHeight,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          slivers: [
+            SliverPinnedDcHeader(),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -36,7 +51,7 @@ class _StoresScreenState extends State<StoresScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Temukan Toko',
+                  'Temukan Toko'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
@@ -45,7 +60,7 @@ class _StoresScreenState extends State<StoresScreen> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Jelajahi studio pengrajin keramik Dinoyo.',
+                  'Jelajahi studio pengrajin keramik Dinoyo.'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     color: AppColors.textSecondary,
@@ -55,7 +70,7 @@ class _StoresScreenState extends State<StoresScreen> {
                 TextField(
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
-                    hintText: 'Cari toko...',
+                    hintText: 'Cari toko...'.tr,
                     hintStyle: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       color: AppColors.textMuted,
@@ -105,7 +120,7 @@ class _StoresScreenState extends State<StoresScreen> {
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: AppColors.border.withValues(alpha: 0.6),
@@ -179,6 +194,7 @@ class _StoresScreenState extends State<StoresScreen> {
         ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

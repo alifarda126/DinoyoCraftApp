@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -175,7 +176,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                   ),
                   Expanded(
                     child: Text(
-                      'Ulasan Toko',
+                      'Ulasan Toko'.tr,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 16,
@@ -216,7 +217,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Ulasan Pelanggan',
+                'Ulasan Pelanggan'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -242,11 +243,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             border: Border.all(color: AppColors.borderAlt),
           ),
           child: Text(
-            'Terverifikasi',
+            'Terverifikasi'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF4C4546),
+              color: AppColors.textSecondary,
             ),
           ),
         ),
@@ -258,7 +259,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderAlt),
       ),
@@ -284,7 +285,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                     _starRow(5, size: 18),
                     SizedBox(height: 4),
                     Text(
-                      '128 ulasan',
+                      '128 ulasan'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -322,7 +323,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '98% pembeli merekomendasikan produk studio ini',
+                    '98% pembeli merekomendasikan produk studio ini'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -406,7 +407,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           return OutlinedButton(
             onPressed: () => setState(() => _filterRating = rating),
             style: OutlinedButton.styleFrom(
-              backgroundColor: active ? AppColors.black : AppColors.white,
+              backgroundColor: active ? AppColors.black : AppColors.surface,
               side: BorderSide(
                 color: active ? AppColors.black : AppColors.borderAlt,
               ),
@@ -416,8 +417,8 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             ),
             child: Text(
               rating == null
-                  ? 'Semua ($count)'
-                  : 'Bintang $rating ($count)',
+                  ? '${'Semua'.tr} ($count)'
+                  : '${'Bintang'.tr} $rating ($count)',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -437,7 +438,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       margin: const EdgeInsets.only(top: 14),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderAlt),
       ),
@@ -493,12 +494,12 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                   if (value == 'copy') {
                     Clipboard.setData(ClipboardData(text: review.text));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Ulasan disalin')),
+                      SnackBar(content: Text('Ulasan disalin'.tr)),
                     );
                   } else if (value == 'report') {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Terima kasih, laporan ulasan dikirim.'),
+                        content: Text('Terima kasih, laporan ulasan dikirim.'.tr),
                       ),
                     );
                   }
@@ -507,12 +508,12 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                   PopupMenuItem(
                     value: 'copy',
                     height: 40,
-                    child: Text('Salin Ulasan'),
+                    child: Text('Salin Ulasan'.tr),
                   ),
                   PopupMenuItem(
                     value: 'report',
                     height: 40,
-                    child: Text('Laporkan Ulasan'),
+                    child: Text('Laporkan Ulasan'.tr),
                   ),
                 ],
               ),
@@ -552,18 +553,18 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                       ? Icons.thumb_up_alt_rounded
                       : Icons.thumb_up_alt_outlined,
                   size: 13,
-                  color: marked ? AppColors.white : Color(0xFF4C4546),
+                  color: marked ? AppColors.white : AppColors.textSecondary,
                 ),
                 label: Text(
-                  'Membantu (${review.helpful + (marked ? 1 : 0)})',
+                  '${'Membantu'.tr} (${review.helpful + (marked ? 1 : 0)})',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: marked ? AppColors.white : Color(0xFF4C4546),
+                    color: marked ? AppColors.white : AppColors.textSecondary,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: marked ? AppColors.black : AppColors.white,
+                  backgroundColor: marked ? AppColors.black : AppColors.surface,
                   side: BorderSide(color: AppColors.borderAlt),
                   shape: StadiumBorder(),
                   padding: const EdgeInsets.symmetric(
@@ -574,11 +575,15 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 ),
               ),
               Spacer(),
-              Text(
-                'Apakah ulasan ini bermanfaat?',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
+              Flexible(
+                child: Text(
+                  'Apakah ulasan ini bermanfaat?'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
@@ -628,19 +633,27 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                         color: AppColors.ink,
                       ),
                       SizedBox(width: 6),
-                      Text(
-                        widget.storeName,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+                      Flexible(
+                        child: Text(
+                          widget.storeName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                          ),
                         ),
                       ),
-                      Text(
-                        '  •  ${review.replyDate}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
+                      Flexible(
+                        child: Text(
+                          '  •  ${review.replyDate}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                     ],
@@ -651,7 +664,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       height: 1.5,
-                      color: Color(0xFF4C4546),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],

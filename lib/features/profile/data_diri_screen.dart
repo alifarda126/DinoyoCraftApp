@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -68,15 +69,15 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                   SizedBox(height: 16),
                   _buildAvatarSection(),
                   SizedBox(height: 20),
-                  _buildLabelRow('Nama Lengkap', hint: 'Sesuai KTP'),
+                  _buildLabelRow('Nama Lengkap'.tr, hint: 'Sesuai KTP'.tr),
                   _buildField(
                     controller: _nameController,
                     icon: Icons.person_outline_rounded,
                   ),
                   SizedBox(height: 14),
                   _buildLabelRow(
-                    'Username',
-                    badge: 'Tersedia',
+                    'Username'.tr,
+                    badge: 'Tersedia'.tr,
                   ),
                   _buildField(
                     controller: _usernameController,
@@ -85,12 +86,11 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                   ),
                   SizedBox(height: 6),
                   _buildHelper(
-                    'Username profil dinoyocraft.id/@customer. Ubah 30 hari '
-                    'sekali.',
+                    'Username profil dinoyocraft.id/@customer. Ubah 30 hari sekali.'.tr,
                   ),
                   SizedBox(height: 14),
                   _buildLabelRow(
-                    'Alamat Email',
+                    'Alamat Email'.tr,
                     verified: true,
                     onEdit: () => _emailFocus.requestFocus(),
                   ),
@@ -101,7 +101,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                   ),
                   SizedBox(height: 14),
                   _buildLabelRow(
-                    'Nomor WhatsApp / Seluler',
+                    'Nomor WhatsApp / Seluler'.tr,
                     verified: true,
                     onEdit: () => _phoneFocus.requestFocus(),
                   ),
@@ -111,10 +111,10 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                     focusNode: _phoneFocus,
                   ),
                   SizedBox(height: 14),
-                  _buildLabelRow('Jenis Kelamin'),
+                  _buildLabelRow('Jenis Kelamin'.tr),
                   _buildGenderSegment(),
                   SizedBox(height: 14),
-                  _buildLabelRow('Tanggal Lahir'),
+                  _buildLabelRow('Tanggal Lahir'.tr),
                   _buildField(
                     controller: _birthController,
                     icon: Icons.calendar_today_outlined,
@@ -138,7 +138,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: Text(
-          'Ubah Foto Profil',
+          'Ubah Foto Profil'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -146,7 +146,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
           ),
         ),
         content: Text(
-          'Pilih sumber foto baru untuk profilmu.',
+          'Pilih sumber foto baru untuk profilmu.'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 13,
             height: 1.5,
@@ -157,16 +157,16 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
           TextButton(
             onPressed: () {
               Navigator.of(dialogCtx).pop();
-              _notifyPhotoDemo('Kamera');
+              _notifyPhotoDemo('Kamera'.tr);
             },
-            child: Text('Kamera'),
+            child: Text('Kamera'.tr),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(dialogCtx).pop();
-              _notifyPhotoDemo('Galeri');
+              _notifyPhotoDemo('Galeri'.tr);
             },
-            child: Text('Galeri'),
+            child: Text('Galeri'.tr),
           ),
         ],
       ),
@@ -177,7 +177,9 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Mengambil foto dari $source (integrasi kamera/galeri menyusul).',
+          AppText.isEnglish
+              ? 'Selecting photo from $source (camera/gallery integration coming soon).'
+              : 'Mengambil foto dari $source (integrasi kamera/galeri menyusul).',
         ),
       ),
     );
@@ -194,7 +196,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
           ),
           Expanded(
             child: Text(
-              'Kelola Data Diri',
+              'Kelola Data Diri'.tr,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
@@ -218,7 +220,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Ubah Data Diri',
+                'Ubah Data Diri'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -227,7 +229,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               ),
               SizedBox(height: 4),
               Text(
-                'Kelola informasi akun dan profil pengrajin Anda',
+                'Kelola informasi akun dan profil pengrajin Anda'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   color: AppColors.textSecondary,
@@ -281,7 +283,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               GestureDetector(
                 onTap: _showPhotoSourceDialog,
                 child: Text(
-                  'Ubah Foto Profil',
+                  'Ubah Foto Profil'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -292,7 +294,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               ),
               SizedBox(height: 4),
               Text(
-                'Format JPG, PNG atau WEBP. Maksimal 5 MB.',
+                'Format JPG, PNG atau WEBP. Maksimal 5 MB.'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -317,22 +319,31 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink,
+              ),
             ),
           ),
           Spacer(),
           if (hint != null)
-            Text(
-              hint,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textSecondary,
+            Flexible(
+              child: Text(
+                hint,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           if (badge != null) ...[
@@ -347,7 +358,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF474746),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
@@ -369,7 +380,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                   ),
                   SizedBox(width: 2),
                   Text(
-                    'Verif',
+                    'Verif'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -383,7 +394,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             GestureDetector(
               onTap: onEdit,
               child: Text(
-                'Ubah',
+                'Ubah'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -498,7 +509,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
       child: Container(
         height: 46,
         decoration: BoxDecoration(
-          color: selected ? AppColors.black : AppColors.white,
+          color: selected ? AppColors.black : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? AppColors.black : AppColors.borderAlt,
@@ -552,7 +563,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             child: Text(
               'Pastikan data diri sesuai dengan identitas resmi untuk '
               'kemudahan verifikasi pesanan dan pengiriman keramik di '
-              'Aplikasi DinoyoCraft.',
+              'Aplikasi DinoyoCraft.'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12,
                 height: 1.5,
@@ -566,15 +577,16 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
   }
 
   Widget _buildSaveBar() {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(
         20,
-        12,
+        14,
         20,
-        12 + MediaQuery.paddingOf(context).bottom,
+        14 + (bottomInset > 0 ? bottomInset : 10),
       ),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         boxShadow: [
           BoxShadow(
             color: Color(0x1A000000),
@@ -589,54 +601,69 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
           SizedBox(
             width: double.infinity,
             height: 48,
-            child: FilledButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    behavior: SnackBarBehavior.floating,
-                    backgroundColor: AppColors.black,
-                    content: Text(
-                      'Perubahan data diri disimpan.',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        color: AppColors.white,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: AppColors.darkButtonShadow,
+              ),
+              child: FilledButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: AppColors.black,
+                      content: Text(
+                        'Perubahan data diri disimpan.'.tr,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: AppColors.white,
+                        ),
                       ),
                     ),
+                  );
+                  context.pop();
+                },
+                icon: SvgPicture.asset(
+                  AppAssets.iconSave,
+                  width: 16,
+                  height: 16,
+                  colorFilter: ColorFilter.mode(
+                    AppColors.white,
+                    BlendMode.srcIn,
                   ),
-                );
-                context.pop();
-              },
-              icon: SvgPicture.asset(
-                AppAssets.iconSave,
-                width: 16,
-                height: 16,
-                colorFilter: ColorFilter.mode(
-                  AppColors.white,
-                  BlendMode.srcIn,
                 ),
-              ),
-              label: Text(
-                'Simpan Perubahan',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.white,
+                label: Text(
+                  'Simpan Perubahan'.tr,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.white,
+                  ),
                 ),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.black,
-                shape: StadiumBorder(),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.black,
+                  shape: AppColors.stadiumButtonShape,
+                ),
               ),
             ),
           ),
-          TextButton(
-            onPressed: () => context.pop(),
-            child: Text(
-              'Batalkan',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+          SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: TextButton(
+              onPressed: () => context.pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+                shape: StadiumBorder(),
+              ),
+              child: Text(
+                'Batalkan'.tr,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ),

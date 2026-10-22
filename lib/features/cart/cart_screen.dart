@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/mock_data.dart';
 
@@ -28,7 +29,7 @@ Future<bool> _confirmRemoveCartItemDialog(
     builder: (dialogCtx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
-        'Hapus Produk?',
+        'Hapus Produk?'.tr,
         style: GoogleFonts.plusJakartaSans(
           fontSize: 16,
           fontWeight: FontWeight.w800,
@@ -36,7 +37,9 @@ Future<bool> _confirmRemoveCartItemDialog(
         ),
       ),
       content: Text(
-        'Apakah kamu yakin ingin menghapus "$productName" dari keranjang?',
+        AppText.isEnglish
+            ? 'Are you sure you want to remove "$productName" from your cart?'
+            : 'Apakah kamu yakin ingin menghapus "$productName" dari keranjang?',
         style: GoogleFonts.plusJakartaSans(
           fontSize: 13,
           height: 1.5,
@@ -46,12 +49,12 @@ Future<bool> _confirmRemoveCartItemDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogCtx).pop(false),
-          child: Text('Batal'),
+          child: Text('Batal'.tr),
         ),
         TextButton(
           onPressed: () => Navigator.of(dialogCtx).pop(true),
-          style: TextButton.styleFrom(foregroundColor: Colors.red),
-          child: Text('Hapus'),
+          style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+          child: Text('Hapus'.tr),
         ),
       ],
     ),
@@ -79,7 +82,13 @@ class _CartScreenState extends State<CartScreen> {
       _quantities.removeAt(index);
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('"$productName" dihapus dari keranjang')),
+      SnackBar(
+        content: Text(
+          AppText.isEnglish
+              ? '"$productName" removed from cart'
+              : '"$productName" dihapus dari keranjang',
+        ),
+      ),
     );
   }
 
@@ -99,7 +108,7 @@ class _CartScreenState extends State<CartScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
                 children: [
                   Text(
-                    'Produk yang Dibeli (${_items.length})',
+                    '${'Produk yang Dibeli'.tr} (${_items.length})',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -118,7 +127,7 @@ class _CartScreenState extends State<CartScreen> {
                           ),
                           SizedBox(height: 12),
                           Text(
-                            'Keranjangmu masih kosong',
+                            'Keranjangmu masih kosong'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -127,8 +136,7 @@ class _CartScreenState extends State<CartScreen> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Yuk, jelajahi produk keramik dan tambahkan '
-                            'ke keranjang.',
+                            'Yuk, jelajahi produk keramik dan tambahkan ke keranjang.'.tr,
                             textAlign: TextAlign.center,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
@@ -164,7 +172,7 @@ class _CartScreenState extends State<CartScreen> {
                           SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Pengiriman dan metode pembayaran dipilih pada halaman checkout.',
+                              'Pengiriman dan metode pembayaran dipilih pada halaman checkout.'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 height: 1.4,
@@ -184,7 +192,7 @@ class _CartScreenState extends State<CartScreen> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: AppColors.surface,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: .08),
@@ -200,7 +208,7 @@ class _CartScreenState extends State<CartScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Subtotal',
+                            'Subtotal'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               color: AppColors.textSecondary,
@@ -216,21 +224,27 @@ class _CartScreenState extends State<CartScreen> {
                         ],
                       ),
                     ),
-                    FilledButton(
-                      onPressed: _items.isEmpty
-                          ? null
-                          : () => context.push('/checkout'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.black,
-                        padding: const EdgeInsets.symmetric(horizontal: 36),
-                        minimumSize: Size(0, 50),
-                        shape: StadiumBorder(),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: AppColors.darkButtonShadow,
                       ),
-                      child: Text(
-                        'Checkout',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
+                      child: FilledButton(
+                        onPressed: _items.isEmpty
+                            ? null
+                            : () => context.push('/checkout'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 36),
+                          minimumSize: Size(0, 50),
+                          shape: AppColors.stadiumButtonShape,
+                        ),
+                        child: Text(
+                          'Checkout'.tr,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
@@ -259,7 +273,7 @@ class _CartHeader extends StatelessWidget {
         ),
         Expanded(
           child: Text(
-            'Keranjang Belanja',
+            'Keranjang Belanja'.tr,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 16,
@@ -392,7 +406,7 @@ class _CartSheet extends StatefulWidget {
 }
 
 class _CartSheetState extends State<_CartSheet> {
-  static const Color _handleBarColor = Color(0xFFCFC4C5);
+  Color get _handleBarColor => AppColors.borderAlt;
 
   late final List<CartItem> _items = MockData.mockCart;
   late final List<int> _quantities = _items.map((item) => item.qty).toList();
@@ -414,7 +428,13 @@ class _CartSheetState extends State<_CartSheet> {
       _quantities.removeAt(index);
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('"$productName" dihapus dari keranjang')),
+      SnackBar(
+        content: Text(
+          AppText.isEnglish
+              ? '"$productName" removed from cart'
+              : '"$productName" dihapus dari keranjang',
+        ),
+      ),
     );
   }
 
@@ -436,7 +456,7 @@ class _CartSheetState extends State<_CartSheet> {
     return Container(
       height: modalH,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -473,7 +493,7 @@ class _CartSheetState extends State<_CartSheet> {
                 Row(
                   children: [
                     Text(
-                      'Keranjang Belanja',
+                      'Keranjang Belanja'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         color: AppColors.ink,
                         fontSize: 18,
@@ -491,7 +511,7 @@ class _CartSheetState extends State<_CartSheet> {
                         color: AppColors.black,
                       ),
                       child: Text(
-                        '${_items.length} Item',
+                        '${_items.length} ${AppText.isEnglish ? 'Items' : 'Item'}',
                         style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
                           fontSize: 11,
@@ -508,9 +528,9 @@ class _CartSheetState extends State<_CartSheet> {
                     height: 32,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFFF4F3F3),
+                      color: AppColors.surfaceSubtle,
                       border: Border.all(
-                        color: Color(0xFFE5E5E5),
+                        color: AppColors.border,
                         width: 0.8,
                       ),
                     ),
@@ -541,7 +561,7 @@ class _CartSheetState extends State<_CartSheet> {
                         ),
                         SizedBox(height: 12),
                         Text(
-                          'Keranjangmu masih kosong',
+                          'Keranjangmu masih kosong'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -550,8 +570,7 @@ class _CartSheetState extends State<_CartSheet> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Yuk, jelajahi produk keramik dan tambahkan '
-                          'ke keranjang.',
+                          'Yuk, jelajahi produk keramik dan tambahkan ke keranjang.'.tr,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
@@ -584,7 +603,7 @@ class _CartSheetState extends State<_CartSheet> {
             Container(
               padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + bottomPad),
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: AppColors.surface,
                 boxShadow: [
                   BoxShadow(
                     color: Color(0x14000000),
@@ -600,7 +619,7 @@ class _CartSheetState extends State<_CartSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Subtotal',
+                          'Subtotal'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
                             color: AppColors.textSecondary,
@@ -625,7 +644,7 @@ class _CartSheetState extends State<_CartSheet> {
                       shape: StadiumBorder(),
                     ),
                     child: Text(
-                      'Checkout',
+                      'Checkout'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,

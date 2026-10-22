@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
 import '../../data/mock_data.dart';
@@ -13,26 +14,28 @@ import '../../data/mock_data.dart';
 /// Figma (ProfilPesananDikemas / ProfilPesananDikrim / ProfilPesananDiterima).
 /// Foto produk pesanan tetap memakai data project (MockData).
 class ProfileScreen extends StatefulWidget {
-const   ProfileScreen({super.key});
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // ── Warna dari desain Figma ──────────────────────────────────────────────
-  static const Color _black = Color(0xFF000000);
-  static const Color _text = Color(0xFF1A1C1C);
-  static const Color _textGray = Color(0xFF5F5E5E);
-  static const Color _textLight = Color(0xFF888888);
-  static const Color _priceGray = Color(0xFF848484);
-  static const Color _chipGray = Color(0xFF666666);
-  static const Color _lineGray = Color(0xFFE5E5E5);
-  static const Color _borderGray = Color(0xFFCCCCCC);
-  static const Color _borderPink = Color(0xFFCFC4C5);
-  static const Color _dividerPink = Color(0xFFE6DCDD);
-  static const Color _badgeGray = Color(0xFFF4F3F3);
-  static const Color _btnLight = Color(0xFFFAF9F9);
+  // ── Token profil ────────────────────────────────────────────────────────
+  // Seluruh warna netral mengacu ke token global agar kartu pesanan tetap
+  // memiliki hierarki dan kontras yang sama di tema terang maupun gelap.
+  Color get _black => AppColors.ink;
+  Color get _text => AppColors.ink;
+  Color get _textGray => AppColors.textSecondary;
+  Color get _textLight => AppColors.textMuted;
+  Color get _priceGray => AppColors.textSecondaryAlt;
+  Color get _chipGray => AppColors.textSecondary;
+  Color get _lineGray => AppColors.divider;
+  Color get _borderGray => AppColors.border;
+  Color get _borderPink => AppColors.borderAlt;
+  Color get _dividerPink => AppColors.divider;
+  Color get _badgeGray => AppColors.surfaceSubtle;
+  Color get _btnLight => AppColors.surfaceSubtle;
   static const Color _dikirimRed = Color(0xFFFF0024);
   static const Color _dikemasYellow = Color(0xFFFFD400);
   static const Color _logoutRed = Color(0xFFFF0000);
@@ -46,14 +49,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Product get _mangkukProduct =>
       MockData.products.firstWhere((p) => p.id == '3');
 
+  Future<void> _handleRefresh() async {
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     const tabs = ['Dikemas', 'Dikirim', 'Diterima'];
+    final topHeaderHeight = MediaQuery.paddingOf(context).top + 48.0;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: CustomScrollView(
-        slivers: [
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: AppColors.ink,
+        backgroundColor: AppColors.surfaceElevated,
+        edgeOffset: topHeaderHeight,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          slivers: [
           SliverPinnedDcHeader(),
           SliverToBoxAdapter(
             child: Padding(
@@ -96,7 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         SizedBox(height: 3),
                         Center(
                           child: Text(
-                            'Sentra Keramik Dinoyo Malang • Jawa Timur',
+                            'Sentra Keramik Dinoyo Malang • Jawa Timur'.tr,
                             textAlign: TextAlign.center,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
@@ -113,7 +130,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   // ═══ Blok profil ════════════════════════════════════════════════════════
@@ -168,7 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: AppColors.ink,
             ),
             label: Text(
-              'Data Diri',
+              'Data Diri'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -176,7 +194,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             style: OutlinedButton.styleFrom(
-              backgroundColor: AppColors.white,
+              backgroundColor: AppColors.surface,
               side: BorderSide(color: AppColors.ink),
               shape: StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -192,24 +210,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Riwayat Pesanan',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppColors.ink,
+        Flexible(
+          child: Text(
+            'Riwayat Pesanan'.tr,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+            ),
           ),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2),
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(4),
             border: Border.all(color: _lineGray),
           ),
           // Sesuai desain: selalu "1 Pesanan" di ketiga tab.
           child: Text(
-            '1 Pesanan',
+            '1 Pesanan'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -225,7 +247,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _borderGray),
       ),
@@ -241,7 +263,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   margin: EdgeInsets.only(right: i < tabs.length - 1 ? 9 : 0),
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: tabs[i] == _orderTab ? _black : Colors.transparent,
+                    color: tabs[i] == _orderTab
+                        ? AppColors.black
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: tabs[i] == _orderTab
                         ? [
@@ -255,7 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: Center(
                     child: Text(
-                      tabs[i],
+                      tabs[i].tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -316,7 +340,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _cardHeader(
           id: '#DNC-001',
           store: 'Dinoyo Ceramic Studio',
-          badge: 'Dikemas Penjual',
+          badge: 'Dikemas Penjual'.tr,
           fontSize: 11,
           storeColor: _textLight,
           badgeBorder: _borderGray,
@@ -325,24 +349,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Divider(height: 1, thickness: 1, color: _lineGray),
         SizedBox(height: 11),
         _statusBox(
-          title: 'Menyerahkan ke Pihak Jasa Kirim',
+          title: 'Menyerahkan ke Pihak Jasa Kirim'.tr,
           dotColor: _dikemasYellow,
           note: 'Paket sedang dalam perjalanan untuk diserahkan\n'
-              'ke Pihak Jasa Kirim',
+              'ke Pihak Jasa Kirim'.tr,
           noteColor: _dikemasYellow,
         ),
         SizedBox(height: 10),
         _simpleProductRow(
           product: _mangkukProduct,
           name: 'Mangkuk Keramik',
-          qty: 'Jumlah: 1',
+          qty: 'Jumlah: 1'.tr,
           price: 'Rp20.000',
           imageSize: 72,
           imageRadius: 8,
           gap: 16,
         ),
         SizedBox(height: 10),
-        _totalRow('Total (1 Produk):', 'Rp25.000', _lineGray),
+        _totalRow('Total (1 Produk):'.tr, 'Rp25.000', _lineGray),
       ],
     );
   }
@@ -357,7 +381,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _cardHeader(
           id: '#DNC-004',
           store: 'Karya Tanah',
-          badge: 'Sedang Dikirim',
+          badge: 'Sedang Dikirim'.tr,
           fontSize: 12,
           storeColor: _textGray,
           badgeBorder: _borderGray,
@@ -370,27 +394,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
           titleTrailing: 'JT92817294820',
           dotColor: _logoutRed,
           note: 'Paket sedang dalam perjalanan menuju kota\n'
-              'Malang (Hub Sukun)',
+              'Malang (Hub Sukun)'.tr,
           noteColor: _dikirimRed,
         ),
         SizedBox(height: 16),
         _simpleProductRow(
           product: _cangkirProduct,
           name: 'Cangkir Handmade Artisan',
-          qty: 'Jumlah: 2',
+          qty: 'Jumlah: 2'.tr,
           price: 'Rp130.000',
           imageSize: 80,
           imageRadius: 8,
           gap: 8,
         ),
         SizedBox(height: 10),
-        _totalRow('Total (2 Produk):', 'Rp145.000', _dividerPink),
+        _totalRow('Total (2 Produk):'.tr, 'Rp145.000', _dividerPink),
         SizedBox(height: 14),
         Row(
           children: [
             Expanded(
               child: _actionButton(
-                label: 'Lacak Resi',
+                label: 'Lacak Resi'.tr,
                 icon: Icons.local_shipping_outlined,
                 bg: _btnLight,
                 fg: _text,
@@ -418,7 +442,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: _actionButton(
                 label: 'Hubungi Penjual',
                 icon: Icons.chat_bubble_outline_rounded,
-                bg: _black,
+                bg: AppColors.black,
                 fg: AppColors.white,
                 height: 40,
                 onTap: () {
@@ -455,7 +479,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _cardHeader(
           id: id,
           store: store,
-          badge: 'Pesanan Selesai',
+          badge: 'Pesanan Selesai'.tr,
           fontSize: 12,
           storeColor: _textGray,
           badgeBorder: _lineGray,
@@ -550,8 +574,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Expanded(
               child: _actionButton(
-                label: leftLabel,
-                bg: AppColors.white,
+                label: leftLabel.tr,
+                bg: AppColors.surface,
                 fg: _text,
                 borderColor: _lineGray,
                 bold: true,
@@ -562,8 +586,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SizedBox(width: 8),
             Expanded(
               child: _actionButton(
-                label: 'Beli Lagi',
-                bg: _black,
+                label: 'Beli Lagi'.tr,
+                bg: AppColors.black,
                 fg: AppColors.white,
                 bold: true,
                 height: 36,
@@ -587,7 +611,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: borderColor),
       ),
@@ -605,7 +629,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required double fontSize,
     required Color storeColor,
     required Color badgeBorder,
-    Color badgeFill = Colors.white,
+    Color? badgeFill,
     bool showBullet = false,
   }) {
     return Row(
@@ -644,7 +668,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: badgeFill,
+            color: badgeFill ?? AppColors.surface,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: badgeBorder),
           ),
@@ -672,7 +696,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(9),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: _black),
       ),
@@ -836,19 +860,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  color: _textGray,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: _textGray,
+                  ),
                 ),
               ),
-              Text(
-                value,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: _black,
+              SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: _black,
+                  ),
                 ),
               ),
             ],
@@ -917,7 +951,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // modal Notifikasi & Keranjang).
       useRootNavigator: true,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceElevated,
       barrierColor: Color(0x73000000),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -933,7 +967,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Row(
                 children: [
                   Text(
-                    'Semua Pesanan',
+                    'Semua Pesanan'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -997,7 +1031,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildSeeAllButton(BuildContext context) {
-    const dashed = _DashedRRectPainter(
+    final dashed = _DashedRRectPainter(
       color: _black,
       radius: 12,
       dashWidth: 4,
@@ -1016,7 +1050,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Lihat Semua Pesanan',
+                'Lihat Semua Pesanan'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -1038,7 +1072,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Akun',
+          'Akun'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -1048,7 +1082,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.white.withValues(alpha: 0.82),
+            color: AppColors.surface.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.border),
           ),
@@ -1057,32 +1091,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _accountTile(
                 context,
                 icon: Icons.person_outline_rounded,
-                title: 'Data Diri',
-                subtitle: 'Kelola informasi akun & profil',
+                title: 'Data Diri'.tr,
+                subtitle: 'Kelola informasi akun & profil'.tr,
                 route: '/profile/edit',
               ),
               Divider(height: 1, indent: 60, color: _lineGray),
               _accountTile(
                 context,
                 icon: Icons.location_on_outlined,
-                title: 'Alamat Pengiriman',
-                subtitle: 'Kelola alamat tujuan pesanan',
+                title: 'Alamat Pengiriman'.tr,
+                subtitle: 'Kelola alamat tujuan pesanan'.tr,
                 route: '/addresses',
               ),
               Divider(height: 1, indent: 60, color: _lineGray),
               _accountTile(
                 context,
                 icon: Icons.settings_outlined,
-                title: 'Pengaturan',
-                subtitle: 'Notifikasi, bahasa & privasi',
+                title: 'Pengaturan'.tr,
+                subtitle: 'Notifikasi, bahasa & privasi'.tr,
                 route: '/settings',
               ),
               Divider(height: 1, indent: 60, color: _lineGray),
               _accountTile(
                 context,
                 icon: Icons.help_outline_rounded,
-                title: 'Bantuan',
-                subtitle: 'Temukan jawaban yang Anda butuhkan',
+                title: 'Bantuan'.tr,
+                subtitle: 'Temukan jawaban yang Anda butuhkan'.tr,
                 route: '/help',
               ),
             ],
@@ -1164,21 +1198,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         icon: Icon(
           Icons.logout_rounded,
           size: 20,
-          color: Colors.redAccent,
+          color: AppColors.danger,
         ),
         label: Text(
-          'Keluar dari Akun',
+          'Keluar dari Akun'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: Colors.redAccent,
+            color: AppColors.danger,
           ),
         ),
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: Colors.redAccent, width: 1.5),
+          side: BorderSide(color: AppColors.danger, width: 1.5),
           shape: StadiumBorder(),
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.surface,
         ),
       ),
     );

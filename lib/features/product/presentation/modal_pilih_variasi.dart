@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/app_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/mock_data.dart';
 
@@ -46,7 +47,7 @@ const List<_Variasi> _variasiList = [
   _Variasi(label: 'Charcoal Ash', sublabel: 'Tekstur Abu', color: Color(0xFF3F3F3F)),
 ];
 
-const Color _borderColor = Color(0xFFE5E5E5);
+Color get _borderColor => AppColors.border;
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -80,7 +81,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
     return Container(
       margin: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.15),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(color: Color(0x40000000), blurRadius: 40, offset: Offset(0, -12)),
@@ -95,7 +96,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
             width: 48,
             height: 5,
             decoration: BoxDecoration(
-              color: Color(0xFFD4D4D4),
+              color: AppColors.border,
               borderRadius: BorderRadius.circular(9999),
             ),
           ),
@@ -121,10 +122,10 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                     height: 32,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: Color(0xFFF5F5F5),
+                      color: AppColors.surfaceSubtle,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.close, size: 16, color: Color(0xFF404040)),
+                    child: Icon(Icons.close, size: 16, color: AppColors.ink),
                   ),
                 ),
               ),
@@ -144,19 +145,29 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'PILIHAN WARNA / GLAZE',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF262626),
+                    Flexible(
+                      child: Text(
+                        'PILIHAN WARNA / GLAZE'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
+                        ),
                       ),
                     ),
-                    Text(
-                      '${_variasiList[_selectedVariasi].label} ${_variasiList[_selectedVariasi].sublabel}',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        color: Color(0xFF737373),
+                    SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        '${_variasiList[_selectedVariasi].label} ${_variasiList[_selectedVariasi].sublabel}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          color: AppColors.textZinc,
+                        ),
                       ),
                     ),
                   ],
@@ -189,19 +200,21 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'JUMLAH PRODUK',
+                        'JUMLAH PRODUK'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF262626),
+                          color: AppColors.ink,
                         ),
                       ),
                       SizedBox(height: 2),
                       Text(
-                        'Stok tersisa $_stokVariasi buah untuk varian ini',
+                        AppText.isEnglish
+                            ? 'Only $_stokVariasi items left for this variant'
+                            : 'Stok tersisa $_stokVariasi buah untuk varian ini',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
-                          color: Color(0xFF737373),
+                          color: AppColors.textZinc,
                         ),
                       ),
                     ],
@@ -223,7 +236,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
 
           // ── Bottom action bar ──
           Container(
-            color: Colors.white,
+            color: AppColors.surfaceElevated,
             padding: EdgeInsets.fromLTRB(20, 12, 20, 14 + bottomPad),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -232,19 +245,29 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Subtotal Estimasi:',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: Color(0xFF737373),
+                    Flexible(
+                      child: Text(
+                        'Subtotal Estimasi:'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: AppColors.textZinc,
+                        ),
                       ),
                     ),
-                    Text(
-                      MockData.formatPrice(_subtotal),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.ink,
+                    SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        MockData.formatPrice(_subtotal),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink,
+                        ),
                       ),
                     ),
                   ],
@@ -260,7 +283,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                           onPressed: _onKeranjang,
                           icon: Icon(Icons.shopping_cart_outlined, size: 18),
                           label: Text(
-                            'Tambah ke Keranjang',
+                            'Tambah ke Keranjang'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -272,19 +295,25 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                             side: BorderSide(color: AppColors.ink, width: 2),
                           ),
                         )
-                      : FilledButton(
-                          onPressed: _onBeliLangsung,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.black,
-                            foregroundColor: AppColors.white,
-                            elevation: 0,
-                            shape: StadiumBorder(),
+                      : Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: AppColors.darkButtonShadow,
                           ),
-                          child: Text(
-                            'Beli Langsung',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+                          child: FilledButton(
+                            onPressed: _onBeliLangsung,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.black,
+                              foregroundColor: AppColors.white,
+                              elevation: 0,
+                              shape: AppColors.stadiumButtonShape,
+                            ),
+                            child: Text(
+                              'Beli Langsung'.tr,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ),
@@ -330,7 +359,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
       SnackBar(
         content: Text(
           '${widget.product.name} — ${_variasiList[_selectedVariasi].label} '
-          '(x$_jumlah) ditambahkan ke keranjang!',
+          '(x$_jumlah) ${AppText.isEnglish ? 'added to cart!' : 'ditambahkan ke keranjang!'}',
         ),
         behavior: SnackBarBehavior.floating,
         duration: Duration(seconds: 2),
@@ -367,7 +396,7 @@ class _ProductInfoRow extends StatelessWidget {
           width: 72,
           height: 72,
           decoration: BoxDecoration(
-            color: Color(0xFFF5F5F5),
+            color: AppColors.surfaceSubtle,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: _borderColor),
           ),
@@ -394,7 +423,7 @@ class _ProductInfoRow extends StatelessWidget {
                   product.studio,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
-                    color: Color(0xFF737373),
+                    color: AppColors.textZinc,
                   ),
                 ),
                 SizedBox(height: 2),
@@ -411,21 +440,29 @@ class _ProductInfoRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(
-                      MockData.formatPrice(product.price),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.ink,
+                    Flexible(
+                      child: Text(
+                        MockData.formatPrice(product.price),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink,
+                        ),
                       ),
                     ),
                     SizedBox(width: 8),
-                    Text(
-                      MockData.formatPrice(originalPrice),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: Color(0xFFA3A3A3),
-                        decoration: TextDecoration.lineThrough,
+                    Flexible(
+                      child: Text(
+                        MockData.formatPrice(originalPrice),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                          decoration: TextDecoration.lineThrough,
+                        ),
                       ),
                     ),
                   ],
@@ -433,15 +470,19 @@ class _ProductInfoRow extends StatelessWidget {
                 SizedBox(height: 3),
                 Row(
                   children: [
-                    Text(
-                      'Stok Pengrajin: ',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: Color(0xFF737373),
+                    Flexible(
+                      child: Text(
+                        AppText.isEnglish ? 'Artisan Stock: ' : 'Stok Pengrajin: ',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: AppColors.textZinc,
+                        ),
                       ),
                     ),
                     Text(
-                      '$stok buah',
+                      AppText.isEnglish ? '$stok items' : '$stok buah',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -481,7 +522,7 @@ class _VariasiCard extends StatelessWidget {
           width: isSelected ? 2 : 1,
         ),
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
+        color: AppColors.surface,
       ),
       child: Row(
         children: [
@@ -494,7 +535,7 @@ class _VariasiCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: variasi.color,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Color(0xFFD4D4D4)),
+                  border: Border.all(color: AppColors.border),
                 ),
               ),
               if (isSelected)
@@ -527,7 +568,7 @@ class _VariasiCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 10,
-                    color: Color(0xFF737373),
+                    color: AppColors.textZinc,
                   ),
                 ),
               ],
@@ -560,7 +601,7 @@ class _JumlahCounter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _borderColor),
       ),
@@ -619,12 +660,12 @@ class _StepBtn extends StatelessWidget {
     final Border? border;
 
     if (filled) {
-      bg = enabled ? AppColors.black : Color(0xFFE5E5E5);
-      fg = enabled ? Colors.white : Color(0xFFAAAAAA);
+      bg = enabled ? AppColors.black : AppColors.border;
+      fg = enabled ? Colors.white : AppColors.textMuted;
       border = null;
     } else {
-      bg = Colors.white;
-      fg = enabled ? AppColors.ink : Color(0xFF525252);
+      bg = AppColors.surface;
+      fg = enabled ? AppColors.ink : AppColors.textMuted;
       border = Border.all(color: _borderColor);
     }
 

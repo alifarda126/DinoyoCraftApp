@@ -65,18 +65,20 @@ const   DcBottomNav({
                 filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.60),
+                    color: AppColors.navigationSurface,
                     borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(22)),
                     border: Border(
                       top: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.85),
+                        color: AppColors.navigationBorder,
                         width: 1.2,
                       ),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
+                        color: Colors.black.withValues(
+                          alpha: AppColors.isDark ? 0.32 : 0.08,
+                        ),
                         blurRadius: 20,
                         offset: Offset(0, -4),
                       ),
@@ -179,7 +181,7 @@ class _IconBubble extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         // Stroke putih tipis (1.5px) di luar circle hitam
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: AppColors.navigationBorder, width: 1.5),
         color: Colors.transparent,
       ),
       // inner circle hitam mengisi hampir penuh (margin 1.5px ikut border)

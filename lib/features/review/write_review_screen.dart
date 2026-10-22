@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -116,7 +117,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   ),
                   Expanded(
                     child: Text(
-                      'Beri Ulasan Produk',
+                      'Beri Ulasan Produk'.tr,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 16,
@@ -155,7 +156,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderAlt),
       ),
@@ -178,20 +179,28 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               children: [
                 Row(
                   children: [
-                    Text(
-                      widget.orderId,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
+                    Flexible(
+                      child: Text(
+                        widget.orderId,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
+                        ),
                       ),
                     ),
                     SizedBox(width: 6),
-                    Text(
-                      widget.receivedDate,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                    Flexible(
+                      child: Text(
+                        widget.receivedDate,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ],
@@ -221,11 +230,15 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                       color: AppColors.textSecondary,
                     ),
                     SizedBox(width: 4),
-                    Text(
-                      widget.studioName,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                    Flexible(
+                      child: Text(
+                        widget.studioName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ],
@@ -246,7 +259,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderAlt),
       ),
@@ -353,7 +366,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         selected ? _likes.remove(index) : _likes.add(index);
       }),
       style: OutlinedButton.styleFrom(
-        backgroundColor: selected ? AppColors.black : AppColors.white,
+        backgroundColor: selected ? AppColors.black : AppColors.surface,
         side: BorderSide(
           color: selected ? AppColors.black : AppColors.borderAlt,
         ),
@@ -378,7 +391,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderAlt),
       ),
@@ -388,7 +401,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             if (i > 0)
               Divider(
                 height: 1,
-                color: Color(0x99CFC4C5),
+                color: AppColors.divider,
               ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -457,7 +470,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderAlt),
       ),
@@ -611,7 +624,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         12 + MediaQuery.paddingOf(context).bottom,
       ),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         boxShadow: [
           BoxShadow(
             color: Color(0x1A000000),
@@ -633,7 +646,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             ),
           ),
           child: Text(
-            'Kirim Ulasan',
+            'Kirim Ulasan'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 16,
               fontWeight: FontWeight.w700,

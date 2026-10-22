@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/dc_bottom_nav.dart';
+import '../../core/theme/app_colors.dart';
 import '../../features/chatbot/chatbot_screen.dart';
 import '../../core/assets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -102,6 +103,9 @@ class _MainShellState extends State<MainShell> {
 class _DraggableFabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
+
     return Material(
       color: Colors.transparent,
       child: Container(
@@ -110,11 +114,23 @@ class _DraggableFabButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black,
           shape: BoxShape.circle,
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.35)
+                : Colors.white.withValues(alpha: 0.15),
+            width: 1.2,
+          ),
           boxShadow: [
+            if (isDark)
+              BoxShadow(
+                color: Colors.white.withValues(alpha: 0.15),
+                blurRadius: 8,
+                spreadRadius: 0.5,
+              ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
+              color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.25),
               blurRadius: 12,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -124,7 +140,7 @@ class _DraggableFabButton extends StatelessWidget {
             width: 28,
             height: 28,
             colorFilter:
-                ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                const ColorFilter.mode(Colors.white, BlendMode.srcIn),
           ),
         ),
       ),
