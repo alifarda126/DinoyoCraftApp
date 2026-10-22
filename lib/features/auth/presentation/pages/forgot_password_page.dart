@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/app_settings.dart';
 import '../../../../core/assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/dc_button.dart';
@@ -69,7 +70,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   label: 'Kirim Kode',
                   onPressed: () {
                     if (_formKey.currentState?.validate() ?? false) {
-                      context.push('/verify-otp?from=forgot');
+                      final email = _email.text.trim();
+                      AppSettings.instance.lastAuthEmail = email;
+                      final uri = Uri(
+                        path: '/verify-otp',
+                        queryParameters: {
+                          'from': 'forgot',
+                          if (email.isNotEmpty) 'email': email,
+                        },
+                      );
+                      context.push(uri.toString());
                     }
                   },
                 ),

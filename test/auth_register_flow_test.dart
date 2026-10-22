@@ -73,4 +73,27 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.byType(HomeScreen), findsNothing);
   });
+
+  testWidgets('email pada verifikasi OTP sesuai dengan email yang didaftarkan',
+      (tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        routerConfig: appRouter,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Buka verifikasi OTP dengan email pendaftaran
+    appRouter.go('/verify-otp?from=register&email=alifarda@gmail.com');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OtpScreen), findsOneWidget);
+    // Verifikasi teks email yang ditampilkan sesuai (awalan a, domain @gmail.com)
+    expect(find.textContaining('a●●●●●@gmail.com'), findsOneWidget);
+  });
 }

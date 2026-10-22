@@ -34,7 +34,16 @@ class _LoginScreenState extends State<LoginScreen> {
       // 2FA: setelah logout / login dari perangkat berbeda, wajib OTP email.
       if (AppSettings.instance.twoFactorEnabled &&
           AppSettings.instance.requireOtpNextLogin) {
-        context.push('/verify-otp?from=login');
+        final email = _email.text.trim();
+        AppSettings.instance.lastAuthEmail = email;
+        final uri = Uri(
+          path: '/verify-otp',
+          queryParameters: {
+            'from': 'login',
+            if (email.isNotEmpty) 'email': email,
+          },
+        );
+        context.push(uri.toString());
         return;
       }
       context.go('/home');
