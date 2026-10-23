@@ -16,176 +16,202 @@ const   ProductCard({super.key, required this.product, this.onAdd});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => context.push('/product/${product.id}'),
-              borderRadius: BorderRadius.circular(16),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: ColoredBox(
-                      color: AppColors.inputBg,
-                      child: Image.asset(
-                        product.image,
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Center(
-                          child: Icon(
-                            Icons.image_not_supported_outlined,
-                            color: AppColors.textMuted,
+    final isDark = AppColors.isDark;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? AppColors.border
+              : AppColors.black.withValues(alpha: 0.10),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: isDark ? 0.35 : 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => context.push('/product/${product.id}'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Stack(
+                    children: [
+                      ColoredBox(
+                        color: AppColors.inputBg,
+                        child: Image.asset(
+                          product.image,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Center(
+                            child: Icon(
+                              Icons.image_not_supported_outlined,
+                              color: AppColors.textMuted,
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      if (product.hot)
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.black,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SvgPicture.asset(
+                                  AppAssets.iconFlame,
+                                  width: 12,
+                                  height: 12,
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.orangeAccent,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Hot',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface.withValues(alpha: 0.92),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SvgPicture.asset(
+                                AppAssets.iconStar,
+                                width: 12,
+                                height: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                product.rating.toStringAsFixed(1),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  if (product.hot)
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.black,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SvgPicture.asset(
-                              AppAssets.iconFlame,
-                              width: 12,
-                              height: 12,
-                              colorFilter: ColorFilter.mode(
-                                Colors.orangeAccent,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Hot',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.white,
-                              ),
-                            ),
-                          ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
                         ),
                       ),
-                    ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                      const SizedBox(height: 2),
+                      Text(
+                        product.studio,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface.withValues(alpha: 0.92),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      const SizedBox(height: 6),
+                      Row(
                         children: [
-                          SvgPicture.asset(
-                            AppAssets.iconStar,
-                            width: 12,
-                            height: 12,
+                          Expanded(
+                            child: Text(
+                              MockData.formatPrice(product.price),
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.ink,
+                              ),
+                            ),
                           ),
-                          SizedBox(width: 4),
-                          Text(
-                            product.rating.toStringAsFixed(1),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.ink,
+                          Material(
+                            color: AppColors.black,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: onAdd ??
+                                  () => showModalPilihVariasi(
+                                    context,
+                                    product: product,
+                                    mode: ModalVariasiMode.beliLangsung,
+                                  ),
+                              child: SizedBox(
+                                width: 30,
+                                height: 30,
+                                child: Center(
+                                  child: SvgPicture.asset(
+                                    AppAssets.iconPlus,
+                                    width: 13,
+                                    height: 13,
+                                    colorFilter: const ColorFilter.mode(
+                                      AppColors.white,
+                                      BlendMode.srcIn,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: 10),
-        Text(
-          product.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: AppColors.ink,
-          ),
-        ),
-        SizedBox(height: 2),
-        Text(
-          product.studio,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                MockData.formatPrice(product.price),
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
-                ),
-              ),
-            ),
-            Material(
-              color: AppColors.black,
-              shape: CircleBorder(),
-              child: InkWell(
-                customBorder: CircleBorder(),
-                onTap: onAdd ??
-                    () => showModalPilihVariasi(
-                      context,
-                      product: product,
-                      mode: ModalVariasiMode.beliLangsung,
-                    ),
-                child: SizedBox(
-                  width: 34,
-                  height: 34,
-                  child: Center(
-                    child: SvgPicture.asset(
-                      AppAssets.iconPlus,
-                      width: 14,
-                      height: 14,
-                      colorFilter: ColorFilter.mode(
-                        AppColors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
+                    ],
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }

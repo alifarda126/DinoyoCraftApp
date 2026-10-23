@@ -33,10 +33,17 @@ abstract final class AppColors {
   static Color get divider =>
       isDark ? Color(0xFF3A3A3A) : Color(0xFFEEEEEE);
 
+  /// Permukaan navbar glassmorphism ala iOS: translusen dengan efek blur agar konten di belakangnya terlihat memudar halus.
   static Color get navigationSurface =>
-      isDark ? Color(0xEE1C1C1C) : Color(0xEEFFFFFF);
+      isDark
+          ? const Color(0xFF1C1C1E).withValues(alpha: 0.25)
+          : Colors.white.withValues(alpha: 0.18);
+
+  /// Border highlight atas kaca glassmorphism navbar ala iOS.
   static Color get navigationBorder =>
-      isDark ? Color(0xFF484848) : Color(0xFFE6E6E6);
+      isDark
+          ? Colors.white.withValues(alpha: 0.35)
+          : Colors.white.withValues(alpha: 0.85);
 
   static Color get successSurface =>
       isDark ? Color(0xFF173B28) : Color(0xFFD4EDDA);

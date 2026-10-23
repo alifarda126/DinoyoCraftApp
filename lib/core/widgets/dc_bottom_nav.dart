@@ -50,39 +50,85 @@ const   DcBottomNav({
         // Stack bebas overflow ke atas — icon tidak terpotong
         clipBehavior: Clip.none,
         children: [
-          // ── Layer 1: glass background (di-clip, tidak overflow) ──────────
+          // ── Layer 1: iOS authentic frosted glass background ─────────────
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-          // Background lebih pendek (_bgHeight) dari items layer (_barHeight)
-          // → icon active yang pop ke atas akan mencuat keluar dari background
-          height: _bgHeight + bottomPad,
-            child: ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(22)),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.navigationSurface,
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(22)),
-                    border: Border(
-                      top: BorderSide(
-                        color: AppColors.navigationBorder,
-                        width: 1.2,
+            // Background lebih pendek (_bgHeight) dari items layer (_barHeight)
+            // → icon active yang pop ke atas akan mencuat keluar dari background
+            height: _bgHeight + bottomPad,
+            child: Container(
+              // Shadow diffused ke atas di luar clip agar tidak terpotong
+              decoration: BoxDecoration(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(
+                      alpha: AppColors.isDark ? 0.40 : 0.08,
+                    ),
+                    blurRadius: 28,
+                    spreadRadius: 0,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+                child: BackdropFilter(
+                  // Blur intensitas iOS (transparan & jernih sehingga objek di baliknya terlihat)
+                  filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(24)),
+                      // Transparansi khas iOS Liquid / Frosted Glass jernih
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: AppColors.isDark
+                            ? [
+                                const Color(0xFF2C2C2E).withValues(alpha: 0.35),
+                                const Color(0xFF1C1C1E).withValues(alpha: 0.20),
+                              ]
+                            : [
+                                Colors.white.withValues(alpha: 0.22),
+                                Colors.white.withValues(alpha: 0.08),
+                              ],
+                      ),
+                      border: Border(
+                        top: BorderSide(
+                          color: AppColors.navigationBorder,
+                          width: 1.0,
+                        ),
                       ),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: AppColors.isDark ? 0.32 : 0.08,
+                    child: Stack(
+                      children: [
+                        // iOS specular rim glint (kilau bevel atas kaca khas Apple)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: 1.2,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.10),
+                                  Colors.white.withValues(
+                                    alpha: AppColors.isDark ? 0.45 : 0.95,
+                                  ),
+                                  Colors.white.withValues(alpha: 0.10),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                        blurRadius: 20,
-                        offset: Offset(0, -4),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -143,13 +189,33 @@ class _NavItemWidget extends StatelessWidget {
         ),
         SizedBox(height: 4),
         AnimatedDefaultTextStyle(
-          duration: Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 200),
           style: GoogleFonts.plusJakartaSans(
             fontSize: 10,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            color: active ? AppColors.ink : AppColors.textMuted,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+            color: active
+                ? AppColors.ink
+                : (AppColors.isDark
+                    ? const Color(0xFFE4E4E7)
+                    : const Color(0xFF27272A)),
+            shadows: [
+              Shadow(
+                color: (AppColors.isDark ? Colors.black : Colors.white)
+                    .withValues(alpha: 0.75),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
-          child: Text(AppText.get(item.label)),
+          child: Text(
+            AppText.get(item.label),
+            // Label tidak boleh wrap: di lebar item ekstrem (window di-resize
+            // sangat sempit / split screen) teks membungkus puluhan baris dan
+            // membuat Column meluap dari tinggi bar 76px.
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
@@ -180,8 +246,18 @@ class _IconBubble extends StatelessWidget {
       height: 46,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        // Stroke putih tipis (1.5px) di luar circle hitam
-        border: Border.all(color: AppColors.navigationBorder, width: 1.5),
+        // Stroke putih tipis kaca bercahaya di luar circle hitam
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.95),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.22),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
         color: Colors.transparent,
       ),
       // inner circle hitam mengisi hampir penuh (margin 1.5px ikut border)
@@ -198,18 +274,24 @@ class _IconBubble extends StatelessWidget {
   }
 
   Widget _icon(bool active) {
+    final Color iconColor = active
+        ? AppColors.white
+        : (AppColors.isDark
+            ? const Color(0xFFE4E4E7)
+            : const Color(0xFF27272A));
+
     return SvgPicture.asset(
       item.asset,
       width: 20,
       height: 20,
       colorFilter: ColorFilter.mode(
-        active ? AppColors.white : AppColors.textMuted,
+        iconColor,
         BlendMode.srcIn,
       ),
       placeholderBuilder: (ctx) => Icon(
         item.fallback,
         size: 20,
-        color: active ? AppColors.white : AppColors.textMuted,
+        color: iconColor,
       ),
     );
   }
