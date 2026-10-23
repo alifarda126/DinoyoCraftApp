@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -5,7 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/services/photo_picker_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/mock_data.dart';
 
 class DataDiriScreen extends StatefulWidget {
 const   DataDiriScreen({super.key});
@@ -56,6 +60,11 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
+      // Bar simpan di slot bottomNavigationBar (bukan di dalam body): saat
+      // keyboard terbuka body menyusut, tetapi bar TETAP di dasar layar dan
+      // tertutup keyboard — konsisten dengan bottom nav di halaman pencarian
+      // produk/toko.
+      bottomNavigationBar: _buildSaveBar(),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -63,18 +72,18 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             _buildHeader(),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
                 children: [
                   _buildTitleBlock(),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   _buildAvatarSection(),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   _buildLabelRow('Nama Lengkap'.tr, hint: 'Sesuai KTP'.tr),
                   _buildField(
                     controller: _nameController,
                     icon: Icons.person_outline_rounded,
                   ),
-                  SizedBox(height: 14),
+                  const SizedBox(height: 14),
                   _buildLabelRow(
                     'Username'.tr,
                     badge: 'Tersedia'.tr,
@@ -84,105 +93,126 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                     icon: Icons.alternate_email_rounded,
                     prefixText: '@',
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   _buildHelper(
                     'Username profil dinoyocraft.id/@customer. Ubah 30 hari sekali.'.tr,
                   ),
-                  SizedBox(height: 14),
-                  _buildLabelRow(
-                    'Alamat Email'.tr,
-                    verified: true,
-                    onEdit: () => _emailFocus.requestFocus(),
-                  ),
+                  const SizedBox(height: 14),
+                  _buildLabelRow('Alamat Email'.tr),
                   _buildField(
                     controller: _emailController,
                     icon: Icons.mail_outline_rounded,
                     focusNode: _emailFocus,
+                    suffix: _buildVerifiedSuffix(
+                      onEdit: () => _emailFocus.requestFocus(),
+                    ),
                   ),
-                  SizedBox(height: 14),
-                  _buildLabelRow(
-                    'Nomor WhatsApp / Seluler'.tr,
-                    verified: true,
-                    onEdit: () => _phoneFocus.requestFocus(),
-                  ),
+                  const SizedBox(height: 14),
+                  _buildLabelRow('Nomor WhatsApp / Seluler'.tr),
                   _buildField(
                     controller: _phoneController,
                     icon: Icons.phone_outlined,
                     focusNode: _phoneFocus,
+                    suffix: _buildVerifiedSuffix(
+                      onEdit: () => _phoneFocus.requestFocus(),
+                    ),
                   ),
-                  SizedBox(height: 14),
+                  const SizedBox(height: 14),
                   _buildLabelRow('Jenis Kelamin'.tr),
                   _buildGenderSegment(),
-                  SizedBox(height: 14),
+                  const SizedBox(height: 14),
                   _buildLabelRow('Tanggal Lahir'.tr),
                   _buildField(
                     controller: _birthController,
                     icon: Icons.calendar_today_outlined,
+                    readOnly: true,
+                    onTap: _selectBirthDate,
                   ),
-                  SizedBox(height: 18),
+                  const SizedBox(height: 18),
                   _buildNoticeBox(),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
-            _buildSaveBar(),
           ],
         ),
       ),
     );
   }
 
-  /// Dialog pilih sumber foto profil.
-  void _showPhotoSourceDialog() {
-    showDialog<void>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: Text(
-          'Ubah Foto Profil'.tr,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: AppColors.ink,
-          ),
-        ),
+  /// Ubah foto profil: sheet pilih sumber (kamera/galeri) → ambil foto.
+  /// Hasil disimpan ke [MockData.userProfilePhotoPath] dan [MockData.userProfilePhotoBytes]
+  /// agar avatar di seluruh layar profil langsung tersinkronisasi.
+  Future<void> _changeProfilePhoto() async {
+    final file = await PhotoPickerService.pickWithSheet(
+      context,
+      title: 'Ubah Foto Profil'.tr,
+      subtitle: 'Pilih sumber foto baru untuk profilmu.'.tr,
+    );
+    if (file == null || !mounted) return;
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      MockData.userProfilePhotoPath = file.path;
+      MockData.userProfilePhotoBytes = bytes;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.black,
         content: Text(
-          'Pilih sumber foto baru untuk profilmu.'.tr,
+          'Foto profil berhasil diperbarui.'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 13,
-            height: 1.5,
-            color: AppColors.textSecondary,
+            color: AppColors.white,
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogCtx).pop();
-              _notifyPhotoDemo('Kamera'.tr);
-            },
-            child: Text('Kamera'.tr),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogCtx).pop();
-              _notifyPhotoDemo('Galeri'.tr);
-            },
-            child: Text('Galeri'.tr),
-          ),
-        ],
       ),
     );
   }
 
-  void _notifyPhotoDemo(String source) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppText.isEnglish
-              ? 'Selecting photo from $source (camera/gallery integration coming soon).'
-              : 'Mengambil foto dari $source (integrasi kamera/galeri menyusul).',
-        ),
-      ),
+  Future<void> _selectBirthDate() async {
+    final now = DateTime.now();
+    final initialDate = DateTime(1998, 8, 14);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1940),
+      lastDate: now,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.black,
+              onPrimary: AppColors.white,
+              surface: AppColors.surface,
+              onSurface: AppColors.ink,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
+    if (picked != null) {
+      final months = [
+        'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember',
+      ];
+      setState(() {
+        _birthController.text =
+            '${picked.day} ${months[picked.month - 1]} ${picked.year}';
+      });
+    }
   }
 
   Widget _buildHeader() {
@@ -258,30 +288,83 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
     );
   }
 
+  Widget _buildAvatarImage() {
+    if (MockData.userProfilePhotoBytes != null) {
+      return Image.memory(
+        MockData.userProfilePhotoBytes!,
+        width: 96,
+        height: 96,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _avatarPlaceholder(),
+      );
+    }
+    if (MockData.userProfilePhotoPath != null) {
+      return Image.file(
+        File(MockData.userProfilePhotoPath!),
+        width: 96,
+        height: 96,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _avatarPlaceholder(),
+      );
+    }
+    return _avatarPlaceholder();
+  }
+
+  Widget _avatarPlaceholder() {
+    return Icon(
+      Icons.person_outline_rounded,
+      size: 44,
+      color: AppColors.ink,
+    );
+  }
+
   Widget _buildAvatarSection() {
     return Row(
       children: [
-        Container(
-          width: 96,
-          height: 96,
-          decoration: BoxDecoration(
-            color: AppColors.inputBg,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.borderAlt),
-          ),
-          child: Icon(
-            Icons.person_outline_rounded,
-            size: 44,
-            color: AppColors.ink,
+        GestureDetector(
+          onTap: _changeProfilePhoto,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 96,
+                height: 96,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: AppColors.inputBg,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.borderAlt),
+                ),
+                child: _buildAvatarImage(),
+              ),
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: AppColors.black,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.surface, width: 2),
+                  ),
+                  child: Icon(
+                    Icons.camera_alt_rounded,
+                    size: 14,
+                    color: AppColors.white,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
-                onTap: _showPhotoSourceDialog,
+                onTap: _changeProfilePhoto,
                 child: Text(
                   'Ubah Foto Profil'.tr,
                   style: GoogleFonts.plusJakartaSans(
@@ -292,7 +375,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                   ),
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 'Format JPG, PNG atau WEBP. Maksimal 5 MB.'.tr,
                 style: GoogleFonts.plusJakartaSans(
@@ -319,7 +402,9 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Flexible(
+          // Expanded: saat layar sempit label menyusut dengan ellipsis,
+          // bukan meluap ke kanan bersama badge/hint di sebelahnya.
+          Expanded(
             child: Text(
               label,
               maxLines: 1,
@@ -331,8 +416,8 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               ),
             ),
           ),
-          Spacer(),
-          if (hint != null)
+          if (hint != null) ...[
+            SizedBox(width: 8),
             Flexible(
               child: Text(
                 hint,
@@ -346,12 +431,15 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                 ),
               ),
             ),
+          ],
           if (badge != null) ...[
+            SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: AppColors.inputBg,
                 borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: AppColors.borderAlt),
               ),
               child: Text(
                 badge,
@@ -364,45 +452,58 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             ),
           ],
           if (verified) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Color(0xFF50B0FF),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: AppColors.white),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check_rounded,
-                    size: 10,
-                    color: AppColors.ink,
-                  ),
-                  SizedBox(width: 2),
-                  Text(
-                    'Verif'.tr,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                ],
-              ),
-            ),
             SizedBox(width: 8),
-            GestureDetector(
-              onTap: onEdit,
-              child: Text(
-                'Ubah'.tr,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+            _buildVerifiedSuffix(onEdit: onEdit),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerifiedSuffix({VoidCallback? onEdit}) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFF50B0FF),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_rounded,
+                  size: 11,
                   color: AppColors.ink,
                 ),
+                const SizedBox(width: 3),
+                Text(
+                  'Verif'.tr,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onEdit,
+            child: Text(
+              'Ubah'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink,
               ),
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -413,10 +514,16 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
     required IconData icon,
     String prefixText = '',
     FocusNode? focusNode,
+    Widget? suffix,
+    bool readOnly = false,
+    VoidCallback? onTap,
   }) {
     return TextField(
       controller: controller,
       focusNode: focusNode,
+      readOnly: readOnly,
+      onTap: onTap,
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       style: GoogleFonts.plusJakartaSans(
         fontSize: 14,
         color: AppColors.ink,
@@ -428,6 +535,8 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
           fontSize: 14,
           color: AppColors.textSecondary,
         ),
+        suffixIcon: suffix,
+        suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
@@ -503,17 +612,32 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
     required bool selected,
     required VoidCallback onTap,
   }) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
+
+    final Color bgColor;
+    final Color borderColor;
+    final Color contentColor;
+
+    if (selected) {
+      bgColor = isDark ? AppColors.white : AppColors.black;
+      borderColor = isDark ? AppColors.white : AppColors.black;
+      contentColor = isDark ? AppColors.black : AppColors.white;
+    } else {
+      bgColor = AppColors.surface;
+      borderColor = AppColors.borderAlt;
+      contentColor = isDark ? AppColors.textSecondary : AppColors.ink;
+    }
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         height: 46,
         decoration: BoxDecoration(
-          color: selected ? AppColors.black : AppColors.surface,
+          color: bgColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? AppColors.black : AppColors.borderAlt,
-          ),
+          border: Border.all(color: borderColor),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -524,17 +648,23 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               height: 14,
               fit: BoxFit.contain,
               colorFilter: ColorFilter.mode(
-                selected ? AppColors.white : AppColors.ink,
+                contentColor,
                 BlendMode.srcIn,
               ),
             ),
-            SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: selected ? AppColors.white : AppColors.ink,
+            const SizedBox(width: 8),
+            // Flexible + ellipsis: tombol gender bisa meluap saat layar
+            // sangat sempit karena ikon + teks melebihi setengah lebar.
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  color: contentColor,
+                ),
               ),
             ),
           ],

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import '../../core/app_settings.dart';
 import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
+import '../../core/widgets/image_preview_dialog.dart';
 import '../../data/mock_data.dart';
 
 /// Halaman Profil — bagian "Riwayat Pesanan" disesuaikan 1:1 dengan desain
@@ -27,18 +29,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Color get _black => AppColors.ink;
   Color get _text => AppColors.ink;
   Color get _textGray => AppColors.textSecondary;
-  Color get _textLight => AppColors.textMuted;
   Color get _priceGray => AppColors.textSecondaryAlt;
   Color get _chipGray => AppColors.textSecondary;
   Color get _lineGray => AppColors.divider;
   Color get _borderGray => AppColors.border;
-  Color get _borderPink => AppColors.borderAlt;
-  Color get _dividerPink => AppColors.divider;
   Color get _badgeGray => AppColors.surfaceSubtle;
   Color get _btnLight => AppColors.surfaceSubtle;
-  static const Color _dikirimRed = Color(0xFFFF0024);
-  static const Color _dikemasYellow = Color(0xFFFFD400);
-  static const Color _logoutRed = Color(0xFFFF0000);
+  Color get _dikirimBlue =>
+      AppColors.isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E88E5);
+  Color get _dikemasAmber =>
+      AppColors.isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
+  Color get _statusGreen =>
+      AppColors.isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A);
 
   String _orderTab = 'Dikemas';
 
@@ -57,10 +59,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     const tabs = ['Dikemas', 'Dikirim', 'Diterima'];
-    final topHeaderHeight = MediaQuery.paddingOf(context).top + 48.0;
+    final topHeaderHeight = DcAppHeader.totalHeight(context);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
+      extendBody: true,
       body: RefreshIndicator(
         onRefresh: _handleRefresh,
         color: AppColors.ink,
@@ -74,25 +77,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SliverPinnedDcHeader(),
           SliverToBoxAdapter(
             child: Padding(
-              // Padding bawah 120 agar tombol logout & teks versi leluasa
-              // di atas navbar melayang (MainShell memakai extendBody: true).
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+              // Padding bawah disesuaikan agar elemen profil dapat leluasa bergulir
+              // dan terlihat secara jelas di balik navbar kaca (extendBody: true).
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 56),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildProfileBlock(),
-                  SizedBox(height: 28),
+                  SizedBox(height: 20),
                   _buildOrderSectionHeader(),
-                  SizedBox(height: 12),
+                  SizedBox(height: 10),
                   _buildSegmentedTabs(tabs),
-                  SizedBox(height: 14),
-                  ..._buildOrderCards(context),
                   SizedBox(height: 12),
+                  ..._buildOrderCards(context),
+                  SizedBox(height: 10),
                   _buildSeeAllButton(context),
-                  SizedBox(height: 28),
-                  // Bagian bawah tetap memakai margin 24 seperti sebelumnya.
+                  SizedBox(height: 20),
+                  // Bagian bawah tetap memakai margin 4 horizontal.
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -134,26 +137,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
   );
   }
 
+  void _openProfilePhotoPreview() {
+    ImagePreviewDialog.show(
+      context,
+      title: 'Foto Profil'.tr,
+      subtitle: 'Customer • @customer',
+      bytes: MockData.userProfilePhotoBytes,
+      filePath: MockData.userProfilePhotoPath,
+      isAvatar: true,
+    );
+  }
+
+  Widget _avatarPlaceholder() {
+    return Icon(
+      Icons.person_outline_rounded,
+      size: 44,
+      color: AppColors.ink,
+    );
+  }
+
+  Widget _buildProfileAvatar() {
+    Widget imageContent;
+    if (MockData.userProfilePhotoBytes != null) {
+      imageContent = Image.memory(
+        MockData.userProfilePhotoBytes!,
+        width: 88,
+        height: 88,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _avatarPlaceholder(),
+      );
+    } else if (MockData.userProfilePhotoPath != null) {
+      imageContent = Image.file(
+        File(MockData.userProfilePhotoPath!),
+        width: 88,
+        height: 88,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _avatarPlaceholder(),
+      );
+    } else {
+      imageContent = _avatarPlaceholder();
+    }
+
+    return GestureDetector(
+      key: const Key('profile_avatar_tap'),
+      onTap: _openProfilePhotoPreview,
+      child: Container(
+        width: 88,
+        height: 88,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: AppColors.inputBg,
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.border, width: 1),
+        ),
+        child: imageContent,
+      ),
+    );
+  }
+
   // ═══ Blok profil ════════════════════════════════════════════════════════
   Widget _buildProfileBlock() {
     return Column(
       children: [
-        Center(
-          child: Container(
-            width: 88,
-            height: 88,
-            decoration: BoxDecoration(
-              color: AppColors.inputBg,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            child: Icon(
-              Icons.person_outline_rounded,
-              size: 44,
-              color: AppColors.ink,
-            ),
-          ),
-        ),
+        Center(child: _buildProfileAvatar()),
         SizedBox(height: 14),
         Center(
           child: Text(
@@ -179,7 +225,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SizedBox(height: 14),
         Center(
           child: OutlinedButton.icon(
-            onPressed: () => context.push('/profile/edit'),
+            onPressed: () async {
+              await context.push('/profile/edit');
+              if (mounted) setState(() {});
+            },
             icon: Icon(
               Icons.person_outline_rounded,
               size: 16,
@@ -307,13 +356,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             product: _vasProduct,
             name: 'Vas Keramik Minimalis',
             variant: 'Sand White Glossy • 1x',
-            price: 'Harga: Rp85.000',
-            total: 'Total: Rp102.000',
+            price: 'Rp85.000',
+            total: 'Rp102.000',
             leftLabel: 'Beri Ulasan',
             onLeft: () => context.push('/review/write'),
             onBuyAgain: () => context.push('/product/1'),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           _diterimaCard(
             id: '#DNC-000',
             store: 'Ruang Tanah Studio',
@@ -321,8 +370,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             product: _mangkukProduct,
             name: 'Mangkuk Keramik Artisanal',
             variant: 'Terracotta Glaze • 1x',
-            price: 'Harga: Rp75.000',
-            total: 'Total: Rp90.000',
+            price: 'Rp75.000',
+            total: 'Rp90.000',
             leftLabel: 'Lihat Ulasan',
             onLeft: () => context.push('/reviews'),
             onBuyAgain: () => context.push('/product/3'),
@@ -335,37 +384,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _cardShell(
       borderColor: _borderGray,
       radius: 16,
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 17),
+      padding: const EdgeInsets.all(16),
       children: [
         _cardHeader(
           id: '#DNC-001',
           store: 'Dinoyo Ceramic Studio',
           badge: 'Dikemas Penjual'.tr,
-          fontSize: 11,
-          storeColor: _textLight,
+          fontSize: 12,
+          storeColor: _textGray,
           badgeBorder: _borderGray,
+          badgeFill: _badgeGray,
+          showBullet: true,
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 12),
         Divider(height: 1, thickness: 1, color: _lineGray),
-        SizedBox(height: 11),
+        const SizedBox(height: 12),
         _statusBox(
           title: 'Menyerahkan ke Pihak Jasa Kirim'.tr,
-          dotColor: _dikemasYellow,
+          dotColor: _dikemasAmber,
           note: 'Paket sedang dalam perjalanan untuk diserahkan\n'
               'ke Pihak Jasa Kirim'.tr,
-          noteColor: _dikemasYellow,
+          noteColor: _dikemasAmber,
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 12),
         _simpleProductRow(
           product: _mangkukProduct,
           name: 'Mangkuk Keramik',
+          subtitle: 'Karya Tanah Keramik Dinoyo',
           qty: 'Jumlah: 1'.tr,
           price: 'Rp20.000',
-          imageSize: 72,
-          imageRadius: 8,
-          gap: 16,
+          imageSize: 76,
+          imageRadius: 10,
+          gap: 12,
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         _totalRow('Total (1 Produk):'.tr, 'Rp25.000', _lineGray),
       ],
     );
@@ -374,9 +426,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ═══ Kartu: DIKIRIM ═════════════════════════════════════════════════════
   Widget _dikirimCard(BuildContext context) {
     return _cardShell(
-      borderColor: _borderPink,
-      radius: 12,
-      padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 16),
+      borderColor: _borderGray,
+      radius: 16,
+      padding: const EdgeInsets.all(16),
       children: [
         _cardHeader(
           id: '#DNC-004',
@@ -385,31 +437,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
           fontSize: 12,
           storeColor: _textGray,
           badgeBorder: _borderGray,
+          badgeFill: _badgeGray,
+          showBullet: true,
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 12),
         Divider(height: 1, thickness: 1, color: _lineGray),
-        SizedBox(height: 16),
+        const SizedBox(height: 12),
         _statusBox(
           title: 'J&T Express - Reguler',
           titleTrailing: 'JT92817294820',
-          dotColor: _logoutRed,
+          dotColor: _dikirimBlue,
           note: 'Paket sedang dalam perjalanan menuju kota\n'
               'Malang (Hub Sukun)'.tr,
-          noteColor: _dikirimRed,
+          noteColor: _dikirimBlue,
         ),
-        SizedBox(height: 16),
+        const SizedBox(height: 12),
         _simpleProductRow(
           product: _cangkirProduct,
           name: 'Cangkir Handmade Artisan',
+          subtitle: 'Karya Tanah Keramik Dinoyo',
           qty: 'Jumlah: 2'.tr,
           price: 'Rp130.000',
-          imageSize: 80,
-          imageRadius: 8,
-          gap: 8,
+          imageSize: 76,
+          imageRadius: 10,
+          gap: 12,
         ),
-        SizedBox(height: 10),
-        _totalRow('Total (2 Produk):'.tr, 'Rp145.000', _dividerPink),
-        SizedBox(height: 14),
+        const SizedBox(height: 10),
+        _totalRow('Total (2 Produk):'.tr, 'Rp145.000', _lineGray),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -418,7 +473,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: Icons.local_shipping_outlined,
                 bg: _btnLight,
                 fg: _text,
-                borderColor: _borderPink,
+                borderColor: _borderGray,
+                bold: true,
                 height: 40,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -437,13 +493,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
               ),
             ),
-            SizedBox(width: 9),
+            const SizedBox(width: 8),
             Expanded(
               child: _actionButton(
                 label: 'Hubungi Penjual',
                 icon: Icons.chat_bubble_outline_rounded,
                 bg: AppColors.black,
                 fg: AppColors.white,
+                bold: true,
                 height: 40,
                 onTap: () {
                   context.push('/chat-room?store='
@@ -472,9 +529,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required VoidCallback onBuyAgain,
   }) {
     return _cardShell(
-      borderColor: _lineGray,
+      borderColor: _borderGray,
       radius: 16,
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(16),
       children: [
         _cardHeader(
           id: id,
@@ -482,115 +539,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
           badge: 'Pesanan Selesai'.tr,
           fontSize: 12,
           storeColor: _textGray,
-          badgeBorder: _lineGray,
+          badgeBorder: _borderGray,
           badgeFill: _badgeGray,
           showBullet: true,
         ),
-        SizedBox(height: 11),
+        const SizedBox(height: 12),
         Divider(height: 1, thickness: 1, color: _lineGray),
-        SizedBox(height: 12),
-        Row(
-          children: [
-            Icon(Icons.check_circle_outline_rounded,
-                size: 14, color: _textGray),
-            SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                deliveredText,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  color: _textGray,
-                ),
-              ),
-            ),
-          ],
+        const SizedBox(height: 12),
+        _deliveredStatusBox(deliveredText),
+        const SizedBox(height: 12),
+        _simpleProductRow(
+          product: product,
+          name: name,
+          subtitle: variant,
+          qty: 'Jumlah: 1'.tr,
+          price: price,
+          imageSize: 76,
+          imageRadius: 10,
+          gap: 12,
         ),
-        SizedBox(height: 12),
-        SizedBox(
-          height: 72,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _productImage(product, 72, 12),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: _text,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          variant,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            color: _textGray,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          price,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            color: _priceGray,
-                          ),
-                        ),
-                        Text(
-                          total,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: _text,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 12),
-        Divider(height: 1, thickness: 1, color: _lineGray),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
+        _totalRow('Total (1 Produk):'.tr, total, _lineGray),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
               child: _actionButton(
                 label: leftLabel.tr,
-                bg: AppColors.surface,
+                bg: _btnLight,
                 fg: _text,
-                borderColor: _lineGray,
+                borderColor: _borderGray,
                 bold: true,
-                height: 36,
+                height: 40,
                 onTap: onLeft,
               ),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: _actionButton(
                 label: 'Beli Lagi'.tr,
                 bg: AppColors.black,
                 fg: AppColors.white,
                 bold: true,
-                height: 36,
+                height: 40,
                 onTap: onBuyAgain,
               ),
             ),
@@ -614,6 +605,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: AppColors.isDark ? 0.25 : 0.04,
+            ),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,7 +666,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         SizedBox(width: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: badgeFill ?? AppColors.surface,
             borderRadius: BorderRadius.circular(999),
@@ -758,6 +758,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _deliveredStatusBox(String text) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _black),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle_outline_rounded,
+            size: 15,
+            color: _statusGreen,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: _black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _productImage(Product product, double size, double radius) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
@@ -776,11 +807,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Baris produk untuk tab Dikemas & Dikirim:
-  /// nama + toko di atas, "Jumlah" (kiri) dan harga (kanan) di bawah.
+  /// Baris produk untuk seluruh tab pesanan:
+  /// nama + info di atas, "Jumlah" (kiri) dan harga (kanan) di bawah.
   Widget _simpleProductRow({
     required Product product,
     required String name,
+    required String subtitle,
     required String qty,
     required String price,
     required double imageSize,
@@ -812,9 +844,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: _text,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'Karya Tanah Keramik Dinoyo',
+                      subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
@@ -838,6 +870,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       price,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
+                        fontWeight: FontWeight.w700,
                         color: _black,
                       ),
                     ),
@@ -1000,13 +1033,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     product: _vasProduct,
                     name: 'Vas Keramik Minimalis',
                     variant: 'Sand White Glossy • 1x',
-                    price: 'Harga: Rp85.000',
-                    total: 'Total: Rp102.000',
+                    price: 'Rp85.000',
+                    total: 'Rp102.000',
                     leftLabel: 'Beri Ulasan',
                     onLeft: () => ctx.push('/review/write'),
                     onBuyAgain: () => ctx.push('/product/1'),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _diterimaCard(
                     id: '#DNC-000',
                     store: 'Ruang Tanah Studio',
@@ -1015,8 +1048,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     product: _mangkukProduct,
                     name: 'Mangkuk Keramik Artisanal',
                     variant: 'Terracotta Glaze • 1x',
-                    price: 'Harga: Rp75.000',
-                    total: 'Total: Rp90.000',
+                    price: 'Rp75.000',
+                    total: 'Rp90.000',
                     leftLabel: 'Lihat Ulasan',
                     onLeft: () => ctx.push('/reviews'),
                     onBuyAgain: () => ctx.push('/product/3'),
@@ -1082,9 +1115,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.92),
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: AppColors.isDark ? 0.25 : 0.04,
+                ),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -1193,7 +1235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onPressed: () {
           // Logout → login berikutnya butuh OTP (jika 2FA aktif).
           AppSettings.instance.markLoggedOut();
-          context.go('/');
+          context.go('/login');
         },
         icon: Icon(
           Icons.logout_rounded,
