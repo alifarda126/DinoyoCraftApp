@@ -5,6 +5,7 @@ import 'core/app_settings.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/keyboard_dismiss_wrapper.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,9 +86,11 @@ class _DinoyoCraftAppState extends State<DinoyoCraftApp> {
             // di bawah memaksa seluruh subtree dibangun ulang SAAT mode
             // berubah — state navigator (route, input, scroll) tetap utuh
             // karena reparenting GlobalKey milik go_router.
-            return KeyedSubtree(
-              key: ObjectKey((isDark, settings.locale)),
-              child: child ?? const SizedBox.shrink(),
+            return KeyboardDismissWrapper(
+              child: KeyedSubtree(
+                key: ObjectKey((isDark, settings.locale)),
+                child: child ?? const SizedBox.shrink(),
+              ),
             );
           },
         );

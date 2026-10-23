@@ -85,6 +85,7 @@ class _DcTextFieldState extends State<DcTextField> {
           validator: widget.validator,
           textInputAction: widget.textInputAction,
           onFieldSubmitted: widget.onFieldSubmitted,
+          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14,
             color: AppColors.ink,

@@ -21,15 +21,44 @@ class CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
+
+    // Stroke border & shadow putih tipis saat mode gelap agar kategori yang
+    // dipilih terlihat jelas dan kontras dari background gelap (tidak tenggelam).
+    final border = (selected && isDark)
+        ? Border.all(
+            color: Colors.white.withValues(alpha: 0.35),
+            width: 1.0,
+          )
+        : Border.all(
+            color: Colors.transparent,
+            width: 1.0,
+          );
+
+    final boxShadow = (selected && isDark)
+        ? [
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.12),
+              blurRadius: 8,
+              spreadRadius: 0.5,
+              offset: const Offset(0, 1),
+            ),
+          ]
+        : null;
+
     // Bentuk pill penuh sesuai desain awal; mengisi tinggi baris (38px).
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? AppColors.black : AppColors.inputBg,
           borderRadius: BorderRadius.circular(999),
+          border: border,
+          boxShadow: boxShadow,
         ),
         child: Text(
           label.tr,
