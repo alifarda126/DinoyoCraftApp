@@ -5,6 +5,7 @@ import 'package:dinoyocraftmobile/core/assets.dart';
 import 'package:dinoyocraftmobile/core/router/app_router.dart';
 import 'package:dinoyocraftmobile/core/theme/app_colors.dart';
 import 'package:dinoyocraftmobile/features/auth/login_screen.dart';
+import 'package:dinoyocraftmobile/features/profile/data_diri_screen.dart';
 import 'package:dinoyocraftmobile/main.dart' as app;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -368,5 +369,52 @@ void main() {
     // Kembalikan ke mode terang
     AppSettings.instance.setThemeMode(AppThemeMode.light);
     await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'tombol gender di DataDiriScreen memiliki kontras tinggi saat dipilih di mode gelap',
+      (tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(() {
+      tester.view.reset();
+      AppSettings.instance.setThemeMode(AppThemeMode.light);
+    });
+
+    AppSettings.instance.setThemeMode(AppThemeMode.dark);
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: DataDiriScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final maleFinder = find.text('Laki-laki');
+    await tester.scrollUntilVisible(
+      maleFinder,
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    // Default: 'Laki-laki' terpilih (selected)
+    // Di mode gelap, tombol terpilih harus berlatar putih dengan teks hitam
+    final maleText = tester.widget<Text>(maleFinder);
+    expect(maleText.style?.color, AppColors.black);
+
+    // Tombol tidak terpilih 'Perempuan' harus berwarna textSecondary (abu-abu)
+    final femaleFinder = find.text('Perempuan');
+    final femaleText = tester.widget<Text>(femaleFinder);
+    expect(femaleText.style?.color, AppColors.textSecondary);
+
+    // Tap Perempuan
+    await tester.tap(femaleFinder);
+    await tester.pumpAndSettle();
+
+    // Sekarang Perempuan yang terpilih (teks hitam) dan Laki-laki tidak terpilih (textSecondary)
+    final femaleTextAfter = tester.widget<Text>(femaleFinder);
+    expect(femaleTextAfter.style?.color, AppColors.black);
+    final maleTextAfter = tester.widget<Text>(maleFinder);
+    expect(maleTextAfter.style?.color, AppColors.textSecondary);
   });
 }
