@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
 import '../../data/mock_data.dart';
 
 /// Halaman Checkout — disesuaikan dengan desain CO.png.
@@ -483,9 +484,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     final totalQty = _qtys.fold<int>(0, (s, q) => s + q);
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: _buildAppBar(),
+    return AppBackScope(
+      fallbackRoute: '/home',
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        appBar: _buildAppBar(),
       body: Column(
         children: [
           Expanded(
@@ -869,6 +872,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     controller: _noteCtrl,
                     maxLines: 3,
                     minLines: 2,
+                    onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       color: AppColors.ink,
@@ -1008,8 +1012,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ─── Section header ────────────────────────────────────────────────────────────
@@ -1664,7 +1669,7 @@ class _AddressFormState extends State<_AddressForm> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
       ),
@@ -1714,10 +1719,17 @@ class _AddressFormState extends State<_AddressForm> {
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
 
+    final mediaQuery = MediaQuery.of(context);
+    final bottomInset = mediaQuery.viewInsets.bottom;
+    final topPadding = mediaQuery.padding.top;
+    final screenH = mediaQuery.size.height;
+    final maxAllowedHeight = (screenH - bottomInset - topPadding - 12.0)
+        .clamp(200.0, screenH * 0.88);
+
     return Container(
-      margin: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      margin: EdgeInsets.only(bottom: bottomInset),
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.88,
+        maxHeight: maxAllowedHeight,
       ),
       decoration: BoxDecoration(
         color: AppColors.surfaceElevated,
@@ -1782,6 +1794,8 @@ class _AddressFormState extends State<_AddressForm> {
               Divider(height: 1, color: AppColors.divider),
               Expanded(
                 child: ListView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.manual,
                   padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
                   children: [
                     // Label Alamat
