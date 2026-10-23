@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
 import '../../data/mock_data.dart';
 
 /// Tampilkan keranjang sebagai bottom sheet — dipanggil dari ikon keranjang
@@ -98,11 +99,21 @@ class _CartScreenState extends State<CartScreen> {
       _items.length,
       (index) => _items[index].product.price * _quantities[index],
     ).fold<int>(0, (sum, price) => sum + price);
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            _CartHeader(onBack: () => context.pop()),
+    return AppBackScope(
+      fallbackRoute: '/home',
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              _CartHeader(
+                onBack: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
+                },
+              ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
@@ -255,8 +266,9 @@ class _CartScreenState extends State<CartScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _CartHeader extends StatelessWidget {
