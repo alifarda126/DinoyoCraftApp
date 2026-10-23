@@ -382,12 +382,17 @@ class _AlamatScreenState extends State<AlamatScreen> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            final mediaQuery = MediaQuery.of(context);
+            final bottomInset = mediaQuery.viewInsets.bottom;
+            final topPadding = mediaQuery.padding.top;
+            final screenH = mediaQuery.size.height;
+            final maxAllowedHeight = (screenH - bottomInset - topPadding - 12.0)
+                .clamp(200.0, screenH * 0.88);
 
             return Container(
               margin: EdgeInsets.only(bottom: bottomInset),
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.88,
+                maxHeight: maxAllowedHeight,
               ),
               decoration: BoxDecoration(
                 color: AppColors.surfaceElevated,
@@ -448,6 +453,8 @@ class _AlamatScreenState extends State<AlamatScreen> {
                     Divider(height: 1, color: AppColors.divider),
                     Expanded(
                       child: ListView(
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.manual,
                         padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
                         children: [
                           if (errorMessage != null) ...[

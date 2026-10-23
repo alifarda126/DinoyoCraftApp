@@ -1,8 +1,13 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../../../core/services/photo_picker_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../data/mock_data.dart';
 
 // ─── Account Settings Page (DataDiri.dart + Pengaturan.dart → 1 page) ─────────
 class AccountSettingsPage extends StatefulWidget {
@@ -104,10 +109,20 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                 CircleAvatar(
                   radius: 48,
                   backgroundColor: AppColors.inputBg,
-                  child: Text(
-                    _nameCtrl.text.isNotEmpty ? _nameCtrl.text[0] : 'U',
-                    style: AppTextStyles.sectionTitle,
-                  ),
+                  // Foto hasil kamera/galeri (sama dengan layar Kelola Data
+                  // Diri) ditampilkan sebagai latar avatar.
+                  backgroundImage: MockData.userProfilePhotoBytes != null
+                      ? MemoryImage(MockData.userProfilePhotoBytes!)
+                      : (MockData.userProfilePhotoPath != null
+                          ? FileImage(File(MockData.userProfilePhotoPath!))
+                          : null),
+                  child: (MockData.userProfilePhotoBytes == null &&
+                          MockData.userProfilePhotoPath == null)
+                      ? Text(
+                          _nameCtrl.text.isNotEmpty ? _nameCtrl.text[0] : 'U',
+                          style: AppTextStyles.sectionTitle,
+                        )
+                      : null,
                 ),
                 CircleAvatar(
                   radius: 16,
@@ -115,8 +130,33 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                   child: IconButton(
                     padding: EdgeInsets.zero,
                     icon: Icon(Icons.camera_alt, size: 14, color: AppColors.white),
-                    onPressed: () {
-                      // TODO: image picker
+                    onPressed: () async {
+                      final file = await PhotoPickerService.pickWithSheet(
+                        context,
+                        title: 'Ubah Foto Profil',
+                        subtitle: 'Pilih sumber foto baru untuk profilmu.',
+                      );
+                      if (file == null || !mounted) return;
+                      final bytes = await file.readAsBytes();
+                      if (!mounted) return;
+                      setState(() {
+                        MockData.userProfilePhotoPath = file.path;
+                        MockData.userProfilePhotoBytes = bytes;
+                      });
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: AppColors.black,
+                          content: Text(
+                            'Foto profil berhasil diperbarui.',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              color: AppColors.white,
+                            ),
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ),
