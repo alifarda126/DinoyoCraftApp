@@ -26,6 +26,14 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>DinoyoCraft membutuhkan akses kamera untuk mengambil foto profil, foto produk untuk chat, dan foto ulasan.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>DinoyoCraft membutuhkan akses galeri untuk memilih foto profil, foto produk untuk chat, dan foto ulasan.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>DinoyoCraft membutuhkan izin untuk menyimpan foto produk dan foto profil ke galeri perangkat Anda.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>DinoyoCraft membutuhkan akses mikrofon saat merekam video ulasan produk keramik.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
