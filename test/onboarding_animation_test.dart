@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   setUp(() {
     AppColors.isDark = false;
+    OnboardingScreen.hasPlayedEntranceAnimation = false;
   });
 
   testWidgets(
@@ -29,7 +30,6 @@ void main() {
     expect(find.byKey(const Key('logo_piece_top')), findsOneWidget);
     expect(find.byKey(const Key('logo_piece_hand')), findsOneWidget);
     expect(find.byKey(const Key('logo_piece_leaf')), findsOneWidget);
-    expect(find.byKey(const Key('logo_intro_skip_btn')), findsOneWidget);
 
     // Majukan ke detik saat kepingan menyatu dan brand reveal tampil di tengah (1300ms)
     await tester.pump(const Duration(milliseconds: 1300));
@@ -48,7 +48,7 @@ void main() {
     expect(find.textContaining('Daftar'), findsOneWidget);
   });
 
-  testWidgets('Tombol lewati (skip) langsung mempercepat ke halaman onboarding',
+  testWidgets('Mengetuk layar saat animasi intro langsung mempercepat ke halaman onboarding',
       (tester) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
@@ -61,13 +61,40 @@ void main() {
       ),
     );
 
-    expect(find.byKey(const Key('logo_intro_skip_btn')), findsOneWidget);
+    expect(find.byKey(const Key('logo_motion_intro')), findsOneWidget);
 
-    // Tap tombol Lewati
-    await tester.tap(find.byKey(const Key('logo_intro_skip_btn')));
+    // Tap pada layar intro
+    await tester.tap(
+      find.byKey(const Key('logo_motion_intro')),
+      warnIfMissed: false,
+    );
     await tester.pumpAndSettle();
 
     // Langsung berada pada halaman onboarding
+    expect(find.byKey(const Key('logo_motion_intro')), findsNothing);
+    expect(find.text('Mulai Menjelajah'), findsOneWidget);
+    expect(find.textContaining('Temukan Cerita di Balik Setiap'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Setelah animasi masuk pertama kali selesai, kunjungan berikutnya (misal logout) langsung ke onboarding tanpa animasi',
+      (tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+
+    // Simulasi bahwa animasi sudah pernah diputar saat pertama kali buka aplikasi
+    OnboardingScreen.hasPlayedEntranceAnimation = true;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const OnboardingScreen(),
+      ),
+    );
+    await tester.pump();
+
+    // Langsung merender halaman onboarding tanpa intro
     expect(find.byKey(const Key('logo_motion_intro')), findsNothing);
     expect(find.text('Mulai Menjelajah'), findsOneWidget);
     expect(find.textContaining('Temukan Cerita di Balik Setiap'), findsOneWidget);
