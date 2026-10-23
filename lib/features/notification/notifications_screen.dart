@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
+import '../../data/mock_data.dart';
 
 /// Menampilkan modal notifikasi sesuai desain Figma (Notif.dart)
 /// Menggunakan useRootNavigator: true agar berada di atas navbar dan FAB
@@ -24,21 +26,30 @@ const   NotificationsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0x73000000),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => context.pop(),
-                child: const SizedBox.expand(),
+    return AppBackScope(
+      fallbackRoute: '/home',
+      child: Scaffold(
+        backgroundColor: Color(0x73000000),
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/home');
+                    }
+                  },
+                  child: const SizedBox.expand(),
+                ),
               ),
-            ),
-            NotificationsModalSheet(isFullPageFallback: true),
-          ],
+              NotificationsModalSheet(isFullPageFallback: true),
+            ],
+          ),
         ),
       ),
     );
@@ -58,8 +69,16 @@ const   NotificationsModalSheet({super.key, this.isFullPageFallback = false});
 class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
   String _selectedFilter = 'Semua';
 
-  // ID notifikasi yang sudah dibaca (item 1 dan 2 belum dibaca, 3-5 sudah)
-  final Set<String> _readIds = {'3', '4', '5'};
+  // ID notifikasi yang sudah dibaca (disinkronkan dengan MockData)
+  Set<String> get _readIds => MockData.readNotificationIds;
+  int get _unreadCount =>
+      {'1', '2'}.difference(_readIds).length;
+
+  void _markAsRead(String id) {
+    setState(() {
+      MockData.markNotificationAsRead(id);
+    });
+  }
 
   static const Color _black = Color(0xFF000000);
   Color get _textDark => AppColors.ink;
@@ -134,31 +153,33 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2.5,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(9999),
-                        color: _black,
-                        border: AppColors.isDark
-                            ? Border.all(
-                                color: Colors.white.withValues(alpha: 0.35),
-                                width: 1,
-                              )
-                            : null,
-                      ),
-                      child: Text(
-                        '3 Baru'.tr,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                    if (_unreadCount > 0) ...[
+                      SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2.5,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(9999),
+                          color: _black,
+                          border: AppColors.isDark
+                              ? Border.all(
+                                  color: Colors.white.withValues(alpha: 0.35),
+                                  width: 1,
+                                )
+                              : null,
+                        ),
+                        child: Text(
+                          '$_unreadCount Baru'.tr,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
                 GestureDetector(
@@ -216,19 +237,34 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 children: [
                   // Kartu 1: Voucher Diskon
                   if (_shouldShow('Transaksi & Pesanan')) ...[
-                    _buildVoucherCard(context),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _markAsRead('1'),
+                      child: _buildVoucherCard(context),
+                    ),
                     SizedBox(height: 12),
                   ],
 
                   // Kartu 2: Jadwal Workshop
                   if (_shouldShow('Info Akun')) ...[
-                    _buildWorkshopCard(context),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (!_readIds.contains('2')) {
+                          _markAsRead('2');
+                        } else {
+                          _openNotificationTarget('2', '/workshop');
+                        }
+                      },
+                      child: _buildWorkshopCard(context),
+                    ),
                     SizedBox(height: 12),
                   ],
 
                   // Kartu 3: Pembayaran Dikonfirmasi
                   if (_shouldShow('Transaksi & Pesanan')) ...[
                     GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () => _openNotificationTarget('3', '/profile'),
                       child: _buildPaymentCard(),
                     ),
@@ -238,6 +274,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                   // Kartu 4: Status Pesanan Dikemas (terlihat saat discroll)
                   if (_shouldShow('Transaksi & Pesanan')) ...[
                     GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () => _openNotificationTarget('4', '/profile'),
                       child: _buildOrderPackedCard(),
                     ),
@@ -247,6 +284,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                   // Kartu 5: Info Keamanan Akun (terlihat saat discroll)
                   if (_shouldShow('Info Akun')) ...[
                     GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () => _openNotificationTarget('5', '/settings'),
                       child: _buildAccountSecurityCard(),
                     ),
@@ -269,9 +307,26 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
   /// Tandai kartu sudah dibaca, tutup modal, lalu buka halaman terkait.
   void _openNotificationTarget(String readId, String route) {
     final router = GoRouter.of(context);
-    setState(() => _readIds.add(readId));
-    Navigator.of(context).pop();
-    router.push(route);
+    _markAsRead(readId);
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+
+    // Rute shell branch harus memakai .go() agar StatefulNavigationShell
+    // berpindah branch dan navbar ikut beralih ke tab yang sesuai (mis. Profil).
+    const shellBranches = {
+      '/home',
+      '/products',
+      '/stores',
+      '/workshop',
+      '/profile',
+    };
+
+    if (shellBranches.contains(route)) {
+      router.go(route);
+    } else {
+      router.push(route);
+    }
   }
 
   Widget _buildFilterChip(String label) {
@@ -454,7 +509,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     Clipboard.setData(
                       ClipboardData(text: 'DINOYOKARYA'),
                     );
-                    setState(() => _readIds.add('1'));
+                    _markAsRead('1');
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -595,11 +650,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 ),
                 SizedBox(height: 8),
                 InkWell(
-                  onTap: () {
-                    setState(() => _readIds.add('2'));
-                    Navigator.of(context).pop();
-                    context.go('/workshop');
-                  },
+                  onTap: () => _openNotificationTarget('2', '/workshop'),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

@@ -5,54 +5,80 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
+import '../../data/mock_data.dart';
 
-class ChatListScreen extends StatelessWidget {
+class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
   static const Color _onlineGreen = Color(0xFF059669);
 
   @override
+  State<ChatListScreen> createState() => _ChatListScreenState();
+}
+
+class _ChatListScreenState extends State<ChatListScreen> {
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            SizedBox(
-              height: 54,
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 19,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Pesan'.tr,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
+    return AppBackScope(
+      fallbackRoute: '/home',
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              SizedBox(
+                height: 54,
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/home');
+                        }
+                      },
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 19,
                       ),
                     ),
-                  ),
-                  SizedBox(width: 48),
-                ],
+                    Expanded(
+                      child: Text(
+                        'Pesan'.tr,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 48),
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 6, 20, 30),
-                itemCount: _chats.length,
-                separatorBuilder: (_, _) => SizedBox(height: 12),
-                itemBuilder: (context, i) => _ChatCard(chat: _chats[i]),
+              Expanded(
+                child: ValueListenableBuilder<int>(
+                  valueListenable: MockData.unreadChatNotifier,
+                  builder: (context, unreadCount, child) {
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 6, 20, 30),
+                      itemCount: _chats.length,
+                      separatorBuilder: (_, _) => SizedBox(height: 12),
+                      itemBuilder: (context, i) => _ChatCard(
+                        chat: _chats[i],
+                        onTap: () {
+                          if (mounted) setState(() {});
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -124,15 +150,55 @@ const List<_ChatData> _chats = [
 ];
 
 class _ChatCard extends StatelessWidget {
-  const _ChatCard({required this.chat});
+  const _ChatCard({required this.chat, this.onTap});
 
   final _ChatData chat;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
+    final isUnread = MockData.isChatUnread(chat.store);
+
+    final Color borderColor;
+    final double borderWidth;
+    final List<BoxShadow>? boxShadow;
+
+    if (isUnread) {
+      if (isDark) {
+        // Mode gelap: border dibuat lebih terang dari chat lain (borderAlt) + glow halus
+        borderColor = Colors.white.withValues(alpha: 0.75);
+        borderWidth = 1.3;
+        boxShadow = [
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.12),
+            blurRadius: 8,
+            spreadRadius: 0.5,
+          ),
+        ];
+      } else {
+        borderColor = AppColors.black;
+        borderWidth = 1.2;
+        boxShadow = null;
+      }
+    } else {
+      // Chat sudah dibaca: warna sama dengan chat lainnya
+      borderColor = AppColors.borderAlt;
+      borderWidth = 1.0;
+      boxShadow = null;
+    }
+
     return InkWell(
-      onTap:
-          () => context.push('/chat-room?store=${Uri.encodeComponent(chat.store)}'),
+      onTap: () async {
+        MockData.markChatAsRead(chat.store);
+        onTap?.call();
+        await context
+            .push('/chat-room?store=${Uri.encodeComponent(chat.store)}');
+        if (context.mounted) {
+          onTap?.call();
+        }
+      },
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(15),
@@ -140,8 +206,10 @@ class _ChatCard extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: chat.unread ? AppColors.black : AppColors.borderAlt,
+            color: borderColor,
+            width: borderWidth,
           ),
+          boxShadow: boxShadow,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,14 +272,14 @@ class _ChatCard extends StatelessWidget {
                         ),
                       ),
                       Spacer(),
-                      if (chat.unread) ...[
+                      if (isUnread) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.black,
+                            color: isDark ? Colors.white : AppColors.black,
                             shape: BoxShape.circle,
                           ),
                           child: Text(
@@ -219,7 +287,8 @@ class _ChatCard extends StatelessWidget {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.white,
+                              color:
+                                  isDark ? AppColors.black : AppColors.white,
                             ),
                           ),
                         ),
@@ -230,7 +299,7 @@ class _ChatCard extends StatelessWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: chat.unread
+                          color: isUnread
                               ? AppColors.ink
                               : AppColors.textSecondary,
                         ),
@@ -241,7 +310,7 @@ class _ChatCard extends StatelessWidget {
                   // Preview
                   Row(
                     children: [
-                      if (chat.unread)
+                      if (isUnread)
                         Icon(
                           Icons.done_all_rounded,
                           size: 13,
@@ -261,7 +330,7 @@ class _ChatCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
-                            color: chat.unread
+                            color: isUnread
                                 ? AppColors.ink
                                 : AppColors.textSecondary,
                           ),

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/image_preview_dialog.dart';
 
 class ReviewsScreen extends StatefulWidget {
 const   ReviewsScreen({super.key, this.storeName = 'Dinoyo Ceramic Studio'});
@@ -109,32 +112,12 @@ const List<_ReviewItem> _reviews = [
 
 class _ReviewsScreenState extends State<ReviewsScreen> {
   /// Penampil foto ulasan full-screen dengan zoom.
-  void _openPhotoViewer(BuildContext context, String photo) {
-    showDialog<void>(
-      context: context,
-      barrierColor: Colors.black87,
-      builder: (dialogCtx) => Dialog(
-        insetPadding: EdgeInsets.zero,
-        backgroundColor: Colors.transparent,
-        child: Stack(
-          children: [
-            Center(
-              child: InteractiveViewer(
-                maxScale: 4,
-                child: Image.asset(photo, fit: BoxFit.contain),
-              ),
-            ),
-            Positioned(
-              top: 40,
-              right: 16,
-              child: IconButton(
-                icon: Icon(Icons.close_rounded, color: Colors.white),
-                onPressed: () => Navigator.of(dialogCtx).pop(),
-              ),
-            ),
-          ],
-        ),
-      ),
+  void _openPhotoViewer(BuildContext context, String photo, [_ReviewItem? item]) {
+    ImagePreviewDialog.show(
+      context,
+      title: 'Foto Ulasan'.tr,
+      subtitle: item != null ? '${item.name} • ${item.variant}' : null,
+      assetPath: photo,
     );
   }
 
@@ -158,52 +141,61 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       1: 0.0,
     };
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            SizedBox(
-              height: 54,
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 19,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Ulasan Toko'.tr,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
+    return AppBackScope(
+      fallbackRoute: '/home',
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              SizedBox(
+                height: 54,
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/home');
+                        }
+                      },
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 19,
                       ),
                     ),
-                  ),
-                  SizedBox(width: 48),
-                ],
+                    Expanded(
+                      child: Text(
+                        'Ulasan Toko'.tr,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 48),
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
-                children: [
-                  _buildTitleBlock(),
-                  SizedBox(height: 14),
-                  _buildSummaryCard(histogram),
-                  SizedBox(height: 16),
-                  _buildFilterChips(),
-                  SizedBox(height: 6),
-                  ..._filtered.map(_buildReviewCard),
-                ],
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
+                  children: [
+                    _buildTitleBlock(),
+                    SizedBox(height: 14),
+                    _buildSummaryCard(histogram),
+                    SizedBox(height: 16),
+                    _buildFilterChips(),
+                    SizedBox(height: 6),
+                    ..._filtered.map(_buildReviewCard),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -595,15 +587,36 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
               children: [
                 for (final photo in review.photos) ...[
                   GestureDetector(
-                    onTap: () => _openPhotoViewer(context, photo),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        photo,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                      ),
+                    key: Key('reviews_screen_photo_tap_$photo'),
+                    onTap: () => _openPhotoViewer(context, photo, review),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.asset(
+                            photo,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          right: 6,
+                          bottom: 6,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: .6),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.fullscreen_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   SizedBox(width: 8),

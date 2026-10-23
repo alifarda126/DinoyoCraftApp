@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_text.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/image_preview_dialog.dart';
 import '../../../data/mock_data.dart';
 
 /// Tipe aksi yang memicu modal.
@@ -391,22 +392,32 @@ class _ProductInfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Gambar dalam kotak berborder tipis
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceSubtle,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _borderColor),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(13),
-            child: Image.asset(
-              product.image,
-              width: 72,
-              height: 72,
-              fit: BoxFit.cover,
+        // Gambar dalam kotak berborder tipis (dapat diketuk untuk preview full)
+        GestureDetector(
+          onTap: () {
+            ImagePreviewDialog.show(
+              context,
+              title: product.name,
+              subtitle: product.studio,
+              assetPath: product.image,
+            );
+          },
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSubtle,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _borderColor),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(13),
+              child: Image.asset(
+                product.image,
+                width: 72,
+                height: 72,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         ),

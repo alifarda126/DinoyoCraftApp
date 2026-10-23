@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
+
 import '../core/assets.dart';
 
 class Product {
-const   Product({
+  const Product({
     required this.id,
     required this.name,
     required this.studio,
@@ -9,6 +11,7 @@ const   Product({
     required this.rating,
     required this.category,
     required this.image,
+    this.images,
     this.hot = false,
   });
 
@@ -19,7 +22,45 @@ const   Product({
   final double rating;
   final String category;
   final String image;
+  final List<String>? images;
   final bool hot;
+
+  /// Daftar foto galeri produk untuk carousel (selalu minimal 4 foto sesuai indikator 1/4)
+  List<String> get gallery {
+    if (images != null && images!.isNotEmpty) return images!;
+    return switch (category) {
+      'Vas' => [
+          image,
+          AppAssets.productVasModern,
+          AppAssets.workshopHero,
+          AppAssets.storeDinoyo,
+        ],
+      'Cangkir' => [
+          image,
+          AppAssets.productCangkirSpeckle,
+          AppAssets.productCangkir,
+          AppAssets.storeRuangTanah,
+        ],
+      'Piring' => [
+          image,
+          AppAssets.productSetPiring,
+          AppAssets.productPiring,
+          AppAssets.storeDinoyo,
+        ],
+      'Mangkuk' => [
+          image,
+          AppAssets.productMangkukRamen,
+          AppAssets.productMangkuk,
+          AppAssets.workshopHero,
+        ],
+      _ => [
+          image,
+          AppAssets.productVasModern,
+          AppAssets.productSetPiring,
+          AppAssets.productCangkirSpeckle,
+        ],
+    };
+  }
 }
 
 class Store {
@@ -53,6 +94,12 @@ const   CartItem({required this.product, required this.qty});
 }
 
 abstract final class MockData {
+  /// Path foto profil pengguna (hasil kamera/galeri) untuk sesi ini.
+  /// Null = foto profil default (ikon person). Sengaja in-memory: seluruh
+  /// data profil di aplikasi mock belum dipersisten antar-restart.
+  static String? userProfilePhotoPath;
+  static Uint8List? userProfilePhotoBytes;
+
   static const List<String> categories = [
     'Semua',
     'Vas',
@@ -214,6 +261,76 @@ abstract final class MockData {
     CartItem(product: products[0], qty: 1),
     CartItem(product: products[1], qty: 2),
   ];
+
+  /// Set ID notifikasi yang sudah dibaca. Item '1' dan '2' belum dibaca sejak awal (hanya 2 teratas yang baru).
+  static final Set<String> readNotificationIds = {'3', '4', '5'};
+
+  /// ValueNotifier untuk jumlah notifikasi belum dibaca agar header reaktif secara langsung.
+  static final ValueNotifier<int> unreadNotificationsNotifier =
+      ValueNotifier<int>(2);
+
+  /// Jumlah notifikasi belum dibaca untuk badge angka di header (default 2)
+  static int get unreadNotificationsCount => unreadNotificationsNotifier.value;
+  static set unreadNotificationsCount(int val) {
+    unreadNotificationsNotifier.value = val;
+  }
+
+  /// Menandai notifikasi sebagai terbaca dan mengupdate hitungan notifikasi.
+  static void markNotificationAsRead(String id) {
+    if (!readNotificationIds.contains(id)) {
+      readNotificationIds.add(id);
+      unreadNotificationsCount =
+          {'1', '2'}.difference(readNotificationIds).length;
+    }
+  }
+
+  /// Reset state notifikasi ke kondisi awal (hanya untuk pengujian atau reset).
+  static void resetNotifications() {
+    readNotificationIds
+      ..clear()
+      ..addAll({'3', '4', '5'});
+    unreadNotificationsCount = 2;
+  }
+
+  /// Set nama toko dengan chat yang belum dibaca (default: 'Karya Tanah')
+  static final Set<String> unreadChatStores = {'Karya Tanah'};
+
+  /// ValueNotifier untuk jumlah pesan chat belum dibaca agar reaktif
+  static final ValueNotifier<int> unreadChatNotifier = ValueNotifier<int>(1);
+
+  /// Jumlah pesan chat belum dibaca untuk badge angka di header
+  static int get unreadChatCount => unreadChatNotifier.value;
+  static set unreadChatCount(int val) {
+    unreadChatNotifier.value = val;
+  }
+
+  /// Menandai chat toko sebagai terbaca
+  static void markChatAsRead(String store) {
+    final trimmed = store.trim().toLowerCase();
+    final matching = unreadChatStores
+        .where((s) => s.trim().toLowerCase() == trimmed)
+        .toList();
+    if (matching.isNotEmpty) {
+      for (final s in matching) {
+        unreadChatStores.remove(s);
+      }
+      unreadChatCount = unreadChatStores.length;
+    }
+  }
+
+  /// Cek apakah chat toko belum dibaca
+  static bool isChatUnread(String store) {
+    final trimmed = store.trim().toLowerCase();
+    return unreadChatStores.any((s) => s.trim().toLowerCase() == trimmed);
+  }
+
+  /// Reset state chat (untuk pengujian)
+  static void resetChats() {
+    unreadChatStores
+      ..clear()
+      ..add('Karya Tanah');
+    unreadChatCount = 1;
+  }
 
   /// Tambah produk ke keranjang; qty di-merge bila produk sudah ada.
   static void addToCart(Product product, int qty) {

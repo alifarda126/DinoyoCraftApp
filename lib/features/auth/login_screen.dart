@@ -7,6 +7,7 @@ import '../../core/app_settings.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
 
 /// Halaman Login — disesuaikan 1:1 dengan desain Login.png.
 class LoginScreen extends StatefulWidget {
@@ -176,9 +177,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: _buildHeader(),
+    return AppBackScope(
+      onBack: _back,
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        appBar: _buildHeader(),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -437,6 +440,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

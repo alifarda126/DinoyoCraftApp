@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,6 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/gallery_picker_sheet.dart';
+import '../../core/widgets/image_preview_dialog.dart';
 
 // ─── Data model ───────────────────────────────────────────────────────────────
 class _ChatMessage {
@@ -13,12 +18,17 @@ class _ChatMessage {
     required this.isBot,
     this.time = '',
     this.imagePath,
+    this.isFileImage = false,
   });
 
   final String text;
   final bool isBot;
   final String time;
   final String? imagePath;
+
+  /// True bila [imagePath] adalah file di disk (hasil kamera/galeri),
+  /// false bila path aset bawaan aplikasi.
+  final bool isFileImage;
 }
 
 String _nowTime() {
@@ -112,7 +122,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
   }
 
   /// Kirim foto produk (dari sheet lampiran) sebagai bubble gambar.
-  void _sendImage(String assetPath) {
+  void _sendImage(String assetPath, {bool isFile = false}) {
     setState(() {
       _showQuickReplies = false;
       _messages.add(_ChatMessage(
@@ -120,6 +130,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
         isBot: false,
         time: _nowTime(),
         imagePath: assetPath,
+        isFileImage: isFile,
       ));
     });
     _scrollToBottom();
@@ -137,70 +148,14 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
     });
   }
 
-  void _openAttachmentSheet() {
-    const assets = [
-      AppAssets.productVas,
-      AppAssets.productMangkuk,
-      AppAssets.productPiring,
-    ];
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surfaceElevated,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetCtx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Kirim Foto Produk',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Pilih foto dari galeri contoh (demo).',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  color: AppColors.textMuted,
-                ),
-              ),
-              SizedBox(height: 12),
-              SizedBox(
-                height: 92,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: assets.length,
-                  separatorBuilder: (_, _) => SizedBox(width: 10),
-                  itemBuilder: (context, i) => GestureDetector(
-                    onTap: () {
-                      Navigator.of(sheetCtx).pop();
-                      _sendImage(assets[i]);
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        assets[i],
-                        width: 92,
-                        height: 92,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+  Future<void> _openAttachmentSheet() async {
+    final result = await GalleryPickerSheet.show(
+      context,
+      title: 'Kirim Foto Produk'.tr,
     );
+    if (result != null && mounted) {
+      _sendImage(result.path, isFile: result.isFile);
+    }
   }
 
   void _openEmojiSheet() {
@@ -509,6 +464,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                             Expanded(
                               child: TextField(
                                 controller: _input,
+                                onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 14,
                                   color: AppColors.ink,
@@ -677,13 +633,63 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   if (msg.imagePath != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.asset(
-                        msg.imagePath!,
-                        width: 200,
-                        height: 140,
-                        fit: BoxFit.cover,
+                    GestureDetector(
+                      onTap: () {
+                        ImagePreviewDialog.show(
+                          context,
+                          title: 'Foto ChatBot'.tr,
+                          subtitle: msg.time,
+                          filePath: msg.isFileImage ? msg.imagePath : null,
+                          assetPath: msg.isFileImage ? null : msg.imagePath,
+                        );
+                      },
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: msg.isFileImage
+                                ? Image.file(
+                                    File(msg.imagePath!),
+                                    width: 200,
+                                    height: 140,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => Container(
+                                      width: 200,
+                                      height: 140,
+                                      color: AppColors.inputBg,
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.broken_image_rounded,
+                                          size: 28,
+                                          color: AppColors.textMuted,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Image.asset(
+                                    msg.imagePath!,
+                                    width: 200,
+                                    height: 140,
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
+                          Positioned(
+                            right: 8,
+                            bottom: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.55),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.fullscreen_rounded,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   else
@@ -733,20 +739,23 @@ const   ChatbotScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: Builder(
-        builder: (ctx) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            showClayBotPopup(ctx).then((_) {
-              // Kembali ke halaman sebelumnya agar tidak terjebak layar kosong.
-              if (ctx.mounted && Navigator.of(ctx).canPop()) {
-                Navigator.of(ctx).pop();
-              }
+    return AppBackScope(
+      fallbackRoute: '/home',
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: Builder(
+          builder: (ctx) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              showClayBotPopup(ctx).then((_) {
+                // Kembali ke halaman sebelumnya agar tidak terjebak layar kosong.
+                if (ctx.mounted && Navigator.of(ctx).canPop()) {
+                  Navigator.of(ctx).pop();
+                }
+              });
             });
-          });
-          return const SizedBox.shrink();
-        },
+            return const SizedBox.shrink();
+          },
+        ),
       ),
     );
   }

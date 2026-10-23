@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_bottom_nav.dart';
 import '../../features/chatbot/chatbot_screen.dart';
 
@@ -50,49 +51,52 @@ class _MainShellState extends State<MainShell> {
       _posInitialized = true;
     }
 
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
-          // ── konten halaman ──────────────────────────────────────────────
-          widget.navigationShell,
+    return DoubleBackExitScope(
+      bottomOffset: 96,
+      child: Scaffold(
+        extendBody: true,
+        body: Stack(
+          children: [
+            // ── konten halaman ──────────────────────────────────────────────
+            widget.navigationShell,
 
-          // ── draggable FAB ───────────────────────────────────────────────
-          if (showFab && _fabPos != null)
-            Positioned(
-              left: _fabPos!.dx,
-              top: _fabPos!.dy,
-              child: GestureDetector(
-                onPanUpdate: (details) {
-                  setState(() {
-                    double nx = _fabPos!.dx + details.delta.dx;
-                    double ny = _fabPos!.dy + details.delta.dy;
-                    nx = nx.clamp(_edgePad, screenW - _fabSize - _edgePad);
-                    ny = ny.clamp(topBound, bottomBound);
-                    _fabPos = Offset(nx, ny);
-                  });
-                },
-                onPanEnd: (_) {
-                  // Snap ke sisi kiri atau kanan yang terdekat
-                  final center = _fabPos!.dx + _fabSize / 2;
-                  final snapX = center < screenW / 2
-                      ? _edgePad                          // kiri
-                      : screenW - _fabSize - _edgePad;    // kanan
-                  setState(() {
-                    _fabPos = Offset(snapX, _fabPos!.dy);
-                  });
-                },
-                onTap: () => showClayBotPopup(context),
-                child: _DraggableFabButton(),
+            // ── draggable FAB ───────────────────────────────────────────────
+            if (showFab && _fabPos != null)
+              Positioned(
+                left: _fabPos!.dx,
+                top: _fabPos!.dy,
+                child: GestureDetector(
+                  onPanUpdate: (details) {
+                    setState(() {
+                      double nx = _fabPos!.dx + details.delta.dx;
+                      double ny = _fabPos!.dy + details.delta.dy;
+                      nx = nx.clamp(_edgePad, screenW - _fabSize - _edgePad);
+                      ny = ny.clamp(topBound, bottomBound);
+                      _fabPos = Offset(nx, ny);
+                    });
+                  },
+                  onPanEnd: (_) {
+                    // Snap ke sisi kiri atau kanan yang terdekat
+                    final center = _fabPos!.dx + _fabSize / 2;
+                    final snapX = center < screenW / 2
+                        ? _edgePad                          // kiri
+                        : screenW - _fabSize - _edgePad;    // kanan
+                    setState(() {
+                      _fabPos = Offset(snapX, _fabPos!.dy);
+                    });
+                  },
+                  onTap: () => showClayBotPopup(context),
+                  child: _DraggableFabButton(),
+                ),
               ),
-            ),
-        ],
-      ),
-      bottomNavigationBar: DcBottomNav(
-        currentIndex: index,
-        onTap: (i) => widget.navigationShell.goBranch(
-          i,
-          initialLocation: i == widget.navigationShell.currentIndex,
+          ],
+        ),
+        bottomNavigationBar: DcBottomNav(
+          currentIndex: index,
+          onTap: (i) => widget.navigationShell.goBranch(
+            i,
+            initialLocation: i == widget.navigationShell.currentIndex,
+          ),
         ),
       ),
     );

@@ -285,6 +285,8 @@ abstract final class AppText {
     'Cangkir Handmade Artisan': 'Handmade Artisan Cup',
     'Vas Keramik Minimalis': 'Minimalist Ceramic Vase',
     'Mangkuk Keramik Artisanal': 'Artisanal Ceramic Bowl',
+    'Kembali ke Halaman Beranda': 'Back to Home Page',
+    'Butuh Bantuan': 'Need Help',
 
     // ── Settings (Pengaturan Screen) ────────────────────────────────────────
     'Kelola Pengaturan': 'Manage Settings',
@@ -364,6 +366,8 @@ abstract final class AppText {
 
     // ── Notifications ───────────────────────────────────────────────────────
     'Notifikasi': 'Notifications',
+    '1 Baru': '1 New',
+    '2 Baru': '2 New',
     '3 Baru': '3 New',
     'Transaksi & Pesanan': 'Transactions & Orders',
     'Info Akun': 'Account Info',
@@ -496,6 +500,8 @@ abstract final class AppText {
         'Password field is closed because registration is authenticated directly with Google.',
 
     // ── Feedback & Dialogs ──────────────────────────────────────────────────
+    'Tekan sekali lagi untuk keluar': 'Press back again to exit',
+    'Tekan lagi untuk keluar': 'Press back again to exit',
     'Saya Mengerti': 'I Understand',
     'Ubah Foto Profil': 'Change Profile Picture',
     'Pilih sumber foto baru untuk profilmu.':
@@ -505,6 +511,30 @@ abstract final class AppText {
     'Jenis Kelamin': 'Gender',
     'Laki-laki': 'Male',
     'Perempuan': 'Female',
+
+    // ── Kamera & Galeri (PhotoPickerService) ────────────────────────────────
+    'Pilih Sumber Foto': 'Choose Photo Source',
+    'Ambil foto baru menggunakan kamera.':
+        'Take a new photo with your camera.',
+    'Pilih foto yang sudah ada di galeri.':
+        'Pick an existing photo from your gallery.',
+    'Ukuran foto maksimal 5 MB. Pilih foto yang lebih kecil.':
+        'Photo size is up to 5 MB. Please choose a smaller photo.',
+    'Tidak dapat membuka Kamera. Periksa izin kamera lalu coba lagi.':
+        'Unable to open the camera. Check the camera permission and try again.',
+    'Tidak dapat membuka Galeri. Periksa izin penyimpanan lalu coba lagi.':
+        'Unable to open the gallery. Check the storage permission and try again.',
+    'Kamera tidak tersedia di perangkat ini. Membuka galeri foto...':
+        'Camera is unavailable on this device. Opening photo gallery...',
+    'Foto profil berhasil diperbarui.':
+        'Profile photo successfully updated.',
+    'Preview Foto': 'Photo Preview',
+    'Foto Profil': 'Profile Photo',
+    'Ubah foto profil melalui menu Kelola Data Diri':
+        'Change profile picture via Manage Personal Data menu',
+    'Gagal memuat gambar': 'Failed to load image',
+    'Foto Ulasan': 'Review Photo',
+    'Tambahkan Foto Produk': 'Add Product Photos',
 
     // ── Hapus Akun ──────────────────────────────────────────────────────────
     'Hapus Akun?': 'Delete Account?',
@@ -640,6 +670,9 @@ abstract final class AppText {
     'Terima kasih, laporanmu kami terima.':
         'Thank you, your report has been received.',
     'Kirim Foto': 'Send Photo',
+    'Foto Terkirim': 'Sent Photo',
+    'Foto dari Toko': 'Store Photo',
+    'Foto ChatBot': 'ChatBot Photo',
     'Pilih foto dari galeri contoh (demo).':
         'Choose a photo from demo gallery.',
     'Hari ini, 14:10': 'Today, 14:10',
@@ -669,6 +702,9 @@ abstract final class AppText {
     'Ulasan disalin': 'Review copied',
     'Terima kasih, laporan ulasan dikirim.':
         'Thank you, review report submitted.',
+    'Perbesar': 'Enlarge',
+    'Perbesar Foto': 'Enlarge Photo',
+    'Foto Produk': 'Product Photo',
   };
 
   /// Cache lowercase untuk pencarian cepat case-insensitive

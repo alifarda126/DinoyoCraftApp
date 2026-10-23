@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/app_back_scope.dart';
 import 'alamat_screen.dart';
 import 'data_diri_screen.dart';
 import 'pengaturan_screen.dart';
@@ -15,10 +16,13 @@ const   AccountSettingsScreen({super.key, required this.type});
 
   @override
   Widget build(BuildContext context) {
-    return switch (type) {
-      AccountScreenType.profile => DataDiriScreen(),
-      AccountScreenType.address => AlamatScreen(),
-      AccountScreenType.settings => PengaturanScreen(),
-    };
+    return AppBackScope(
+      fallbackRoute: '/profile',
+      child: switch (type) {
+        AccountScreenType.profile => DataDiriScreen(),
+        AccountScreenType.address => AlamatScreen(),
+        AccountScreenType.settings => PengaturanScreen(),
+      },
+    );
   }
 }
