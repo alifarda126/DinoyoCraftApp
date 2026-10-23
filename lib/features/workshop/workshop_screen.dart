@@ -27,7 +27,7 @@ class WorkshopScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topHeaderHeight = MediaQuery.paddingOf(context).top + 48.0;
+    final topHeaderHeight = DcAppHeader.totalHeight(context);
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,

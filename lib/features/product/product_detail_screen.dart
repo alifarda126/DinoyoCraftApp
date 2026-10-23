@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/image_preview_dialog.dart';
 import '../../data/mock_data.dart';
 import 'presentation/modal_pilih_variasi.dart';
 
@@ -20,6 +22,21 @@ const   ProductDetailScreen({super.key, required this.productId});
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  int _currentImageIndex = 0;
+  late final PageController _imagePageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _imagePageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _imagePageController.dispose();
+    super.dispose();
+  }
+
   void _toast(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
@@ -34,13 +51,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     // Harga coret (mock) — sekitar 30% di atas harga jual.
     final originalPrice = ((product.price * 1.3) / 1000).round() * 1000;
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _TopBar(
-              onBack: () => context.pop(),
+    return AppBackScope(
+      fallbackRoute: '/products',
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _TopBar(
+                onBack: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/products');
+                  }
+                },
               onShare: () {
                 Clipboard.setData(
                   ClipboardData(
@@ -49,19 +74,106 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 );
                 _toast('Tautan produk disalin ke clipboard');
               },
-              onMore: () => _toast('Menu lainnya (mock)'),
             ),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  // ── Gambar produk + indikator 1/4 ──
+                  // ── Gambar produk Carousel (PageView) + indikator N / Total + Fullscreen Preview ──
                   AspectRatio(
                     aspectRatio: 1,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.asset(product.image, fit: BoxFit.cover),
+                        PageView.builder(
+                          controller: _imagePageController,
+                          itemCount: product.gallery.length,
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentImageIndex = index;
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            final imagePath = product.gallery[index];
+                            return GestureDetector(
+                              key: Key(index == 0
+                                  ? 'product_image_preview_tap'
+                                  : 'product_image_preview_tap_$index'),
+                              onTap: () {
+                                ImagePreviewDialog.show(
+                                  context,
+                                  title: product.name,
+                                  subtitle:
+                                      '${product.studio} • Foto ${index + 1} dari ${product.gallery.length}',
+                                  assetPath: imagePath,
+                                );
+                              },
+                              child: Image.asset(
+                                imagePath,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                  color: AppColors.inputBg,
+                                  child: Icon(
+                                    Icons.broken_image_rounded,
+                                    size: 40,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        // Tombol / Badge "Perbesar" di kiri bawah
+                        Positioned(
+                          left: 12,
+                          bottom: 12,
+                          child: GestureDetector(
+                            onTap: () {
+                              final activeImage =
+                                  product.gallery[_currentImageIndex];
+                              ImagePreviewDialog.show(
+                                context,
+                                title: product.name,
+                                subtitle:
+                                    '${product.studio} • Foto ${_currentImageIndex + 1} dari ${product.gallery.length}',
+                                assetPath: activeImage,
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: .65),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.fullscreen_rounded,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Perbesar'.tr,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Indikator "1 / 4", "2 / 4", dll di kanan bawah
                         Positioned(
                           right: 12,
                           bottom: 12,
@@ -75,7 +187,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
-                              '1 / 4',
+                              '${_currentImageIndex + 1} / ${product.gallery.length}',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -298,8 +410,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ═══ Styles ═════════════════════════════════════════════════════════════════
@@ -335,38 +448,148 @@ class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.onBack,
     required this.onShare,
-    required this.onMore,
   });
 
   final VoidCallback onBack;
   final VoidCallback onShare;
-  final VoidCallback onMore;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 54,
-    child: Row(
-      children: [
-        IconButton(
-          onPressed: onBack,
-          icon: Icon(Icons.arrow_back_rounded, size: 22),
-          color: AppColors.ink,
-        ),
-        Spacer(),
-        IconButton(
-          onPressed: onShare,
-          icon: Icon(Icons.share_outlined, size: 20),
-          color: AppColors.ink,
-        ),
-        IconButton(
-          onPressed: onMore,
-          icon: Icon(Icons.more_vert_rounded, size: 21),
-          color: AppColors.ink,
-        ),
-        SizedBox(width: 4),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
+
+    return SizedBox(
+      height: 54,
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: onBack,
+            icon: Icon(Icons.arrow_back_rounded, size: 22),
+            color: AppColors.ink,
+          ),
+          Spacer(),
+          IconButton(
+            onPressed: onShare,
+            icon: Icon(Icons.share_outlined, size: 20),
+            color: AppColors.ink,
+          ),
+          Theme(
+            data: Theme.of(context).copyWith(
+              splashColor: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.05),
+              highlightColor: isDark
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : Colors.black.withValues(alpha: 0.03),
+            ),
+            child: PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert_rounded, size: 21),
+              color: AppColors.surface,
+              surfaceTintColor: Colors.transparent,
+              elevation: 6,
+              shadowColor: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: isDark ? AppColors.border : const Color(0xFFE5E5E5),
+                  width: 1,
+                ),
+              ),
+              offset: const Offset(0, 48),
+              onSelected: (value) {
+                if (value == 'home') {
+                  context.go('/home');
+                } else if (value == 'help') {
+                  context.push('/help');
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'home',
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.home_outlined,
+                        size: 20,
+                        color: AppColors.ink,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Kembali ke Halaman Beranda'.tr,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const _MenuDivider(),
+                PopupMenuItem<String>(
+                  value: 'help',
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.help_outline_rounded,
+                        size: 20,
+                        color: AppColors.ink,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Butuh Bantuan'.tr,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 4),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuDivider extends PopupMenuEntry<Never> {
+  const _MenuDivider();
+
+  @override
+  final double height = 1;
+
+  @override
+  bool represents(Never? value) => false;
+
+  @override
+  State<_MenuDivider> createState() => _MenuDividerState();
+}
+
+class _MenuDividerState extends State<_MenuDivider> {
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Divider(
+        height: 1,
+        thickness: 1,
+        color: isDark ? AppColors.border : const Color(0xFFF0F0F0),
+      ),
+    );
+  }
 }
 
 // ═══ ★ 4.9 • 128 Ulasan • Terjual 340+ ══════════════════════════════════════
@@ -1029,13 +1252,44 @@ class _ReviewCardState extends State<_ReviewCard> {
           // ── Foto ulasan ──
           if (hasPhoto) ...[
             SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                review.photo!,
-                width: 142,
-                height: 142,
-                fit: BoxFit.cover,
+            GestureDetector(
+              key: const Key('review_card_photo_tap'),
+              onTap: () {
+                ImagePreviewDialog.show(
+                  context,
+                  title: 'Foto Ulasan'.tr,
+                  subtitle: '${review.name} • ${review.variantLabel}',
+                  assetPath: review.photo!,
+                );
+              },
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset(
+                      review.photo!,
+                      width: 142,
+                      height: 142,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    right: 8,
+                    bottom: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: .6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.fullscreen_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

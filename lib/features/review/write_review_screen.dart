@@ -1,10 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/services/photo_picker_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/image_preview_dialog.dart';
 
 class WriteReviewScreen extends StatefulWidget {
 const   WriteReviewScreen({
@@ -53,12 +58,6 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     ('Keamanan Kemasan & Ekspedisi', 'Bubble wrap tebal & proteksi benturan'),
   ];
 
-  static const List<String> _mockPhotos = [
-    AppAssets.productCangkir,
-    AppAssets.productMangkuk,
-    AppAssets.productVasModern,
-  ];
-
   int _rating = 0;
   final Set<int> _likes = {};
   final List<int> _attributeRatings = [0, 0, 0];
@@ -68,7 +67,20 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         'serta otentik. Pengemasan kayu sangat aman sampai di rumah tanpa '
         'retak sedikitpun. Recommended!',
   );
+
+  /// Path foto ulasan hasil kamera/galeri perangkat (maksimal 5 foto).
   final List<String> _photos = [];
+  static const int _maxPhotos = 5;
+
+  /// Tambah foto: sheet pilih sumber (kamera/galeri) → ambil foto perangkat.
+  Future<void> _addPhoto() async {
+    final file = await PhotoPickerService.pickWithSheet(
+      context,
+      title: 'Tambahkan Foto Produk'.tr,
+    );
+    if (file == null || !mounted) return;
+    setState(() => _photos.add(file.path));
+  }
 
   bool get _canSubmit => _rating > 0 && _reviewController.text.trim().isNotEmpty;
 
@@ -98,54 +110,66 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            SizedBox(
-              height: 54,
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 19,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Beri Ulasan Produk'.tr,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
+    return AppBackScope(
+      fallbackRoute: '/reviews',
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        // Bar kirim di slot bottomNavigationBar (bukan di dalam body): saat
+        // keyboard terbuka body menyusut, tetapi bar TETAP di dasar layar dan
+        // tertutup keyboard — konsisten dengan bottom nav di halaman pencarian.
+        bottomNavigationBar: _buildSubmitBar(),
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 54,
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/reviews');
+                        }
+                      },
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 19,
                       ),
                     ),
-                  ),
-                  SizedBox(width: 48),
-                ],
+                    Expanded(
+                      child: Text(
+                        'Beri Ulasan Produk'.tr,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 48),
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
-                children: [
-                  _buildProductCard(),
-                  SizedBox(height: 14),
-                  _buildRatingCard(),
-                  SizedBox(height: 14),
-                  _buildAttributesCard(),
-                  SizedBox(height: 14),
-                  _buildWrittenReviewCard(),
-                ],
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
+                  children: [
+                    _buildProductCard(),
+                    SizedBox(height: 14),
+                    _buildRatingCard(),
+                    SizedBox(height: 14),
+                    _buildAttributesCard(),
+                    SizedBox(height: 14),
+                    _buildWrittenReviewCard(),
+                  ],
+                ),
               ),
-            ),
-            _buildSubmitBar(),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -482,6 +506,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             maxLength: 500,
             maxLines: 5,
             onChanged: (_) => setState(() {}),
+            onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14,
               height: 1.55,
@@ -535,11 +560,9 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           SizedBox(height: 8),
           Row(
             children: [
-              if (_photos.length < _mockPhotos.length)
+              if (_photos.length < _maxPhotos)
                 GestureDetector(
-                  onTap: () => setState(() {
-                    _photos.add(_mockPhotos[_photos.length]);
-                  }),
+                  onTap: _addPhoto,
                   child: Container(
                     width: 72,
                     height: 72,
@@ -574,22 +597,41 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                 ),
               for (final photo in _photos) ...[
                 SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => setState(() => _photos.remove(photo)),
-                  child: Stack(
-                    children: [
-                      ClipRRect(
+                Stack(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        ImagePreviewDialog.show(
+                          context,
+                          title: 'Foto Ulasan'.tr,
+                          filePath: photo,
+                        );
+                      },
+                      child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
-                          photo,
+                        child: Image.file(
+                          File(photo),
                           width: 72,
                           height: 72,
                           fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(
+                            width: 72,
+                            height: 72,
+                            color: AppColors.inputBg,
+                            child: Icon(
+                              Icons.broken_image_rounded,
+                              size: 20,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
                         ),
                       ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _photos.remove(photo)),
                         child: Container(
                           padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
@@ -603,8 +645,8 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ],

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/image_preview_dialog.dart';
 
 // â”€â”€â”€ Placeholder Model (ganti dengan entity dari domain layer) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class ProductDetailArgs {
@@ -68,7 +69,10 @@ const   ProductDetailPage({super.key, required this.args});
             leading: _CircleBackBtn(),
             systemOverlayStyle: SystemUiOverlayStyle.dark,
             flexibleSpace: FlexibleSpaceBar(
-              background: _ProductHeroImage(imagePath: args.imagePath),
+              background: _ProductHeroImage(
+                imagePath: args.imagePath,
+                productName: args.name,
+              ),
             ),
           ),
 
@@ -183,25 +187,56 @@ class _CircleBackBtn extends StatelessWidget {
 }
 
 class _ProductHeroImage extends StatelessWidget {
-  const _ProductHeroImage({required this.imagePath});
+  const _ProductHeroImage({required this.imagePath, this.productName});
 
   final String imagePath;
+  final String? productName;
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: AppColors.inputBg,
-      child: Image.asset(
-        imagePath,
-        width: double.infinity,
-        height: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Center(
-          child: Icon(
-            Icons.image_not_supported_outlined,
-            size: 48,
-            color: AppColors.textMuted,
-          ),
+    return GestureDetector(
+      onTap: () {
+        ImagePreviewDialog.show(
+          context,
+          title: productName ?? 'Foto Produk',
+          assetPath: imagePath,
+        );
+      },
+      child: ColoredBox(
+        color: AppColors.inputBg,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              imagePath,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Center(
+                child: Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 48,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: .5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.fullscreen_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +8,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/gallery_picker_sheet.dart';
+import '../../core/widgets/image_preview_dialog.dart';
 import '../../data/mock_data.dart';
 
 class ChatRoomScreen extends StatefulWidget {
@@ -23,12 +28,17 @@ class _ChatMessage {
     required this.isMine,
     required this.time,
     this.imagePath,
+    this.isFileImage = false,
   });
 
   final String text;
   final bool isMine;
   final String time;
   final String? imagePath;
+
+  /// True bila [imagePath] adalah file di disk (hasil kamera/galeri),
+  /// false bila path aset bawaan aplikasi.
+  final bool isFileImage;
 }
 
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
@@ -36,6 +46,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    MockData.markChatAsRead(widget.storeName);
+  }
 
   late final List<_ChatMessage> _messages = [
     const _ChatMessage(
@@ -115,70 +131,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _scrollToBottom();
   }
 
-  void _openAttachmentSheet() {
-    const assets = [
-      AppAssets.productVas,
-      AppAssets.productMangkuk,
-      AppAssets.productPiring,
-    ];
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surfaceElevated,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetCtx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Kirim Foto'.tr,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Pilih foto dari galeri contoh (demo).'.tr,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  color: AppColors.textMuted,
-                ),
-              ),
-              SizedBox(height: 12),
-              SizedBox(
-                height: 92,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: assets.length,
-                  separatorBuilder: (_, _) => SizedBox(width: 10),
-                  itemBuilder: (context, i) => GestureDetector(
-                    onTap: () {
-                      Navigator.of(sheetCtx).pop();
-                      _sendImage(assets[i]);
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        assets[i],
-                        width: 92,
-                        height: 92,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+  Future<void> _openAttachmentSheet() async {
+    final result = await GalleryPickerSheet.show(
+      context,
+      title: 'Kirim Foto'.tr,
     );
+    if (result != null && mounted) {
+      if (result.isFile) {
+        setState(() {
+          _messages.add(_ChatMessage(
+            isMine: true,
+            time: _nowLabel(),
+            text: '',
+            imagePath: result.path,
+            isFileImage: true,
+          ));
+        });
+        _scrollToBottom();
+      } else {
+        _sendImage(result.path);
+      }
+    }
   }
 
   void _openEmojiSheet() {
@@ -314,27 +287,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _buildHeader(),
-            Divider(height: 1, color: AppColors.divider),
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                itemCount: _messages.length + 1,
-                itemBuilder: (context, i) {
-                  if (i == 0) return _buildDateDivider();
-                  return _buildBubble(_messages[i - 1]);
-                },
+    return AppBackScope(
+      fallbackRoute: '/messages',
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              _buildHeader(),
+              Divider(height: 1, color: AppColors.divider),
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                  itemCount: _messages.length + 1,
+                  itemBuilder: (context, i) {
+                    if (i == 0) return _buildDateDivider();
+                    return _buildBubble(_messages[i - 1]);
+                  },
+                ),
               ),
-            ),
-            _buildInputBar(),
-          ],
+              _buildInputBar(),
+            ],
+          ),
         ),
       ),
     );
@@ -346,7 +322,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       child: Row(
         children: [
           IconButton(
-            onPressed: () => context.pop(),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/messages');
+              }
+            },
             icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19),
           ),
           Stack(
@@ -423,13 +405,65 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
 
     final content = message.imagePath != null
-        ? ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              message.imagePath!,
-              width: 220,
-              height: 158,
-              fit: BoxFit.cover,
+        ? GestureDetector(
+            onTap: () {
+              ImagePreviewDialog.show(
+                context,
+                title: message.isMine
+                    ? 'Foto Terkirim'.tr
+                    : 'Foto dari Toko'.tr,
+                subtitle: message.time,
+                filePath: message.isFileImage ? message.imagePath : null,
+                assetPath: message.isFileImage ? null : message.imagePath,
+              );
+            },
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: message.isFileImage
+                      ? Image.file(
+                          File(message.imagePath!),
+                          width: 220,
+                          height: 158,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(
+                            width: 220,
+                            height: 158,
+                            color: AppColors.inputBg,
+                            child: Center(
+                              child: Icon(
+                                Icons.broken_image_rounded,
+                                size: 28,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Image.asset(
+                          message.imagePath!,
+                          width: 220,
+                          height: 158,
+                          fit: BoxFit.cover,
+                        ),
+                ),
+                Positioned(
+                  right: 8,
+                  bottom: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.fullscreen_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
           )
         : Text(
@@ -542,6 +576,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               controller: _inputController,
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => _send(),
+              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 color: AppColors.ink,

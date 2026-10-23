@@ -47,7 +47,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   Widget build(BuildContext context) {
     final items = MockData.filterProducts(category: _category, query: _query);
-    final topHeaderHeight = MediaQuery.paddingOf(context).top + 48.0;
+    final topHeaderHeight = DcAppHeader.totalHeight(context);
 
     return Scaffold(
       // Scaffold diperlukan sebagai ancestor Material untuk TextField;
@@ -81,6 +81,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 SizedBox(height: 14),
                 TextField(
                   onChanged: (v) => setState(() => _query = v),
+                  onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                   decoration: InputDecoration(
                     hintText: 'Cari produk atau studio...'.tr,
                     hintStyle: GoogleFonts.plusJakartaSans(
@@ -112,6 +113,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 SizedBox(
                   height: 38,
                   child: ListView.separated(
+                    clipBehavior: Clip.none,
                     scrollDirection: Axis.horizontal,
                     itemCount: MockData.categories.length,
                     separatorBuilder: (_, _) => SizedBox(width: 8),
@@ -135,9 +137,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              mainAxisSpacing: 16,
+              mainAxisSpacing: 20,
               crossAxisSpacing: 14,
-              childAspectRatio: 0.62,
+              childAspectRatio: 0.60,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) => ProductCard(product: items[index]),

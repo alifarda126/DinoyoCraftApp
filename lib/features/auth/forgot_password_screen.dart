@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_settings.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_text_field.dart';
 
 /// Halaman Lupa Password — disesuaikan dengan desain Lupa_Password.png.
@@ -31,7 +32,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (context.canPop()) {
       context.pop();
     } else {
-      context.go('/');
+      context.go('/login');
     }
   }
 
@@ -98,9 +99,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: _buildHeader(),
+    return AppBackScope(
+      onBack: _back,
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        appBar: _buildHeader(),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -299,6 +302,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           },
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

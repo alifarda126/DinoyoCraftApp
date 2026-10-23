@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_button.dart';
 import '../../data/mock_data.dart';
 
@@ -66,9 +67,11 @@ class _HelpScreenState extends State<HelpScreen> {
         )
         .toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
+    return AppBackScope(
+      fallbackRoute: '/home',
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
         bottom: false,
         child: Column(
           children: [
@@ -96,6 +99,7 @@ class _HelpScreenState extends State<HelpScreen> {
                   SizedBox(height: 14),
                   TextField(
                     onChanged: (v) => setState(() => _query = v),
+                    onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                     decoration: InputDecoration(
                       hintText: 'Cari pertanyaan...'.tr,
                       hintStyle: GoogleFonts.plusJakartaSans(
@@ -207,6 +211,7 @@ class _HelpScreenState extends State<HelpScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_settings.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
 
 /// Halaman Verifikasi OTP — disesuaikan dengan desain Verifikasi_Daftar_Akun.png.
 class OtpScreen extends StatefulWidget {
@@ -121,7 +122,13 @@ class _OtpScreenState extends State<OtpScreen> {
     if (context.canPop()) {
       context.pop();
     } else {
-      context.go('/');
+      if (widget.from == 'login') {
+        context.go('/login');
+      } else if (widget.from == 'forgot') {
+        context.go('/forgot-password');
+      } else {
+        context.go('/register');
+      }
     }
   }
 
@@ -194,6 +201,7 @@ class _OtpScreenState extends State<OtpScreen> {
           focusNode: _focus[i],
           textAlign: TextAlign.center,
           keyboardType: TextInputType.number,
+          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
           cursorColor: AppColors.ink,
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
@@ -234,9 +242,11 @@ class _OtpScreenState extends State<OtpScreen> {
       color: AppColors.textSecondary,
     );
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: _buildHeader(),
+    return AppBackScope(
+      onBack: _back,
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        appBar: _buildHeader(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(26, 56, 26, 24),
@@ -421,6 +431,7 @@ class _OtpScreenState extends State<OtpScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

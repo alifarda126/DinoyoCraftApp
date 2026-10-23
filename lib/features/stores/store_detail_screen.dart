@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
 
@@ -41,20 +42,28 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
         .where((p) => p.name.toLowerCase().contains(_query.toLowerCase()))
         .toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── App bar: back + judul (rata kiri) + ikon bantuan ──
-            SizedBox(
-              height: 52,
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19),
-                  ),
+    return AppBackScope(
+      fallbackRoute: '/stores',
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // ── App bar: back + judul (rata kiri) + ikon bantuan ──
+              SizedBox(
+                height: 52,
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/stores');
+                        }
+                      },
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19),
+                    ),
                   Expanded(
                     child: Text(
                       'Profil Toko'.tr,
@@ -352,6 +361,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

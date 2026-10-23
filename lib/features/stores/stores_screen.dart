@@ -27,7 +27,7 @@ class _StoresScreenState extends State<StoresScreen> {
   @override
   Widget build(BuildContext context) {
     final stores = MockData.filterStores(_query);
-    final topHeaderHeight = MediaQuery.paddingOf(context).top + 48.0;
+    final topHeaderHeight = DcAppHeader.totalHeight(context);
 
     return Scaffold(
       // Scaffold diperlukan sebagai ancestor Material untuk TextField/InkWell;
@@ -69,6 +69,7 @@ class _StoresScreenState extends State<StoresScreen> {
                 SizedBox(height: 14),
                 TextField(
                   onChanged: (v) => setState(() => _query = v),
+                  onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                   decoration: InputDecoration(
                     hintText: 'Cari toko...'.tr,
                     hintStyle: GoogleFonts.plusJakartaSans(

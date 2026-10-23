@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final picks = MockData.filterProducts(category: _category)
         .take(4)
         .toList();
-    final topHeaderHeight = MediaQuery.paddingOf(context).top + 48.0;
+    final topHeaderHeight = DcAppHeader.totalHeight(context);
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
@@ -212,6 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(
                   height: 38,
                   child: ListView.separated(
+                    clipBehavior: Clip.none,
                     scrollDirection: Axis.horizontal,
                     itemCount: MockData.categories.length,
                     separatorBuilder: (_, _) => SizedBox(width: 8),
@@ -227,8 +228,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 SizedBox(height: 18),
-                // Pilihan Untukmu row
+                // Pilihan Untukmu row — dengan "Lihat Semua" konsisten dengan Jelajahi Kategori
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Flexible(
                       child: Text(
@@ -241,19 +243,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
-                    Spacer(),
                     TextButton(
                       onPressed: () => context.go('/products'),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        minimumSize: Size(44, 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        minimumSize: Size(44, 36),
                       ),
                       child: Text(
-                        'Lihat semua'.tr,
+                        'Lihat Semua'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -292,9 +293,9 @@ class _HomeScreenState extends State<HomeScreen> {
               // agar ukuran kartu konsisten antar halaman.
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 16,
+                mainAxisSpacing: 20,
                 crossAxisSpacing: 14,
-                childAspectRatio: 0.62,
+                childAspectRatio: 0.60,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) => ProductCard(product: picks[index]),

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -112,22 +113,30 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            SizedBox(
-              height: 54,
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 19,
+    return AppBackScope(
+      fallbackRoute: '/settings',
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Column(
+            children: [
+              SizedBox(
+                height: 54,
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/settings');
+                        }
+                      },
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 19,
+                      ),
                     ),
-                  ),
                   Expanded(
                     child: Text(
                       'Hapus Akun'.tr,
@@ -184,6 +193,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     onChanged: (_) => setState(() {}),
+                    onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
                       color: AppColors.ink,
@@ -275,8 +285,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildWarningBanner() {
     return Container(

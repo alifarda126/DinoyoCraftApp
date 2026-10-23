@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_text_field.dart';
 
 /// Halaman Buat Kata Sandi Baru
@@ -155,9 +156,11 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: _buildHeader(),
+    return AppBackScope(
+      onBack: _back,
+      child: Scaffold(
+        backgroundColor: AppColors.bg,
+        appBar: _buildHeader(),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -349,6 +352,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
           },
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

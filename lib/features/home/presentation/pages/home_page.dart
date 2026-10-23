@@ -1,9 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/assets.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/category_chip.dart';
 import '../../../../core/widgets/dc_app_header.dart';
 import '../../../../core/widgets/product_card.dart';
 import '../../../../data/mock_data.dart';
@@ -108,34 +109,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SizedBox(height: 10),
                 SizedBox(
-                  height: 40,
+                  height: 38,
                   child: ListView.separated(
+                    clipBehavior: Clip.none,
                     scrollDirection: Axis.horizontal,
                     itemCount: MockData.categories.length,
                     separatorBuilder: (_, _) => SizedBox(width: 8),
                     itemBuilder: (context, i) {
                       final cat = MockData.categories[i];
-                      final active = cat == _category;
-                      return ChoiceChip(
-                        label: Text(cat),
-                        selected: active,
-                        onSelected: (_) {
+                      return CategoryChip(
+                        label: cat,
+                        selected: cat == _category,
+                        onTap: () {
                           setState(() => _category = cat);
                           if (cat != 'Semua') {
                             context.go('/products?category=$cat');
                           }
                         },
-                        selectedColor: AppColors.black,
-                        backgroundColor: AppColors.inputBg,
-                        labelStyle: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: active ? AppColors.white : AppColors.ink,
-                        ),
-                        side: BorderSide.none,
-                        shape: StadiumBorder(),
-                        showCheckmark: false,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
                       );
                     },
                   ),
@@ -143,6 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(height: 18),
                 // Pilihan Untukmu row
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Pilihan Untukmu',
@@ -152,19 +143,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: AppColors.ink,
                       ),
                     ),
-                    Spacer(),
                     TextButton(
                       onPressed: () => context.go('/products'),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        minimumSize: Size(44, 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        minimumSize: Size(44, 36),
                       ),
                       child: Text(
-                        'Lihat semua',
+                        'Lihat Semua',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -201,9 +191,9 @@ class _HomeScreenState extends State<HomeScreen> {
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 18,
+                mainAxisSpacing: 20,
                 crossAxisSpacing: 14,
-                childAspectRatio: 0.58,
+                childAspectRatio: 0.60,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) => ProductCard(product: picks[index]),
