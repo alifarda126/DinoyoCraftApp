@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
+import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/image_preview_dialog.dart';
@@ -353,7 +355,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           product: product,
                           mode: ModalVariasiMode.keranjang,
                         ),
-                        icon: Icon(Icons.shopping_cart_outlined, size: 17),
+                        icon: SvgPicture.asset(
+                          AppAssets.iconCartPlus,
+                          width: 22,
+                          height: 22,
+                          colorFilter: ColorFilter.mode(
+                            AppColors.ink,
+                            BlendMode.srcIn,
+                          ),
+                        ),
                         label: Text(
                           'Keranjang'.tr,
                           style: GoogleFonts.plusJakartaSans(

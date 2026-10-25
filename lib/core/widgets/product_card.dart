@@ -183,7 +183,7 @@ const   ProductCard({super.key, required this.product, this.onAdd});
                                   () => showModalPilihVariasi(
                                     context,
                                     product: product,
-                                    mode: ModalVariasiMode.beliLangsung,
+                                    mode: ModalVariasiMode.keduanya,
                                   ),
                               child: SizedBox(
                                 width: 30,

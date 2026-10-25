@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/foundation.dart';
 
 import '../core/assets.dart';
@@ -87,10 +89,15 @@ const   FaqItem({required this.question, required this.answer});
 }
 
 class CartItem {
-const   CartItem({required this.product, required this.qty});
+  const CartItem({
+    required this.product,
+    required this.qty,
+    this.variant,
+  });
 
   final Product product;
   final int qty;
+  final String? variant;
 }
 
 abstract final class MockData {
@@ -255,12 +262,17 @@ abstract final class MockData {
     ),
   ];
 
-  // Keranjang sesi: mutable agar aksi "Tambah ke Keranjang" tersimpan
-  // dan badge di header ikut bertambah.
-  static final List<CartItem> mockCart = [
-    CartItem(product: products[0], qty: 1),
-    CartItem(product: products[1], qty: 2),
-  ];
+  /// ValueNotifier untuk jumlah jenis produk di keranjang agar header dan badge reaktif seketika
+  static final ValueNotifier<int> cartCountNotifier = ValueNotifier<int>(2);
+
+  /// Jumlah item keranjang untuk badge di header
+  static int get cartCount => cartCountNotifier.value;
+  static set cartCount(int val) {
+    cartCountNotifier.value = val;
+  }
+
+  // Keranjang sesi: mutable & reaktif agar aksi tambah/hapus langsung mengupdate badge header seketika.
+  static final List<CartItem> mockCart = _CartList();
 
   /// Set ID notifikasi yang sudah dibaca. Item '1' dan '2' belum dibaca sejak awal (hanya 2 teratas yang baru).
   static final Set<String> readNotificationIds = {'3', '4', '5'};
@@ -332,17 +344,39 @@ abstract final class MockData {
     unreadChatCount = 1;
   }
 
-  /// Tambah produk ke keranjang; qty di-merge bila produk sudah ada.
-  static void addToCart(Product product, int qty) {
-    final index = mockCart.indexWhere((item) => item.product.id == product.id);
+  /// Tambah produk ke keranjang; qty di-merge bila produk dan varian sama.
+  static void addToCart(Product product, int qty, [String? variant]) {
+    final index = mockCart.indexWhere(
+      (item) =>
+          item.product.id == product.id &&
+          (item.variant == variant || item.variant == null),
+    );
     if (index >= 0) {
       mockCart[index] = CartItem(
         product: product,
         qty: mockCart[index].qty + qty,
+        variant: variant ?? mockCart[index].variant,
       );
     } else {
-      mockCart.add(CartItem(product: product, qty: qty));
+      mockCart.add(CartItem(product: product, qty: qty, variant: variant));
     }
+    cartCountNotifier.value = mockCart.length;
+  }
+
+  /// Hapus produk dari keranjang berdasarkan index dan beri notifikasi reaktif.
+  static void removeFromCart(int index) {
+    if (index >= 0 && index < mockCart.length) {
+      mockCart.removeAt(index);
+    }
+  }
+
+  /// Reset keranjang ke kondisi awal (berguna untuk pengujian)
+  static void resetCart() {
+    mockCart.clear();
+    mockCart.addAll([
+      CartItem(product: products[0], qty: 1),
+      CartItem(product: products[1], qty: 2),
+    ]);
   }
 
   static String formatPrice(int price) {
@@ -383,3 +417,71 @@ abstract final class MockData {
         .toList();
   }
 }
+
+/// List keranjang yang secara otomatis memicu [MockData.cartCountNotifier]
+/// seketika terjadi penambahan, penghapusan, atau perubahan isi keranjang.
+class _CartList extends ListBase<CartItem> {
+  final List<CartItem> _inner = [
+    CartItem(product: MockData.products[0], qty: 1),
+    CartItem(product: MockData.products[1], qty: 2),
+  ];
+
+  @override
+  int get length => _inner.length;
+
+  @override
+  set length(int newLength) {
+    _inner.length = newLength;
+    MockData.cartCountNotifier.value = _inner.length;
+  }
+
+  @override
+  CartItem operator [](int index) => _inner[index];
+
+  @override
+  void operator []=(int index, CartItem value) {
+    _inner[index] = value;
+    MockData.cartCountNotifier.value = _inner.length;
+  }
+
+  @override
+  void add(CartItem element) {
+    _inner.add(element);
+    MockData.cartCountNotifier.value = _inner.length;
+  }
+
+  @override
+  void addAll(Iterable<CartItem> iterable) {
+    _inner.addAll(iterable);
+    MockData.cartCountNotifier.value = _inner.length;
+  }
+
+  @override
+  CartItem removeAt(int index) {
+    final item = _inner.removeAt(index);
+    MockData.cartCountNotifier.value = _inner.length;
+    return item;
+  }
+
+  @override
+  bool remove(Object? element) {
+    final removed = _inner.remove(element);
+    if (removed) {
+      MockData.cartCountNotifier.value = _inner.length;
+    }
+    return removed;
+  }
+
+  @override
+  void removeWhere(bool Function(CartItem element) test) {
+    _inner.removeWhere(test);
+    MockData.cartCountNotifier.value = _inner.length;
+  }
+
+  @override
+  void clear() {
+    _inner.clear();
+    MockData.cartCountNotifier.value = 0;
+  }
+}
+

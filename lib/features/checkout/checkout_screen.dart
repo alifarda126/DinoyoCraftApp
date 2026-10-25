@@ -11,9 +11,13 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../data/mock_data.dart';
 
+export '../../data/mock_data.dart' show CartItem;
+
 /// Halaman Checkout — disesuaikan dengan desain CO.png.
 class CheckoutScreen extends StatefulWidget {
-const   CheckoutScreen({super.key});
+  const CheckoutScreen({super.key, this.directBuyItems});
+
+  final List<CartItem>? directBuyItems;
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -58,13 +62,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  // Local mutable cart quantities
-  late final List<int> _qtys;
+  bool get _isDirectBuy => widget.directBuyItems != null;
+  late List<CartItem> _items;
+  late List<int> _qtys;
 
   @override
   void initState() {
     super.initState();
-    _qtys = MockData.mockCart.map((item) => item.qty).toList();
+    _initItems();
+  }
+
+  void _initItems() {
+    _items = widget.directBuyItems != null
+        ? List<CartItem>.from(widget.directBuyItems!)
+        : MockData.mockCart;
+    _qtys = _items.map((item) => item.qty).toList();
+  }
+
+  @override
+  void didUpdateWidget(covariant CheckoutScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.directBuyItems != oldWidget.directBuyItems) {
+      _initItems();
+    }
   }
 
   @override
@@ -75,8 +95,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   int get _subtotal {
     int total = 0;
-    for (var i = 0; i < MockData.mockCart.length; i++) {
-      total += MockData.mockCart[i].product.price * _qtys[i];
+    for (var i = 0; i < _items.length; i++) {
+      total += _items[i].product.price * _qtys[i];
     }
     return total;
   }
@@ -94,7 +114,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   static const int _serviceFee = 2000;
 
-  int get _total => _subtotal + _shippingFee + _serviceFee;
+  int get _total => _items.isEmpty ? 0 : _subtotal + _shippingFee + _serviceFee;
 
   String _shippingLabel() {
     switch (_shipping) {
@@ -348,7 +368,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   /// Konfirmasi hapus produk saat qty tinggal 1 dan tombol minus ditekan.
   Future<void> _confirmRemoveItem(int index) async {
-    final product = MockData.mockCart[index].product;
+    final product = _items[index].product;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -385,7 +405,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
     if (confirmed != true || !mounted) return;
     setState(() {
-      MockData.mockCart.removeAt(index);
+      _items.removeAt(index);
       _qtys.removeAt(index);
     });
     ScaffoldMessenger.of(context).showSnackBar(
@@ -648,14 +668,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   icon: Icons.inventory_2_outlined,
                   title: '${'Produk yang Dibeli'.tr} ($totalQty)',
                   trailing: Text(
-                    '${MockData.mockCart.length} Penjual Terpilih',
+                    '${_items.length} Penjual Terpilih',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ),
-                if (MockData.mockCart.isEmpty)
+                if (_items.isEmpty)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -672,7 +692,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                         SizedBox(height: 10),
                         Text(
-                          'Keranjangmu kosong',
+                          _isDirectBuy
+                              ? 'Tidak ada produk'
+                              : 'Keranjangmu kosong',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -681,7 +703,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Tambahkan produk dari halaman Keranjang.',
+                          _isDirectBuy
+                              ? 'Pilih produk untuk melanjutkan checkout.'
+                              : 'Tambahkan produk dari halaman Keranjang.',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             color: AppColors.textSecondary,
@@ -690,8 +714,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ],
                     ),
                   ),
-                ...List.generate(MockData.mockCart.length, (i) {
-                  final item = MockData.mockCart[i];
+                ...List.generate(_items.length, (i) {
+                  final item = _items[i];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: _Card(
@@ -752,6 +776,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     ),
                                   ],
                                 ),
+                                if (item.variant != null &&
+                                    item.variant!.isNotEmpty) ...[
+                                  SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.inputBg,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: AppColors.border,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Variasi: ${item.variant}',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                                 SizedBox(height: 10),
                                 Row(
                                   children: [
@@ -987,7 +1036,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           boxShadow: AppColors.darkButtonShadow,
                         ),
                         child: FilledButton(
-                          onPressed: MockData.mockCart.isEmpty ? null : _pay,
+                          onPressed: _items.isEmpty ? null : _pay,
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.black,
                             foregroundColor: AppColors.white,

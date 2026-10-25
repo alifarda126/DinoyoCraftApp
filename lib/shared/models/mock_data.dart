@@ -46,10 +46,15 @@ const   FaqItem({required this.question, required this.answer});
 }
 
 class CartItem {
-const   CartItem({required this.product, required this.qty});
+  const CartItem({
+    required this.product,
+    required this.qty,
+    this.variant,
+  });
 
   final Product product;
   final int qty;
+  final String? variant;
 }
 
 abstract final class MockData {

@@ -195,10 +195,20 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
       _permissionState = perm;
 
       if (perm.isAuth || perm.hasAccess) {
+        final filterOption = FilterOptionGroup(
+          orders: [
+            const OrderOption(
+              type: OrderOptionType.createDate,
+              asc: false,
+            ),
+          ],
+        );
+
         final albums = await PhotoManager.getAssetPathList(
           type: RequestType.image,
           hasAll: true,
           onlyAll: false,
+          filterOption: filterOption,
         );
         if (!mounted) return;
         setState(() {
@@ -239,6 +249,9 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
         page: page,
         size: _pageSize,
       );
+
+      // Urutkan juga in-memory (terbaru ke terlama) sebagai jaminan konsistensi timestamp
+      newAssets.sort((a, b) => b.createDateTime.compareTo(a.createDateTime));
 
       if (!mounted) return;
       setState(() {

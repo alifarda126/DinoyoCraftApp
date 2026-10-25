@@ -31,10 +31,12 @@ migrate_working_dir/
 /build/
 /coverage/
 
-# Test artifacts & golden audits (local only)
-test/goldens/
-test/failures/
-test/*.png
+# Tests (local only - do not push to git)
+test/
+
+# Local agent rules
+.agents/
+AGENTS.md
 
 # Local scratch scripts
 extract.js

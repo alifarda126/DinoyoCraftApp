@@ -8,6 +8,7 @@ import '../../data/mock_data.dart';
 import '../../features/cart/cart_screen.dart';
 import '../../features/notification/notifications_screen.dart';
 import '../theme/app_colors.dart';
+import 'cart_fly_animation.dart';
 
 class DcAppHeader extends StatelessWidget {
 const   DcAppHeader({
@@ -95,15 +96,18 @@ const   DcAppHeader({
                     ),
                   ),
                   SizedBox(width: 8 * s),
-                  _IconBtn(
-                    asset: AppAssets.iconCart,
-                    iconSize: 19,
-                    badge: MockData.mockCart.isNotEmpty
-                        ? '${MockData.mockCart.length}'
-                        : null,
-                    badgeTop: -2,
-                    badgeRight: -3,
-                    onTap: () => showCartModal(context),
+                  ValueListenableBuilder<int>(
+                    valueListenable: MockData.cartCountNotifier,
+                    builder: (context, cartCount, _) => CartBounceTarget(
+                      child: _IconBtn(
+                        asset: AppAssets.iconCart,
+                        iconSize: 19,
+                        badge: cartCount > 0 ? '$cartCount' : null,
+                        badgeTop: -2,
+                        badgeRight: -3,
+                        onTap: () => showCartModal(context),
+                      ),
+                    ),
                   ),
                   SizedBox(width: 8 * s),
                   ValueListenableBuilder<int>(

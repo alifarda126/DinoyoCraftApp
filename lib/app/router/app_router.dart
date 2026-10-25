@@ -103,7 +103,12 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/checkout',
-      builder: (context, state) => CheckoutScreen(),
+      builder: (context, state) {
+        final items = state.extra is List<CartItem>
+            ? state.extra as List<CartItem>
+            : (state.extra is CartItem ? [state.extra as CartItem] : null);
+        return CheckoutScreen(directBuyItems: items);
+      },
     ),
     GoRoute(
       path: '/chatbot',

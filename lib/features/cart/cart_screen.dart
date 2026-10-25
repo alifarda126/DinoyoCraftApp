@@ -350,7 +350,18 @@ class _CartItem extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                SizedBox(height: 9),
+                if (item.variant != null && item.variant!.isNotEmpty) ...[
+                  SizedBox(height: 2),
+                  Text(
+                    item.variant!,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+                SizedBox(height: 7),
                 Text(
                   MockData.formatPrice(item.product.price),
                   style: GoogleFonts.plusJakartaSans(

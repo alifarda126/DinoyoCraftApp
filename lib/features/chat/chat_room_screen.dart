@@ -670,10 +670,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Icon(
-                    Icons.shopping_cart_outlined,
-                    size: 16,
-                    color: AppColors.ink,
+                  child: SvgPicture.asset(
+                    AppAssets.iconCartPlus,
+                    width: 20,
+                    height: 20,
+                    colorFilter: ColorFilter.mode(
+                      AppColors.ink,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ),
               ),

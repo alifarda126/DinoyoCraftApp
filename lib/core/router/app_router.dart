@@ -174,7 +174,12 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/checkout',
-      builder: (context, state) => _live(CheckoutScreen.new),
+      builder: (context, state) {
+        final items = state.extra is List<CartItem>
+            ? state.extra as List<CartItem>
+            : (state.extra is CartItem ? [state.extra as CartItem] : null);
+        return _live(() => CheckoutScreen(directBuyItems: items));
+      },
     ),
     GoRoute(path: '/cart', builder: (context, state) => _live(CartScreen.new)),
     GoRoute(

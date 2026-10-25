@@ -49,6 +49,7 @@ abstract final class AppAssets {
   static const String iconChatDot = 'assets/icons/icon_chat_dot.svg';
   static const String iconNotification = 'assets/icons/icon_notification.svg';
   static const String iconCart = 'assets/icons/icon_cart.svg';
+  static const String iconCartPlus = 'assets/icons/icon_cart_plus.svg';
   static const String iconFlame = 'assets/icons/icon_flame.svg';
   static const String iconStar = 'assets/icons/icon_star.svg';
   static const String iconPlus = 'assets/icons/icon_plus.svg';

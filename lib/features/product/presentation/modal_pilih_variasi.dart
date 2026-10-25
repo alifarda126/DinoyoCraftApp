@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_text.dart';
+import '../../../core/assets.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/cart_fly_animation.dart';
 import '../../../core/widgets/image_preview_dialog.dart';
 import '../../../data/mock_data.dart';
 
 /// Tipe aksi yang memicu modal.
-enum ModalVariasiMode { keranjang, beliLangsung }
+enum ModalVariasiMode { keranjang, beliLangsung, keduanya }
 
 /// Tampilkan modal pilih variasi & jumlah produk sebagai bottom sheet.
 Future<void> showModalPilihVariasi(
@@ -63,6 +66,7 @@ class _ModalPilihVariasi extends StatefulWidget {
 }
 
 class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
+  final GlobalKey _imageKey = GlobalKey();
   int _selectedVariasi = 0;
   int _jumlah = 1;
 
@@ -108,6 +112,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
                 child: _ProductInfoRow(
+                  imageKey: _imageKey,
                   product: widget.product,
                   originalPrice: originalPrice,
                   stok: _stokVariasi,
@@ -279,50 +284,88 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                 SizedBox(
                   width: double.infinity,
                   height: 44,
-                  child: widget.mode == ModalVariasiMode.keranjang
-                      ? OutlinedButton.icon(
-                          onPressed: _onKeranjang,
-                          icon: Icon(Icons.shopping_cart_outlined, size: 18),
-                          label: Text(
-                            'Tambah ke Keranjang'.tr,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
+                  child: switch (widget.mode) {
+                    ModalVariasiMode.keranjang =>
+                      _buildKeranjangButton(isFullWidth: true),
+                    ModalVariasiMode.beliLangsung =>
+                      _buildBeliLangsungButton(),
+                    ModalVariasiMode.keduanya => Row(
+                        children: [
+                          Expanded(
+                            child: _buildKeranjangButton(isFullWidth: false),
                           ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.ink,
-                            shape: StadiumBorder(),
-                            side: BorderSide(color: AppColors.ink, width: 2),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _buildBeliLangsungButton(),
                           ),
-                        )
-                      : Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            boxShadow: AppColors.darkButtonShadow,
-                          ),
-                          child: FilledButton(
-                            onPressed: _onBeliLangsung,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.black,
-                              foregroundColor: AppColors.white,
-                              elevation: 0,
-                              shape: AppColors.stadiumButtonShape,
-                            ),
-                            child: Text(
-                              'Beli Langsung'.tr,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
+                        ],
+                      ),
+                  },
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildKeranjangButton({required bool isFullWidth}) {
+    return OutlinedButton.icon(
+      onPressed: _onKeranjang,
+      icon: SvgPicture.asset(
+        AppAssets.iconCartPlus,
+        width: isFullWidth ? 22 : 20,
+        height: isFullWidth ? 22 : 20,
+        colorFilter: ColorFilter.mode(
+          AppColors.ink,
+          BlendMode.srcIn,
+        ),
+      ),
+      label: Text(
+        isFullWidth ? 'Tambah ke Keranjang'.tr : 'Keranjang'.tr,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.ink,
+        shape: const StadiumBorder(),
+        side: BorderSide(color: AppColors.ink, width: isFullWidth ? 2 : 1.5),
+        padding: isFullWidth
+            ? null
+            : const EdgeInsets.symmetric(horizontal: 8),
+      ),
+    );
+  }
+
+  Widget _buildBeliLangsungButton() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: AppColors.darkButtonShadow,
+      ),
+      child: FilledButton(
+        onPressed: _onBeliLangsung,
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.black,
+          foregroundColor: AppColors.white,
+          elevation: 0,
+          shape: AppColors.stadiumButtonShape,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+        ),
+        child: Text(
+          'Beli Langsung'.tr,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     );
   }
@@ -353,8 +396,30 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
   }
 
   void _onKeranjang() {
+    // Ambil posisi thumbnail sebelum modal ditutup
+    final renderBox =
+        _imageKey.currentContext?.findRenderObject() as RenderBox?;
+    Offset? startOffset;
+    if (renderBox != null && renderBox.hasSize && renderBox.attached) {
+      startOffset = renderBox.localToGlobal(
+        Offset(renderBox.size.width / 2, renderBox.size.height / 2),
+      );
+    }
+
     // Simpan ke keranjang sesi agar badge header & halaman keranjang ikut.
-    MockData.addToCart(widget.product, _jumlah);
+    MockData.addToCart(
+      widget.product,
+      _jumlah,
+      _variasiList[_selectedVariasi].label,
+    );
+
+    // Jalankan animasi terlempar ke keranjang
+    CartFlyAnimation.run(
+      context,
+      imagePath: widget.product.image,
+      startPosition: startOffset,
+    );
+
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -363,14 +428,20 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
           '(x$_jumlah) ${AppText.isEnglish ? 'added to cart!' : 'ditambahkan ke keranjang!'}',
         ),
         behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
 
   void _onBeliLangsung() {
+    final selectedVariantLabel = _variasiList[_selectedVariasi].label;
+    final directItem = CartItem(
+      product: widget.product,
+      qty: _jumlah,
+      variant: selectedVariantLabel,
+    );
     Navigator.pop(context);
-    context.push('/checkout');
+    context.push('/checkout', extra: [directItem]);
   }
 }
 
@@ -378,11 +449,13 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
 
 class _ProductInfoRow extends StatelessWidget {
   const _ProductInfoRow({
+    this.imageKey,
     required this.product,
     required this.originalPrice,
     required this.stok,
   });
 
+  final Key? imageKey;
   final Product product;
   final int originalPrice;
   final int stok;
@@ -394,6 +467,7 @@ class _ProductInfoRow extends StatelessWidget {
       children: [
         // Gambar dalam kotak berborder tipis (dapat diketuk untuk preview full)
         GestureDetector(
+          key: imageKey,
           onTap: () {
             ImagePreviewDialog.show(
               context,
