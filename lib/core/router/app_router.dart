@@ -227,7 +227,11 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final storeName = state.uri.queryParameters['store'] ??
             'Dinoyo Ceramic Studio';
-        return _live(() => ChatRoomScreen(storeName: storeName));
+        final productId = state.uri.queryParameters['productId'];
+        return _live(() => ChatRoomScreen(
+              storeName: storeName,
+              productId: productId,
+            ));
       },
     ),
     GoRoute(

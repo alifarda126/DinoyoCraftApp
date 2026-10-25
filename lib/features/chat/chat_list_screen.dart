@@ -25,59 +25,68 @@ class _ChatListScreenState extends State<ChatListScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bg,
         body: SafeArea(
-          child: Column(
-            children: [
-              SizedBox(
-                height: 54,
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go('/home');
-                        }
-                      },
-                      icon: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 19,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Pesan'.tr,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxHeight < 54 || constraints.maxWidth < 96) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                children: [
+                  SizedBox(
+                    height: 54,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go('/home');
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 19,
+                          ),
                         ),
-                      ),
+                        Expanded(
+                          child: Text(
+                            'Pesan'.tr,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 48),
+                      ],
                     ),
-                    SizedBox(width: 48),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ValueListenableBuilder<int>(
-                  valueListenable: MockData.unreadChatNotifier,
-                  builder: (context, unreadCount, child) {
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 6, 20, 30),
-                      itemCount: _chats.length,
-                      separatorBuilder: (_, _) => SizedBox(height: 12),
-                      itemBuilder: (context, i) => _ChatCard(
-                        chat: _chats[i],
-                        onTap: () {
-                          if (mounted) setState(() {});
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+                  ),
+                  Expanded(
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: MockData.unreadChatNotifier,
+                      builder: (context, unreadCount, child) {
+                        return ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(20, 6, 20, 30),
+                          itemCount: _chats.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          itemBuilder: (context, i) => _ChatCard(
+                            chat: _chats[i],
+                            onTap: () {
+                              if (mounted) setState(() {});
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

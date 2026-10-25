@@ -10,6 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/gallery_picker_sheet.dart';
 import '../../core/widgets/image_preview_dialog.dart';
+import '../../core/widgets/sticker_picker_sheet.dart';
 
 // ─── Data model ───────────────────────────────────────────────────────────────
 class _ChatMessage {
@@ -19,6 +20,7 @@ class _ChatMessage {
     this.time = '',
     this.imagePath,
     this.isFileImage = false,
+    this.isSticker = false,
   });
 
   final String text;
@@ -29,6 +31,7 @@ class _ChatMessage {
   /// True bila [imagePath] adalah file di disk (hasil kamera/galeri),
   /// false bila path aset bawaan aplikasi.
   final bool isFileImage;
+  final bool isSticker;
 }
 
 String _nowTime() {
@@ -158,52 +161,41 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
     }
   }
 
-  void _openEmojiSheet() {
-    const emojis = [
-      '😊', '😂', '😍', '🥰', '😎', '👍', '🙏',
-      '🔥', '✨', '❤️', '🤩', '😁', '🫙', '🏺',
-    ];
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surfaceElevated,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetCtx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: emojis.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-            ),
-            itemBuilder: (context, i) => GestureDetector(
-              onTap: () {
-                final selection = _input.selection;
-                final text = _input.text;
-                final pos = selection.baseOffset >= 0 &&
-                        selection.baseOffset <= text.length
-                    ? selection.baseOffset
-                    : text.length;
-                final newText = text.replaceRange(pos, pos, emojis[i]);
-                _input.value = TextEditingValue(
-                  text: newText,
-                  selection: TextSelection.collapsed(
-                    offset: pos + emojis[i].length,
-                  ),
-                );
-              },
-              child: Center(
-                child: Text(emojis[i], style: TextStyle(fontSize: 24)),
-              ),
-            ),
-          ),
-        ),
-      ),
+  void _openStickerSheet() {
+    StickerPickerSheet.show(
+      context,
+      onSelected: (sticker) => _sendSticker(sticker),
     );
+  }
+
+  void _sendSticker(DinoyoSticker sticker) {
+    setState(() {
+      _messages.add(
+        _ChatMessage(
+          text: '',
+          isBot: false,
+          time: _nowTime(),
+          imagePath: sticker.assetPath,
+          isSticker: true,
+        ),
+      );
+    });
+    _scrollToBottom();
+
+    // Respons ramah dari ClayBot menyambut stiker
+    Future.delayed(const Duration(milliseconds: 650), () {
+      if (!mounted) return;
+      setState(() {
+        _messages.add(
+          _ChatMessage(
+            text: 'Wah, stiker Si Clay yang lucu! Ada yang bisa ClayBot bantu seputar produk atau workshop keramik Dinoyo? 😊',
+            isBot: true,
+            time: _nowTime(),
+          ),
+        );
+      });
+      _scrollToBottom();
+    });
   }
 
   void _scrollToBottom() {
@@ -493,7 +485,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                               ),
                             ),
                             GestureDetector(
-                              onTap: _openEmojiSheet,
+                              onTap: _openStickerSheet,
                               behavior: HitTestBehavior.opaque,
                               child: Padding(
                                 padding: const EdgeInsets.only(right: 14, left: 4),
@@ -637,7 +629,9 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                       onTap: () {
                         ImagePreviewDialog.show(
                           context,
-                          title: 'Foto ChatBot'.tr,
+                          title: msg.isSticker
+                              ? 'Stiker ChatBot'.tr
+                              : 'Foto ChatBot'.tr,
                           subtitle: msg.time,
                           filePath: msg.isFileImage ? msg.imagePath : null,
                           assetPath: msg.isFileImage ? null : msg.imagePath,
@@ -650,12 +644,14 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                             child: msg.isFileImage
                                 ? Image.file(
                                     File(msg.imagePath!),
-                                    width: 200,
-                                    height: 140,
-                                    fit: BoxFit.cover,
+                                    width: msg.isSticker ? 140 : 200,
+                                    height: msg.isSticker ? 140 : 140,
+                                    fit: msg.isSticker
+                                        ? BoxFit.contain
+                                        : BoxFit.cover,
                                     errorBuilder: (_, _, _) => Container(
-                                      width: 200,
-                                      height: 140,
+                                      width: msg.isSticker ? 140 : 200,
+                                      height: msg.isSticker ? 140 : 140,
                                       color: AppColors.inputBg,
                                       child: Center(
                                         child: Icon(
@@ -668,27 +664,30 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                                   )
                                 : Image.asset(
                                     msg.imagePath!,
-                                    width: 200,
-                                    height: 140,
-                                    fit: BoxFit.cover,
+                                    width: msg.isSticker ? 140 : 200,
+                                    height: msg.isSticker ? 140 : 140,
+                                    fit: msg.isSticker
+                                        ? BoxFit.contain
+                                        : BoxFit.cover,
                                   ),
                           ),
-                          Positioned(
-                            right: 8,
-                            bottom: 8,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.55),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.fullscreen_rounded,
-                                size: 16,
-                                color: Colors.white,
+                          if (!msg.isSticker)
+                            Positioned(
+                              right: 8,
+                              bottom: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.55),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.fullscreen_rounded,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     )

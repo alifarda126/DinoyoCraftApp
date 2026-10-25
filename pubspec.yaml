@@ -16,6 +16,7 @@ dependencies:
   image_picker: ^1.2.0
   url_launcher: ^6.3.2
   photo_manager: ^3.12.0
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
@@ -28,6 +29,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/stickers/
 
 flutter_launcher_icons:
   # iOS - pakai image dengan background putih sudah di-embed

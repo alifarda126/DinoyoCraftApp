@@ -161,6 +161,12 @@ abstract final class AppText {
     'Cari': 'Search',
     'Detail': 'Details',
     'Pesan': 'Messages',
+    'Ditanyakan': 'Inquired',
+    'Kirim': 'Send',
+    'Kirim Produk': 'Send Product',
+    'Lihat Produk': 'View Product',
+    'Hapus Preview': 'Remove Preview',
+    ' • Terjual 340+': ' • 340+ sold',
 
     // ── Filter & Kategori ───────────────────────────────────────────────────
     'Semua': 'All',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_cache_manager.dart';
 import 'theme/app_colors.dart';
 
 /// Mode tema aplikasi.
@@ -105,9 +106,29 @@ class AppSettings extends ChangeNotifier {
     notifyListeners();
   }
 
-  void clearCache() {
-    cacheBytes = 0;
+  /// Sinkronkan ukuran cache nyata langsung dari penyimpanan perangkat.
+  Future<void> syncCacheSize() async {
+    try {
+      final real = await AppCacheManager.getRealCacheBytes();
+      cacheBytes = real;
+      notifyListeners();
+    } catch (_) {
+      // Pada lingkungan widget test atau tanpa platform channel
+    }
+  }
+
+  /// Hapus seluruh file cache fisik langsung dari disk perangkat dan memory.
+  Future<int> clearCache() async {
+    int cleared = cacheBytes;
+    try {
+      final bytes = await AppCacheManager.clearRealCache();
+      if (bytes > 0) cleared = bytes;
+      cacheBytes = await AppCacheManager.getRealCacheBytes();
+    } catch (_) {
+      cacheBytes = 0;
+    }
     notifyListeners();
+    return cleared;
   }
 
   /// Paksa rebuild root (dipakai observer kecerahan sistem).

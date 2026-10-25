@@ -11,12 +11,19 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/gallery_picker_sheet.dart';
 import '../../core/widgets/image_preview_dialog.dart';
+import '../../core/widgets/sticker_picker_sheet.dart';
 import '../../data/mock_data.dart';
+import '../product/presentation/modal_pilih_variasi.dart';
 
 class ChatRoomScreen extends StatefulWidget {
-const   ChatRoomScreen({super.key, this.storeName = 'Dinoyo Ceramic Studio'});
+  const ChatRoomScreen({
+    super.key,
+    this.storeName = 'Dinoyo Ceramic Studio',
+    this.productId,
+  });
 
   final String storeName;
+  final String? productId;
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -29,6 +36,8 @@ class _ChatMessage {
     required this.time,
     this.imagePath,
     this.isFileImage = false,
+    this.isSticker = false,
+    this.product,
   });
 
   final String text;
@@ -39,6 +48,8 @@ class _ChatMessage {
   /// True bila [imagePath] adalah file di disk (hasil kamera/galeri),
   /// false bila path aset bawaan aplikasi.
   final bool isFileImage;
+  final bool isSticker;
+  final Product? product;
 }
 
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
@@ -46,11 +57,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  Product? _productPreview;
 
   @override
   void initState() {
     super.initState();
     MockData.markChatAsRead(widget.storeName);
+    if (widget.productId != null) {
+      try {
+        _productPreview = MockData.products.firstWhere(
+          (p) => p.id == widget.productId,
+        );
+      } catch (_) {
+        _productPreview = null;
+      }
+    }
   }
 
   late final List<_ChatMessage> _messages = [
@@ -84,6 +105,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       text: '',
       imagePath: AppAssets.productVas,
     ),
+    const _ChatMessage(
+      isMine: false,
+      time: '14:18',
+      text: '',
+      imagePath: AppAssets.stickerClayPacking,
+      isSticker: true,
+    ),
   ];
 
   String get _storeImage {
@@ -96,12 +124,25 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   void _send() {
     final text = _inputController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && _productPreview == null) return;
     setState(() {
-      _messages.add(
-        _ChatMessage(isMine: true, time: _nowLabel(), text: text),
-      );
-      _inputController.clear();
+      if (_productPreview != null) {
+        _messages.add(
+          _ChatMessage(
+            isMine: true,
+            time: _nowLabel(),
+            text: '',
+            product: _productPreview,
+          ),
+        );
+        _productPreview = null;
+      }
+      if (text.isNotEmpty) {
+        _messages.add(
+          _ChatMessage(isMine: true, time: _nowLabel(), text: text),
+        );
+        _inputController.clear();
+      }
     });
     _scrollToBottom();
   }
@@ -131,6 +172,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _scrollToBottom();
   }
 
+  /// Kirim stiker DinoyoCraft (Si Clay) ke ruang obrolan.
+  void _sendSticker(DinoyoSticker sticker) {
+    setState(() {
+      _messages.add(_ChatMessage(
+        isMine: true,
+        time: _nowLabel(),
+        text: '',
+        imagePath: sticker.assetPath,
+        isSticker: true,
+      ));
+    });
+    _scrollToBottom();
+  }
+
   Future<void> _openAttachmentSheet() async {
     final result = await GalleryPickerSheet.show(
       context,
@@ -154,51 +209,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
-  void _openEmojiSheet() {
-    const emojis = [
-      '😊', '😂', '😍', '🥰', '😎', '👍', '🙏',
-      '🔥', '✨', '❤️', '🤩', '😁', '🫙', '🏺',
-    ];
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surfaceElevated,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetCtx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: emojis.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-            ),
-            itemBuilder: (context, i) => GestureDetector(
-              onTap: () {
-                final selection = _inputController.selection;
-                final text = _inputController.text;
-                final pos = selection.baseOffset >= 0 &&
-                        selection.baseOffset <= text.length
-                    ? selection.baseOffset
-                    : text.length;
-                final newText = text.replaceRange(pos, pos, emojis[i]);
-                _inputController.value = TextEditingValue(
-                  text: newText,
-                  selection: TextSelection.collapsed(
-                    offset: pos + emojis[i].length,
-                  ),
-                );
-              },
-              child: Center(
-                child: Text(emojis[i], style: TextStyle(fontSize: 24)),
-              ),
-            ),
-          ),
-        ),
-      ),
+  void _openStickerSheet() {
+    StickerPickerSheet.show(
+      context,
+      onSelected: (sticker) => _sendSticker(sticker),
     );
   }
 
@@ -293,23 +307,32 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         backgroundColor: AppColors.bg,
         body: SafeArea(
           bottom: false,
-          child: Column(
-            children: [
-              _buildHeader(),
-              Divider(height: 1, color: AppColors.divider),
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                  itemCount: _messages.length + 1,
-                  itemBuilder: (context, i) {
-                    if (i == 0) return _buildDateDivider();
-                    return _buildBubble(_messages[i - 1]);
-                  },
-                ),
-              ),
-              _buildInputBar(),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxHeight < 80 || constraints.maxWidth < 100) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                children: [
+                  _buildHeader(),
+                  Divider(height: 1, color: AppColors.divider),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                      itemCount: _messages.length + 1,
+                      itemBuilder: (context, i) {
+                        if (i == 0) return _buildDateDivider();
+                        return _buildBubble(_messages[i - 1]);
+                      },
+                    ),
+                  ),
+                  if (_productPreview != null)
+                    _buildBottomProductPreview(_productPreview!),
+                  _buildInputBar(),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -396,6 +419,303 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  Widget _buildBottomProductPreview(Product product) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          top: BorderSide(color: AppColors.divider),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          GestureDetector(
+            onTap: () => context.push('/product/${product.id}'),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset(
+                product.image,
+                width: 58,
+                height: 58,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => context.push('/product/${product.id}'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceSubtle,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: AppColors.borderAlt,
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_rounded,
+                              size: 8,
+                              color: AppColors.ink,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Ditanyakan'.tr,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          product.studio,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    product.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    MockData.formatPrice(product.price),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _productPreview = null;
+              });
+            },
+            icon: Icon(
+              Icons.close_rounded,
+              size: 20,
+              color: AppColors.textMuted,
+            ),
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            splashRadius: 18,
+            tooltip: 'Hapus Preview'.tr,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductCard(Product product) {
+    return GestureDetector(
+      onTap: () => context.push('/product/${product.id}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  product.image,
+                  width: 68,
+                  height: 68,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      product.studio,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 13,
+                          color: Color(0xFFF59E0B),
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${product.rating}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            '• Terjual 340+'.tr,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      MockData.formatPrice(product.price),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              SizedBox(
+                width: 38,
+                height: 34,
+                child: OutlinedButton(
+                  key: const ValueKey('chat_product_cart_button'),
+                  onPressed: () => showModalPilihVariasi(
+                    context,
+                    product: product,
+                    mode: ModalVariasiMode.keranjang,
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    foregroundColor: AppColors.ink,
+                    backgroundColor: AppColors.surfaceSubtle,
+                    side: BorderSide(
+                      color: AppColors.borderAlt,
+                      width: 1.2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 16,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SizedBox(
+                  height: 34,
+                  child: ElevatedButton.icon(
+                    onPressed: () => context.push('/product/${product.id}'),
+                    icon: const Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 14,
+                      color: AppColors.white,
+                    ),
+                    label: Text(
+                      'Lihat Produk'.tr,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.black,
+                      foregroundColor: AppColors.white,
+                      padding: EdgeInsets.zero,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: AppColors.darkButtonSide ?? BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBubble(_ChatMessage message) {
     final bubbleRadius = BorderRadius.only(
       topLeft: const Radius.circular(16),
@@ -404,76 +724,81 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       bottomRight: Radius.circular(message.isMine ? 2 : 16),
     );
 
-    final content = message.imagePath != null
-        ? GestureDetector(
-            onTap: () {
-              ImagePreviewDialog.show(
-                context,
-                title: message.isMine
-                    ? 'Foto Terkirim'.tr
-                    : 'Foto dari Toko'.tr,
-                subtitle: message.time,
-                filePath: message.isFileImage ? message.imagePath : null,
-                assetPath: message.isFileImage ? null : message.imagePath,
-              );
-            },
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: message.isFileImage
-                      ? Image.file(
-                          File(message.imagePath!),
-                          width: 220,
-                          height: 158,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
-                            width: 220,
-                            height: 158,
-                            color: AppColors.inputBg,
-                            child: Center(
-                              child: Icon(
-                                Icons.broken_image_rounded,
-                                size: 28,
-                                color: AppColors.textMuted,
+    final isProduct = message.product != null;
+    final isSticker = message.isSticker;
+    final content = isProduct
+        ? _buildProductCard(message.product!)
+        : message.imagePath != null
+            ? GestureDetector(
+                onTap: () {
+                  ImagePreviewDialog.show(
+                    context,
+                    title: message.isMine
+                        ? (isSticker ? 'Stiker Terkirim'.tr : 'Foto Terkirim'.tr)
+                        : (isSticker ? 'Stiker dari Toko'.tr : 'Foto dari Toko'.tr),
+                    subtitle: message.time,
+                    filePath: message.isFileImage ? message.imagePath : null,
+                    assetPath: message.isFileImage ? null : message.imagePath,
+                  );
+                },
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: message.isFileImage
+                          ? Image.file(
+                              File(message.imagePath!),
+                              width: isSticker ? 140 : 220,
+                              height: isSticker ? 140 : 158,
+                              fit: isSticker ? BoxFit.contain : BoxFit.cover,
+                              errorBuilder: (_, _, _) => Container(
+                                width: isSticker ? 140 : 220,
+                                height: isSticker ? 140 : 158,
+                                color: AppColors.inputBg,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.broken_image_rounded,
+                                    size: 28,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
                               ),
+                            )
+                          : Image.asset(
+                              message.imagePath!,
+                              width: isSticker ? 140 : 220,
+                              height: isSticker ? 140 : 158,
+                              fit: isSticker ? BoxFit.contain : BoxFit.cover,
                             ),
+                    ),
+                    if (!isSticker)
+                      Positioned(
+                        right: 8,
+                        bottom: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            shape: BoxShape.circle,
                           ),
-                        )
-                      : Image.asset(
-                          message.imagePath!,
-                          width: 220,
-                          height: 158,
-                          fit: BoxFit.cover,
+                          child: const Icon(
+                            Icons.fullscreen_rounded,
+                            size: 16,
+                            color: Colors.white,
+                          ),
                         ),
+                      ),
+                  ],
                 ),
-                Positioned(
-                  right: 8,
-                  bottom: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.55),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.fullscreen_rounded,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                  ),
+              )
+            : Text(
+                message.text,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: AppColors.ink,
                 ),
-              ],
-            ),
-          )
-        : Text(
-            message.text,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              height: 1.5,
-              color: message.isMine ? AppColors.white : AppColors.ink,
-            ),
-          );
+              );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -497,21 +822,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ],
               Flexible(
                 child: Container(
-                  padding: message.imagePath != null
-                      ? const EdgeInsets.all(6)
-                      : const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                  constraints: BoxConstraints(maxWidth: 260),
+                  padding: isProduct
+                      ? const EdgeInsets.all(10)
+                      : message.imagePath != null
+                          ? const EdgeInsets.all(6)
+                          : const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                  constraints: BoxConstraints(
+                    maxWidth: isProduct ? 272 : (isSticker ? 152 : 260),
+                  ),
                   decoration: BoxDecoration(
-                    color: message.isMine
-                        ? AppColors.black
-                        : AppColors.surface,
+                    color: AppColors.surface,
                     borderRadius: bubbleRadius,
-                    border: message.isMine
-                        ? null
-                        : Border.all(color: AppColors.borderAlt),
+                    border: Border.all(color: AppColors.borderAlt),
                   ),
                   child: content,
                 ),
@@ -588,7 +913,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   color: AppColors.textMuted,
                 ),
                 suffixIcon: GestureDetector(
-                  onTap: _openEmojiSheet,
+                  onTap: _openStickerSheet,
                   child: Padding(
                     padding: const EdgeInsets.all(12.0),
                     child: SvgPicture.asset(
@@ -621,6 +946,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ),
           SizedBox(width: 10),
           InkWell(
+            key: const ValueKey('chat_send_button'),
             onTap: _send,
             borderRadius: BorderRadius.circular(22),
             child: Container(

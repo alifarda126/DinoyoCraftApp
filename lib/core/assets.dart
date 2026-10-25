@@ -60,4 +60,14 @@ abstract final class AppAssets {
   static const String iconSave = 'assets/icons/icon_save.svg';
   static const String iconGaransi = 'assets/icons/icon_garansi.svg';
   static const String iconFloatingCS = 'assets/icons/icon_floatingCS.svg';
+
+  // Stickers DinoyoCraft (Si Clay)
+  static const String stickerClayHalo = 'assets/stickers/sticker_clay_halo.jpg';
+  static const String stickerClayThumbsup = 'assets/stickers/sticker_clay_thumbsup.jpg';
+  static const String stickerClayPacking = 'assets/stickers/sticker_clay_packing.jpg';
+  static const String stickerClayLove = 'assets/stickers/sticker_clay_love.jpg';
+  static const String stickerClayCrafting = 'assets/stickers/sticker_clay_crafting.jpg';
+  static const String stickerClayTanya = 'assets/stickers/sticker_clay_tanya.jpg';
+  static const String stickerClayDiskon = 'assets/stickers/sticker_clay_diskon.jpg';
+  static const String stickerClayMakasih = 'assets/stickers/sticker_clay_makasih.jpg';
 }

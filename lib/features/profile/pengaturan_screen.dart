@@ -26,6 +26,12 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       ? 'Baru saja diubah'.tr
       : 'Terakhir diubah 3 bulan lalu'.tr;
 
+  @override
+  void initState() {
+    super.initState();
+    _settings.syncCacheSize();
+  }
+
   /// Sumber kebenaran tema/bahasa/2FA/perangkat/cache ada di AppSettings
   /// agar seluruh aplikasi ikut berubah saat diubah dari sini.
   AppSettings get _settings => AppSettings.instance;
@@ -889,12 +895,14 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final cleared = _settings.cacheLabel;
               Navigator.pop(dialogCtx);
-              _settings.clearCache();
-              setState(() {});
-              _showFeedback('Cache sebesar $cleared berhasil dibersihkan.');
+              await _settings.clearCache();
+              if (mounted) {
+                setState(() {});
+                _showFeedback('Cache sebesar $cleared berhasil dibersihkan.');
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.black,

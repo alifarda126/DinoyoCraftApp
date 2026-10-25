@@ -332,7 +332,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     height: 46,
                     child: OutlinedButton(
                       onPressed: () => context.push(
-                        '/chat-room?store=${Uri.encodeComponent(product.studio)}',
+                        '/chat-room?store=${Uri.encodeComponent(product.studio)}&productId=${product.id}',
                       ),
                       style: OutlinedButton.styleFrom(
                         padding: EdgeInsets.zero,

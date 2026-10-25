@@ -9,6 +9,7 @@ import 'core/widgets/keyboard_dismiss_wrapper.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  AppSettings.instance.syncCacheSize();
   runApp(DinoyoCraftApp());
 }
 
