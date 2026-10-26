@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -7,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
+import 'presentation/modal_laporkan_toko.dart';
 
 Color get _borderColor => AppColors.border;
 const double _padH = 24;
@@ -31,6 +33,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
     final store = MockData.stores[
         widget.storeIndex.clamp(0, MockData.stores.length - 1)];
     final products = MockData.products
@@ -49,7 +52,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              // ── App bar: back + judul (rata kiri) + ikon bantuan ──
+              // ── App bar: back + judul (rata kiri) + titik 3 ──
               SizedBox(
                 height: 52,
                 child: Row(
@@ -64,26 +67,218 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                       },
                       icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19),
                     ),
-                  Expanded(
-                    child: Text(
-                      'Profil Toko'.tr,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                    Expanded(
+                      child: Text(
+                        'Profil Toko'.tr,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () => context.push('/help'),
-                    icon: Icon(
-                      Icons.help_outline_rounded,
-                      size: 22,
-                      color: AppColors.ink,
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        splashColor: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.05),
+                        highlightColor: isDark
+                            ? Colors.white.withValues(alpha: 0.04)
+                            : Colors.black.withValues(alpha: 0.03),
+                      ),
+                      child: PopupMenuButton<String>(
+                        icon: Icon(Icons.more_vert_rounded, size: 21),
+                        color: AppColors.surface,
+                        surfaceTintColor: Colors.transparent,
+                        elevation: 6,
+                        shadowColor: Colors.black
+                            .withValues(alpha: isDark ? 0.4 : 0.1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(
+                            color: isDark
+                                ? AppColors.border
+                                : const Color(0xFFE5E5E5),
+                            width: 1,
+                          ),
+                        ),
+                        offset: const Offset(0, 48),
+                        onSelected: (value) async {
+                          if (value == 'home') {
+                            context.go('/home');
+                          } else if (value == 'share') {
+                            Clipboard.setData(
+                              ClipboardData(
+                                text:
+                                    'https://dinoyocraft.id/store/${widget.storeIndex}',
+                              ),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                content: Text(
+                                  'Tautan profil toko disalin ke clipboard'.tr,
+                                ),
+                              ),
+                            );
+                          } else if (value == 'help') {
+                            context.push('/help');
+                          } else if (value == 'report') {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final res = await showModalLaporkanToko(
+                              context,
+                              storeName: store.name,
+                              storeImage: store.image,
+                            );
+                            if (res == true && mounted) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  backgroundColor: AppColors.isDark
+                                      ? const Color(0xFF2E2E2E)
+                                      : const Color(0xFF1F1F1F),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  content: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.check_circle_rounded,
+                                        color: Color(0xFF4CAF50),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          'Terima kasih, laporan toko berhasil dikirim dan akan segera ditinjau oleh tim DinoyoCraft.'
+                                              .tr,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem<String>(
+                            value: 'home',
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.home_outlined,
+                                  size: 20,
+                                  color: AppColors.ink,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Kembali ke Halaman Beranda'.tr,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const _StoreMenuDivider(),
+                          PopupMenuItem<String>(
+                            value: 'share',
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.share_outlined,
+                                  size: 20,
+                                  color: AppColors.ink,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Bagikan Toko'.tr,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const _StoreMenuDivider(),
+                          PopupMenuItem<String>(
+                            value: 'help',
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.help_outline_rounded,
+                                  size: 20,
+                                  color: AppColors.ink,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Butuh Bantuan'.tr,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const _StoreMenuDivider(),
+                          PopupMenuItem<String>(
+                            value: 'report',
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.flag_outlined,
+                                  size: 20,
+                                  color: AppColors.danger,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Laporkan Toko'.tr,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.danger,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                  ],
+                ),
               ),
-            ),
 
             Expanded(
               child: ListView(
@@ -362,6 +557,34 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
         ),
       ),
     ),
-  );
+    );
+  }
 }
+
+class _StoreMenuDivider extends PopupMenuEntry<Never> {
+  const _StoreMenuDivider();
+
+  @override
+  final double height = 1;
+
+  @override
+  bool represents(Never? value) => false;
+
+  @override
+  State<_StoreMenuDivider> createState() => _StoreMenuDividerState();
+}
+
+class _StoreMenuDividerState extends State<_StoreMenuDivider> {
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Divider(
+        height: 1,
+        thickness: 1,
+        color: isDark ? AppColors.border : const Color(0xFFF0F0F0),
+      ),
+    );
+  }
 }

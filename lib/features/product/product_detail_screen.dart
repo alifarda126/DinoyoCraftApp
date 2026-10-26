@@ -10,6 +10,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 import '../../data/mock_data.dart';
+import '../review/presentation/modal_laporkan_ulasan.dart';
+import 'presentation/modal_laporkan_produk.dart';
 import 'presentation/modal_pilih_variasi.dart';
 
 /// Halaman Detail Produk — disesuaikan dengan desain
@@ -68,15 +70,58 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     context.go('/products');
                   }
                 },
-              onShare: () {
-                Clipboard.setData(
-                  ClipboardData(
-                    text: 'https://dinoyocraft.id/product/${widget.productId}',
-                  ),
-                );
-                _toast('Tautan produk disalin ke clipboard');
-              },
-            ),
+                onShare: () {
+                  Clipboard.setData(
+                    ClipboardData(
+                      text: 'https://dinoyocraft.id/product/${widget.productId}',
+                    ),
+                  );
+                  _toast('Tautan produk disalin ke clipboard');
+                },
+                onReport: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final result = await showModalLaporkanProduk(
+                    context,
+                    productId: product.id,
+                    productName: product.name,
+                    productImage: product.image,
+                  );
+                  if (result == true && mounted) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppColors.isDark
+                            ? const Color(0xFF2E2E2E)
+                            : const Color(0xFF1F1F1F),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        content: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              color: Color(0xFF4CAF50),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Laporan berhasil dikirim. Terima kasih telah membantu menjaga komunitas DinoyoCraft.'
+                                    .tr,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
@@ -458,10 +503,12 @@ class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.onBack,
     required this.onShare,
+    this.onReport,
   });
 
   final VoidCallback onBack;
   final VoidCallback onShare;
+  final VoidCallback? onReport;
 
   @override
   Widget build(BuildContext context) {
@@ -510,6 +557,8 @@ class _TopBar extends StatelessWidget {
                   context.go('/home');
                 } else if (value == 'help') {
                   context.push('/help');
+                } else if (value == 'report') {
+                  onReport?.call();
                 }
               },
               itemBuilder: (context) => [
@@ -558,6 +607,32 @@ class _TopBar extends StatelessWidget {
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             color: AppColors.ink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const _MenuDivider(),
+                PopupMenuItem<String>(
+                  value: 'report',
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.flag_outlined,
+                        size: 20,
+                        color: AppColors.danger,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Laporkan Produk'.tr,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.danger,
                           ),
                         ),
                       ),
@@ -1096,6 +1171,7 @@ class _ReviewCardState extends State<_ReviewCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark;
     final hasPhoto = review.photo != null;
     final hasReply = review.reply != null;
 
@@ -1144,39 +1220,145 @@ class _ReviewCardState extends State<_ReviewCard> {
                   ],
                 ),
               ),
-              PopupMenuButton<String>(
-                padding: EdgeInsets.zero,
-                icon: Icon(
-                  Icons.more_vert_rounded,
-                  size: 18,
-                  color: AppColors.ink,
+              Theme(
+                data: Theme.of(context).copyWith(
+                  splashColor: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.05),
+                  highlightColor: isDark
+                      ? Colors.white.withValues(alpha: 0.04)
+                      : Colors.black.withValues(alpha: 0.03),
                 ),
-                onSelected: (value) {
-                  if (value == 'copy') {
-                    Clipboard.setData(ClipboardData(text: review.text));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Ulasan disalin')),
-                    );
-                  } else if (value == 'report') {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Terima kasih, laporan ulasan dikirim.'),
+                child: PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    size: 18,
+                    color: AppColors.ink,
+                  ),
+                  color: AppColors.surface,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 6,
+                  shadowColor:
+                      Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color:
+                          isDark ? AppColors.border : const Color(0xFFE5E5E5),
+                      width: 1,
+                    ),
+                  ),
+                  offset: const Offset(0, 36),
+                  onSelected: (value) async {
+                    if (value == 'copy') {
+                      Clipboard.setData(ClipboardData(text: review.text));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          content: Text('Ulasan disalin'.tr),
+                        ),
+                      );
+                    } else if (value == 'report') {
+                      final messenger = ScaffoldMessenger.of(context);
+                      final res = await showModalLaporkanUlasan(
+                        context,
+                        reviewerName: review.name,
+                        reviewText: review.text,
+                      );
+                      if (res == true && context.mounted) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            backgroundColor: AppColors.isDark
+                                ? const Color(0xFF2E2E2E)
+                                : const Color(0xFF1F1F1F),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            content: Row(
+                              children: [
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Color(0xFF4CAF50),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Terima kasih, laporan ulasan berhasil dikirim.'
+                                        .tr,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem<String>(
+                      value: 'copy',
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.copy_rounded,
+                            size: 20,
+                            color: AppColors.ink,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Salin Ulasan'.tr,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'copy',
-                    height: 40,
-                    child: Text('Salin Ulasan'),
-                  ),
-                  PopupMenuItem(
-                    value: 'report',
-                    height: 40,
-                    child: Text('Laporkan Ulasan'),
-                  ),
-                ],
+                    ),
+                    const _MenuDivider(),
+                    PopupMenuItem<String>(
+                      value: 'report',
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.flag_outlined,
+                            size: 20,
+                            color: AppColors.danger,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Laporkan Ulasan'.tr,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.danger,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

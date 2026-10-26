@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/app_text.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/image_preview_dialog.dart';
+import '../modal_laporkan_produk.dart';
 
 // â”€â”€â”€ Placeholder Model (ganti dengan entity dari domain layer) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class ProductDetailArgs {
@@ -67,6 +69,9 @@ const   ProductDetailPage({super.key, required this.args});
             pinned: true,
             backgroundColor: AppColors.bg,
             leading: _CircleBackBtn(),
+            actions: [
+              _CircleMoreBtn(args: args),
+            ],
             systemOverlayStyle: SystemUiOverlayStyle.dark,
             flexibleSpace: FlexibleSpaceBar(
               background: _ProductHeroImage(
@@ -179,6 +184,97 @@ class _CircleBackBtn extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.all(8),
             child: Icon(Icons.arrow_back, size: 20, color: AppColors.ink),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleMoreBtn extends StatelessWidget {
+  const _CircleMoreBtn({required this.args});
+
+  final ProductDetailArgs args;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Material(
+        color: AppColors.white,
+        shape: const CircleBorder(),
+        elevation: 2,
+        shadowColor: Colors.black12,
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            splashColor: Colors.black.withValues(alpha: 0.05),
+          ),
+          child: PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert_rounded, size: 20, color: AppColors.ink),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            offset: const Offset(0, 48),
+            onSelected: (value) async {
+              if (value == 'report') {
+                final messenger = ScaffoldMessenger.of(context);
+                final res = await showModalLaporkanProduk(
+                  context,
+                  productId: args.id,
+                  productName: args.name,
+                  productImage: args.imagePath,
+                );
+                if (res == true && context.mounted) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      content: Row(
+                        children: [
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: Color(0xFF4CAF50),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Laporan berhasil dikirim. Terima kasih telah membantu menjaga komunitas DinoyoCraft.'
+                                  .tr,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'report',
+                height: 44,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.flag_outlined,
+                      size: 20,
+                      color: AppColors.danger,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Laporkan Produk'.tr,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

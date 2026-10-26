@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -9,12 +10,14 @@ import 'core/widgets/keyboard_dismiss_wrapper.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  AppSettings.instance.syncCacheSize();
-  runApp(DinoyoCraftApp());
+  if (!kIsWeb) {
+    AppSettings.instance.syncCacheSize();
+  }
+  runApp(const DinoyoCraftApp());
 }
 
 class DinoyoCraftApp extends StatefulWidget {
-const   DinoyoCraftApp({super.key});
+  const DinoyoCraftApp({super.key});
 
   @override
   State<DinoyoCraftApp> createState() => _DinoyoCraftAppState();
@@ -89,7 +92,7 @@ class _DinoyoCraftAppState extends State<DinoyoCraftApp> {
             // karena reparenting GlobalKey milik go_router.
             return KeyboardDismissWrapper(
               child: KeyedSubtree(
-                key: ObjectKey((isDark, settings.locale)),
+                key: ValueKey((isDark, settings.locale)),
                 child: child ?? const SizedBox.shrink(),
               ),
             );

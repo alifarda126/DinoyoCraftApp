@@ -17,6 +17,9 @@ abstract final class AppCacheManager {
   /// - Pada Desktop/Lainnya: subdirektori khusus 'dinoyocraftmobile_cache' agar terisolasi.
   /// - Fallback: subdirektori di systemTemp jika platform channel tidak tersedia.
   static Future<Directory> getAppCacheDir() async {
+    if (kIsWeb) {
+      throw UnsupportedError('AppCacheManager file cache is not supported on web.');
+    }
     if (testCacheDirectoryOverride != null) {
       return testCacheDirectoryOverride!;
     }
@@ -43,6 +46,7 @@ abstract final class AppCacheManager {
   /// Menghitung total ukuran cache nyata (dalam bytes) dari direktori
   /// temporary / cache sistem dan external cache (Android).
   static Future<int> getRealCacheBytes() async {
+    if (kIsWeb) return 0;
     int totalBytes = 0;
     final visited = <String>{};
 
@@ -96,6 +100,8 @@ abstract final class AppCacheManager {
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
     } catch (_) {}
+
+    if (kIsWeb) return 0;
 
     final visited = <String>{};
 

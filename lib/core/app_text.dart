@@ -415,6 +415,12 @@ abstract final class AppText {
         'Hello! 👋\n\nI am ClayBot, your DinoyoCraft assistant. I am ready to help you discover local ceramics, find artisan studios, check workshop schedules, or assist with your orders.',
     'Ada produk keramik spesifik yang sedang ingin kamu cari hari ini?':
         'Is there a specific ceramic product you are looking for today?',
+    'Chat dengan customer service langsung':
+        'Chat directly with Customer Service',
+    'Customer Service': 'Customer Service',
+    'Tim DinoyoCraft • Siap membantu': 'DinoyoCraft Team • Ready to help',
+    'Menghubungkan kamu ke Customer Service DinoyoCraft... Mohon tunggu sebentar ya.':
+        'Connecting you to DinoyoCraft Customer Service... Please wait a moment.',
 
     // ── Onboarding & Splash ────────────────────────────────────────────────
     'Temukan Cerita di Balik Setiap ': 'Discover the Story Behind Every ',
@@ -711,6 +717,67 @@ abstract final class AppText {
     'Perbesar': 'Enlarge',
     'Perbesar Foto': 'Enlarge Photo',
     'Foto Produk': 'Product Photo',
+
+    // ── Pelaporan Produk ─────────────────────────────────────────────────────
+    'Laporkan Produk': 'Report Product',
+    'Pilih Alasan Pelaporan': 'Select Reason for Reporting',
+    'Beri tahu kami masalah apa yang Anda temukan pada produk ini untuk membantu menjaga kualitas dan keamanan komunitas DinoyoCraft.':
+        'Tell us what issue you found with this product to help maintain the quality and safety of the DinoyoCraft community.',
+    'Gambar tidak sesuai produk asli': 'Image does not match actual product',
+    'Deskripsi atau spesifikasi tidak akurat':
+        'Description or specifications are inaccurate',
+    'Produk tiruan atau pelanggaran hak cipta':
+        'Counterfeit product or copyright violation',
+    'Harga tidak wajar atau indikasi penipuan':
+        'Unreasonable price or suspicious activity',
+    'Produk rusak, cacat, atau kualitas buruk':
+        'Damaged, defective, or poor quality product',
+    'Tuliskan alasan pelaporan Anda': 'Write your reason for reporting',
+    'Tuliskan alasan pelaporan Anda secara rinci...':
+        'Describe your reason for reporting in detail...',
+    'Harap tuliskan alasan pelaporan': 'Please write your reason for reporting',
+    'Pilih salah satu alasan pelaporan': 'Please select a reason for reporting',
+    'Kirim Laporan': 'Submit Report',
+    'Laporan berhasil dikirim. Terima kasih telah membantu menjaga komunitas DinoyoCraft.':
+        'Report submitted successfully. Thank you for helping keep the DinoyoCraft community safe.',
+
+    // ── Pelaporan Ulasan ─────────────────────────────────────────────────────
+    'Beri tahu kami masalah apa yang Anda temukan pada ulasan ini untuk membantu menjaga ulasan tetap relevan, sopan, dan terpercaya.':
+        'Tell us what issue you found with this review to help keep reviews relevant, polite, and trustworthy.',
+    'Ulasan mengandung kata kasar atau menyerang':
+        'Review contains offensive or abusive words',
+    'Ulasan palsu & tidak relevan': 'Fake & irrelevant review',
+    'Spam, penipuan, atau iklan promosi': 'Spam, scam, or promotional ads',
+    'Mengandung informasi pribadi atau sensitif':
+        'Contains personal or sensitive information',
+    'Foto ulasan tidak pantas atau menyesatkan':
+        'Review photo is inappropriate or misleading',
+    'Tuliskan alasan pelaporan ulasan secara rinci...':
+        'Describe your reason for reporting this review in detail...',
+    'Terima kasih, laporan ulasan berhasil dikirim.':
+        'Thank you, the review report has been successfully submitted.',
+
+    // ── Pelaporan Toko ───────────────────────────────────────────────────────
+    'Laporkan Toko': 'Report Store',
+    'Bagikan Toko': 'Share Store',
+    'Tautan profil toko disalin ke clipboard':
+        'Store profile link copied to clipboard',
+    'Beri tahu kami masalah apa yang Anda temukan pada toko ini untuk membantu menjaga persaingan sehat dan keamanan berbelanja di DinoyoCraft.':
+        'Tell us what issue you found with this store to help maintain fair competition and safe shopping at DinoyoCraft.',
+    'Melanggar ketentuan harga (price dumping)':
+        'Price dumping policy violation',
+    'Foto produk menggunakan gambar curian':
+        'Product photos use stolen images',
+    'Toko terindikasi penipuan atau pesanan fiktif':
+        'Store suspected of fraud or fictitious orders',
+    'Menjual produk tiruan atau pelanggaran hak cipta':
+        'Selling counterfeit products or copyright violation',
+    'Penyalahgunaan data pribadi pembeli':
+        'Misuse of buyer personal data',
+    'Tuliskan alasan pelaporan toko secara rinci...':
+        'Describe your reason for reporting this store in detail...',
+    'Terima kasih, laporan toko berhasil dikirim dan akan segera ditinjau oleh tim DinoyoCraft.':
+        'Thank you, your store report has been submitted and will be reviewed by the DinoyoCraft team.',
   };
 
   /// Cache lowercase untuk pencarian cepat case-insensitive

@@ -1,9 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
+import '../../../../core/app_text.dart';
 import '../../../../core/constants/asset_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../modal_laporkan_toko.dart';
 
 class StoreDetailPage extends StatefulWidget {
 const   StoreDetailPage({super.key, this.storeId = '1'});
@@ -48,6 +50,9 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
             pinned: true,
             backgroundColor: AppColors.bg,
             leading: _CircleBackBtn(),
+            actions: [
+              _CircleStoreMoreBtn(storeName: _storeName),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Image.asset(AppAssets.storeDinoyo, fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => ColoredBox(color: AppColors.inputBg)),
@@ -154,6 +159,95 @@ class _CircleBackBtn extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _CircleStoreMoreBtn extends StatelessWidget {
+  const _CircleStoreMoreBtn({required this.storeName});
+
+  final String storeName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Material(
+        color: AppColors.white,
+        shape: const CircleBorder(),
+        elevation: 2,
+        shadowColor: Colors.black12,
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            splashColor: Colors.black.withValues(alpha: 0.05),
+          ),
+          child: PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert_rounded, size: 20, color: AppColors.ink),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            offset: const Offset(0, 48),
+            onSelected: (value) async {
+              if (value == 'report') {
+                final messenger = ScaffoldMessenger.of(context);
+                final res = await showModalLaporkanToko(
+                  context,
+                  storeName: storeName,
+                );
+                if (res == true && context.mounted) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      content: Row(
+                        children: [
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: Color(0xFF4CAF50),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Terima kasih, laporan toko berhasil dikirim dan akan segera ditinjau oleh tim DinoyoCraft.'
+                                  .tr,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'report',
+                height: 44,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.flag_outlined,
+                      size: 20,
+                      color: AppColors.danger,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Laporkan Toko'.tr,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _StoreProductCard extends StatelessWidget {

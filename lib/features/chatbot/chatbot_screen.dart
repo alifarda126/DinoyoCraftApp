@@ -21,6 +21,7 @@ class _ChatMessage {
     this.imagePath,
     this.isFileImage = false,
     this.isSticker = false,
+    this.isCS = false,
   });
 
   final String text;
@@ -32,6 +33,7 @@ class _ChatMessage {
   /// false bila path aset bawaan aplikasi.
   final bool isFileImage;
   final bool isSticker;
+  final bool isCS;
 }
 
 String _nowTime() {
@@ -42,6 +44,7 @@ String _nowTime() {
 
 // ─── Quick replies sesuai Proto_Final/Chatbot.png ─────────────────────────────
 const _quickReplies = [
+  ('💬', 'Chat dengan customer service langsung'),
   ('🫙', 'Cari produk'),
   ('🏺', 'Rekomendasi cangkir'),
   ('🏪', 'Cari toko'),
@@ -60,6 +63,8 @@ const _scripted = <String, String>{
       'Workshop keramik tersedia di Dinoyo! Buka tab Workshop untuk info jadwal dan reservasi via WhatsApp. Sesi berlangsung ±2 jam.',
   'Bantuan pesanan':
       'Untuk informasi pesanan kamu, kunjungi tab Bantuan atau halaman Profil → Riwayat Pesanan. Atau tanya saya langsung!',
+  'Chat dengan customer service langsung':
+      'Menghubungkan kamu ke Customer Service DinoyoCraft... Mohon tunggu sebentar ya.',
 };
 
 // ─── Popup chatbot — dipanggil via showClayBotPopup() ────────────────────────
@@ -84,6 +89,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   bool _showQuickReplies = true;
+  bool _isCSConnected = false;
 
   late final List<_ChatMessage> _messages = [
     _ChatMessage(
@@ -105,20 +111,69 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
     final t = _nowTime();
+
+    final isCSRequest = trimmed == 'Chat dengan customer service langsung' ||
+        trimmed.toLowerCase().contains('customer service') ||
+        trimmed.toLowerCase().contains('cs langsung') ||
+        trimmed.toLowerCase() == 'cs';
+
     setState(() {
       _showQuickReplies = false;
       _messages.add(_ChatMessage(text: trimmed, isBot: false, time: t));
-      final reply = _scripted[trimmed] ??
-          'Ada produk keramik spesifik yang sedang ingin kamu cari hari ini?';
-      Future.delayed(Duration(milliseconds: 600), () {
-        if (mounted) {
+
+      if (isCSRequest && !_isCSConnected) {
+        _isCSConnected = true;
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (!mounted) return;
           setState(() {
-            _messages.add(
-                _ChatMessage(text: reply, isBot: true, time: _nowTime()));
+            _messages.add(_ChatMessage(
+              text: 'Menghubungkan kamu ke Customer Service DinoyoCraft... Mohon tunggu sebentar ya.'.tr,
+              isBot: true,
+              isCS: false,
+              time: _nowTime(),
+            ));
           });
           _scrollToBottom();
-        }
-      });
+
+          Future.delayed(const Duration(milliseconds: 900), () {
+            if (!mounted) return;
+            setState(() {
+              _messages.add(_ChatMessage(
+                text: 'Halo! 👋 Saya Sarah dari Customer Service DinoyoCraft. Ada yang bisa kami bantu terkait produk, pesanan, atau seputar sentra keramik Dinoyo?'.tr,
+                isBot: true,
+                isCS: true,
+                time: _nowTime(),
+              ));
+            });
+            _scrollToBottom();
+          });
+        });
+      } else if (_isCSConnected) {
+        Future.delayed(const Duration(milliseconds: 700), () {
+          if (!mounted) return;
+          setState(() {
+            _messages.add(_ChatMessage(
+              text: 'Baik Kak, pesan kamu sudah kami terima dan sedang ditangani oleh Customer Service DinoyoCraft. Kami akan segera membantu memberikan solusi terbaik! 😊'.tr,
+              isBot: true,
+              isCS: true,
+              time: _nowTime(),
+            ));
+          });
+          _scrollToBottom();
+        });
+      } else {
+        final reply = _scripted[trimmed] ??
+            'Ada produk keramik spesifik yang sedang ingin kamu cari hari ini?';
+        Future.delayed(const Duration(milliseconds: 600), () {
+          if (mounted) {
+            setState(() {
+              _messages.add(
+                  _ChatMessage(text: reply, isBot: true, time: _nowTime()));
+            });
+            _scrollToBottom();
+          }
+        });
+      }
     });
     _input.clear();
     _scrollToBottom();
@@ -137,13 +192,16 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
       ));
     });
     _scrollToBottom();
-    Future.delayed(Duration(milliseconds: 800), () {
+    Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       setState(() {
         _messages.add(_ChatMessage(
-          text: 'Terima kasih, foto produknya sudah kami terima! '
-              'Ada yang ingin ditanyakan tentang produk pada gambar ini?',
+          text: _isCSConnected
+              ? 'Terima kasih Kak, foto produknya sudah kami terima! Tim Customer Service sedang memeriksanya.'.tr
+              : 'Terima kasih, foto produknya sudah kami terima! '
+                  'Ada yang ingin ditanyakan tentang produk pada gambar ini?',
           isBot: true,
+          isCS: _isCSConnected,
           time: _nowTime(),
         ));
       });
@@ -253,13 +311,22 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                       decoration: BoxDecoration(
                         color: AppColors.black,
                         shape: BoxShape.circle,
+                        border: AppColors.isDark
+                            ? Border.all(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 1.2,
+                              )
+                            : null,
+                        boxShadow: AppColors.darkButtonShadow,
                       ),
                       child: Center(
                         child: SvgPicture.asset(
-                          AppAssets.iconBot,
-                          width: 24,
-                          height: 24,
-                          colorFilter: ColorFilter.mode(
+                          _isCSConnected
+                              ? AppAssets.iconFloatingCS
+                              : AppAssets.iconBot,
+                          width: _isCSConnected ? 22 : 24,
+                          height: _isCSConnected ? 22 : 24,
+                          colorFilter: const ColorFilter.mode(
                             AppColors.white,
                             BlendMode.srcIn,
                           ),
@@ -274,7 +341,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                         width: 11,
                         height: 11,
                         decoration: BoxDecoration(
-                          color: Color(0xFF22C55E),
+                          color: const Color(0xFF22C55E),
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 1.5),
                         ),
@@ -282,13 +349,13 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                     ),
                   ],
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ClayBot',
+                        _isCSConnected ? 'Customer Service' : 'ClayBot',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -296,7 +363,9 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                         ),
                       ),
                       Text(
-                        'Asisten DinoyoCraft'.tr,
+                        _isCSConnected
+                            ? 'Tim DinoyoCraft • Siap membantu'.tr
+                            : 'Asisten DinoyoCraft'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -329,7 +398,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
             ),
           ),
 
-          // ── quick replies ─────────────────────────────────────────────
+          // ── quick replies / rekomendasi saat di mulai & saat di chat ───────────
           if (_showQuickReplies)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
@@ -374,6 +443,37 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                     }).toList(),
                   ),
                 ],
+              ),
+            )
+          else if (!_isCSConnected)
+            // Rekomendasi bubble chat CS saat di dalam chat
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: () => _send('Chat dengan customer service langsung'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColors.border,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      '💬 ${'Chat dengan customer service langsung'.tr}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
 
@@ -562,52 +662,107 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Bot avatar kecil
+            // Bot / CS avatar kecil
             Container(
               width: 32,
               height: 32,
               decoration: BoxDecoration(
                 color: AppColors.black,
                 shape: BoxShape.circle,
+                border: AppColors.isDark
+                    ? Border.all(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        width: 1.2,
+                      )
+                    : null,
+                boxShadow: AppColors.darkButtonShadow,
               ),
               child: Center(
                 child: SvgPicture.asset(
-                  AppAssets.iconBot,
-                  width: 16,
-                  height: 16,
-                  colorFilter: ColorFilter.mode(
+                  msg.isCS ? AppAssets.iconFloatingCS : AppAssets.iconBot,
+                  width: msg.isCS ? 18 : 16,
+                  height: msg.isCS ? 18 : 16,
+                  colorFilter: const ColorFilter.mode(
                     AppColors.white,
                     BlendMode.srcIn,
                   ),
                 ),
               ),
             ),
-            SizedBox(width: 10),
-            // Bot bubble
+            const SizedBox(width: 10),
+            // Bot / CS bubble
             Flexible(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceSubtle,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(4),
-                    topRight: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (msg.isCS)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 2, bottom: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Customer Service',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF22C55E),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Online',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF22C55E),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.isDark
+                          ? const Color(0xFF333336)
+                          : AppColors.surfaceSubtle,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(4),
+                        topRight: Radius.circular(16),
+                        bottomLeft: Radius.circular(16),
+                        bottomRight: Radius.circular(16),
+                      ),
+                      border: Border.all(
+                        color: AppColors.isDark
+                            ? Colors.white.withValues(alpha: 0.16)
+                            : AppColors.border.withValues(alpha: 0.4),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      msg.text,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        height: 1.5,
+                        color: AppColors.ink,
+                      ),
+                    ),
                   ),
-                ),
-                child: Text(
-                  msg.text,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    height: 1.5,
-                    color: AppColors.ink,
-                  ),
-                ),
+                ],
               ),
             ),
-            SizedBox(width: 40),
+            const SizedBox(width: 40),
           ],
         ),
       );
@@ -697,12 +852,19 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                           horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         color: AppColors.black,
-                        borderRadius: BorderRadius.only(
+                        borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(16),
                           topRight: Radius.circular(16),
                           bottomLeft: Radius.circular(16),
                           bottomRight: Radius.circular(4),
                         ),
+                        border: AppColors.isDark
+                            ? Border.all(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 1.2,
+                              )
+                            : null,
+                        boxShadow: AppColors.darkButtonShadow,
                       ),
                       child: Text(
                         msg.text,
