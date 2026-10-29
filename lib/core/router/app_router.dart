@@ -113,7 +113,10 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final from = state.uri.queryParameters['from'] ?? 'register';
         final email = state.uri.queryParameters['email'];
-        return _live(() => OtpScreen(from: from, email: email));
+        final code = state.uri.queryParameters['code'];
+        return _live(
+          () => OtpScreen(from: from, email: email, expectedCode: code),
+        );
       },
     ),
     StatefulShellRoute.indexedStack(

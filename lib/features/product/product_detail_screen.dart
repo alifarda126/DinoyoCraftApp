@@ -358,7 +358,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
             // ── Bottom bar: Chat | Keranjang | Beli Langsung ──
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 border: Border(
@@ -375,8 +375,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 46,
-                    height: 46,
+                    width: 44,
+                    height: 44,
                     child: OutlinedButton(
                       onPressed: () => context.push(
                         '/chat-room?store=${Uri.encodeComponent(product.studio)}&productId=${product.id}',
@@ -390,10 +390,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       child: Icon(Icons.chat_bubble_outline_rounded, size: 20),
                     ),
                   ),
-                  SizedBox(width: 10),
+                  SizedBox(width: 8),
                   Expanded(
                     child: SizedBox(
-                      height: 46,
+                      height: 44,
                       child: OutlinedButton.icon(
                         onPressed: () => showModalPilihVariasi(
                           context,
@@ -402,21 +402,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                         icon: SvgPicture.asset(
                           AppAssets.iconCartPlus,
-                          width: 22,
-                          height: 22,
+                          width: 19,
+                          height: 19,
                           colorFilter: ColorFilter.mode(
                             AppColors.ink,
                             BlendMode.srcIn,
                           ),
                         ),
-                        label: Text(
-                          'Keranjang'.tr,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                        label: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Keranjang'.tr,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
                           foregroundColor: AppColors.ink,
                           shape: StadiumBorder(),
                           side: BorderSide(
@@ -427,10 +433,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 10),
+                  SizedBox(width: 8),
                   Expanded(
                     child: SizedBox(
-                      height: 46,
+                      height: 44,
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(999),
@@ -443,16 +449,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             mode: ModalVariasiMode.beliLangsung,
                           ),
                           style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
                             backgroundColor: AppColors.black,
                             foregroundColor: AppColors.white,
                             elevation: 0,
                             shape: AppColors.stadiumButtonShape,
                           ),
-                          child: Text(
-                            'Beli Langsung'.tr,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Beli Langsung'.tr,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ),

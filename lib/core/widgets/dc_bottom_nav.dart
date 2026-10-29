@@ -9,7 +9,7 @@ import '../app_text.dart';
 import '../theme/app_colors.dart';
 
 class DcBottomNav extends StatelessWidget {
-const   DcBottomNav({
+  const DcBottomNav({
     super.key,
     required this.currentIndex,
     required this.onTap,
@@ -36,12 +36,32 @@ const   DcBottomNav({
   // Ruang ekstra di atas agar icon pop-up tidak terpotong
   static const double _overflowTop = 20.0;
 
+  /// Menghitung bottom padding yang adaptif untuk berbagai mode navigasi sistem:
+  /// - Gestur swipe (rawBottom <= 28px): mempertahankan padding ideal seperti semula.
+  /// - 3 gestur Android (3-button navigation, rawBottom >= 36px, biasanya 48px):
+  ///   mengangkat navbar setinggi tombol navigasi + sedikit margin agar label
+  ///   (Beranda, Produk, Toko, Workshop, Profil) tidak terpotong.
+  /// - Web / desktop / no-inset (rawBottom < 8px): fallback 8px.
+  static double getBottomPadding(BuildContext context) {
+    final viewPad = MediaQuery.viewPaddingOf(context).bottom;
+    final pad = MediaQuery.paddingOf(context).bottom;
+    final rawBottom = viewPad > 0 ? viewPad : pad;
+
+    if (rawBottom >= 36.0) {
+      // Navigasi 3 tombol Android (biasanya 48px): beri ruang tombol sistem + margin
+      return rawBottom + 4.0;
+    }
+    if (rawBottom > 28.0) {
+      // iOS safe area indicator (34px)
+      return rawBottom;
+    }
+    // Gestur swipe Android (16-28px) atau fallback 8px untuk layar tanpa inset
+    return rawBottom.clamp(8.0, 28.0);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final rawBottom = MediaQuery.paddingOf(context).bottom;
-    // Beri ruang gesture navigation bar Android (max 20px)
-    // clamp 28px → navbar lebih naik dari gesture navigation bar Android
-    final bottomPad = rawBottom.clamp(8.0, 28.0);
+    final bottomPad = getBottomPadding(context);
     final totalHeight = _barHeight + bottomPad + _overflowTop;
 
     return SizedBox(

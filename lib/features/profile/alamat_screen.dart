@@ -891,6 +891,10 @@ class _AlamatScreenState extends State<AlamatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final viewPad = MediaQuery.viewPaddingOf(context).bottom;
+    final pad = MediaQuery.paddingOf(context).bottom;
+    final bottomInset = viewPad > 0 ? viewPad : pad;
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
@@ -902,7 +906,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
               child: Stack(
                 children: [
                   ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 130),
+                    padding: EdgeInsets.fromLTRB(20, 4, 20, 145 + bottomInset),
                     children: [
                       Row(
                         children: [
@@ -993,7 +997,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         20,
                         14,
                         20,
-                        14 + MediaQuery.paddingOf(context).bottom,
+                        14 + bottomInset,
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.bg.withValues(alpha: 0.9),

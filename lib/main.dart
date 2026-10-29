@@ -8,8 +8,9 @@ import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/keyboard_dismiss_wrapper.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppSettings.instance.loadSavedPreferences();
   if (!kIsWeb) {
     AppSettings.instance.syncCacheSize();
   }

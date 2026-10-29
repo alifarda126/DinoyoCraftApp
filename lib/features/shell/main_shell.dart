@@ -38,8 +38,9 @@ class _MainShellState extends State<MainShell> {
 
     // Batas atas: di bawah status bar + header (~88px)
     final topBound = mq.padding.top + 72.0;
-    // Batas bawah: di atas navbar (navbar height ≈ 76 + bottomPad ~28 + overflowTop 20)
-    final navbarH = 76.0 + mq.padding.bottom.clamp(8.0, 28.0);
+    // Batas bawah: di atas navbar adaptif (gestur swipe maupun 3-button navigation)
+    final bottomPad = DcBottomNav.getBottomPadding(context);
+    final navbarH = 76.0 + bottomPad;
     final bottomBound = screenH - navbarH - _fabSize - _edgePad;
 
     // Posisi default: kanan bawah tepat di atas navbar
@@ -52,7 +53,7 @@ class _MainShellState extends State<MainShell> {
     }
 
     return DoubleBackExitScope(
-      bottomOffset: 96,
+      bottomOffset: navbarH + 16,
       child: Scaffold(
         extendBody: true,
         body: Stack(

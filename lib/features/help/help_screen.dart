@@ -72,13 +72,12 @@ class _HelpScreenState extends State<HelpScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bg,
         body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
                 children: [
                   Text(
                     'Butuh Bantuan?'.tr,

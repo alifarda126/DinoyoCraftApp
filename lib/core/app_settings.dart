@@ -1,22 +1,34 @@
 import 'package:flutter/material.dart';
 
 import 'app_cache_manager.dart';
+import 'app_device_manager.dart';
+import 'app_theme_persistence.dart';
 import 'theme/app_colors.dart';
 
 /// Mode tema aplikasi.
 enum AppThemeMode { system, light, dark }
 
-/// Sesi perangkat lain yang terhubung ke akun.
+/// Sesi perangkat yang terhubung ke akun.
 class DeviceSession {
-const   DeviceSession({
+  DeviceSession({
+    this.id = 'session',
     required this.name,
     required this.location,
     required this.lastActive,
+    this.details = '',
+    this.icon = Icons.devices_rounded,
+    this.isCurrent = false,
+    this.isRevoked = false,
   });
 
+  final String id;
   final String name;
   final String location;
   final String lastActive;
+  final String details;
+  final IconData icon;
+  final bool isCurrent;
+  bool isRevoked;
 }
 
 /// State aplikasi global — tema, bahasa, 2FA, perangkat, dan cache.
@@ -47,17 +59,34 @@ class AppSettings extends ChangeNotifier {
   /// Simulasi ukuran cache (±26 MB); 0 setelah dibersihkan.
   int cacheBytes = 26214400;
 
+  /// Perangkat saat ini yang sedang menjalankan aplikasi (sinkron dengan info nyata).
+  DeviceSession currentDevice = DeviceSession(
+    id: 'current_device',
+    name: 'Smartphone Ini',
+    location: 'Malang, Indonesia',
+    lastActive: 'Aktif saat ini',
+    details: 'DinoyoCraft App v1.0.0',
+    icon: Icons.phone_android_rounded,
+    isCurrent: true,
+  );
+
   /// Perangkat lain yang sedang terhubung (selain perangkat ini).
   final List<DeviceSession> otherDevices = [
     DeviceSession(
-      name: 'Chrome • Windows 11',
-      location: 'Malang, Indonesia',
+      id: 'session_win_chrome',
+      name: 'Chrome di Windows 11',
+      location: 'Surabaya, Indonesia',
       lastActive: 'Aktif 2 jam lalu',
+      details: 'Chrome Browser v122',
+      icon: Icons.laptop_chromebook_rounded,
     ),
     DeviceSession(
-      name: 'Safari • iPhone 14',
-      location: 'Surabaya, Indonesia',
+      id: 'session_ios_safari',
+      name: 'Safari di iPhone 14 Pro',
+      location: 'Malang, Indonesia',
       lastActive: 'Terakhir aktif 3 hari lalu',
+      details: 'Safari Mobile • iOS 17',
+      icon: Icons.phone_iphone_rounded,
     ),
   ];
 
@@ -73,6 +102,25 @@ class AppSettings extends ChangeNotifier {
       AppColors.isDark = mode == AppThemeMode.dark;
     }
     notifyListeners();
+    // Simpan pilihan tema agar tetap bertahan saat aplikasi dibuka kembali.
+    AppThemePersistence.saveThemeMode(mode);
+  }
+
+  /// Memuat preferensi tema yang tersimpan di disk jika pengguna pernah mengubahnya.
+  /// Bila belum pernah diubah, nilai awal bawaan tetap AppThemeMode.light.
+  Future<void> loadSavedPreferences() async {
+    try {
+      final saved = await AppThemePersistence.getSavedThemeMode();
+      if (saved != null) {
+        themeMode = saved;
+        if (saved != AppThemeMode.system) {
+          AppColors.isDark = saved == AppThemeMode.dark;
+        }
+        notifyListeners();
+      }
+    } catch (_) {
+      // Abaikan bila di environment widget test
+    }
   }
 
   void setLocale(String code) {
@@ -96,13 +144,52 @@ class AppSettings extends ChangeNotifier {
     requireOtpNextLogin = false;
   }
 
-  void removeOtherDevice(int index) {
-    otherDevices.removeAt(index);
+  /// Sinkronkan info perangkat saat ini langsung dari hardware / OS nyata.
+  Future<void> syncCurrentDevice() async {
+    try {
+      final real = await AppDeviceManager.getRealCurrentDevice();
+      currentDevice = DeviceSession(
+        id: real.id,
+        name: real.name,
+        location: 'Malang, Indonesia',
+        lastActive: 'Aktif saat ini',
+        details: real.details,
+        icon: real.icon,
+        isCurrent: true,
+      );
+      notifyListeners();
+    } catch (_) {
+      // Abaikan pada testing environment
+    }
+  }
+
+  /// Menghapus sesi perangkat lain berdasarkan index.
+  /// Sesi perangkat tersebut dicabut (revoked), dan otomatis ter-logout.
+  DeviceSession? removeOtherDevice(int index) {
+    if (index >= 0 && index < otherDevices.length) {
+      final removed = otherDevices.removeAt(index);
+      removed.isRevoked = true;
+      notifyListeners();
+      return removed;
+    }
+    return null;
+  }
+
+  /// Menghapus seluruh sesi perangkat lain.
+  /// Seluruh perangkat lain otomatis ter-logout dari akun.
+  void removeAllOtherDevices() {
+    for (final dev in otherDevices) {
+      dev.isRevoked = true;
+    }
+    otherDevices.clear();
     notifyListeners();
   }
 
-  void removeAllOtherDevices() {
-    otherDevices.clear();
+  /// Menghapus / mengeluarkan sesi perangkat ini.
+  /// Perangkat ini otomatis ter-logout dari akun dan status requireOtpNextLogin diatur.
+  void logoutCurrentDevice() {
+    currentDevice.isRevoked = true;
+    markLoggedOut();
     notifyListeners();
   }
 

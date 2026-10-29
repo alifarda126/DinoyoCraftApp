@@ -30,6 +30,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
   void initState() {
     super.initState();
     _settings.syncCacheSize();
+    _settings.syncCurrentDevice();
   }
 
   /// Sumber kebenaran tema/bahasa/2FA/perangkat/cache ada di AppSettings
@@ -102,10 +103,10 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
 
 
   // ── 2. Autentikasi 2 Langkah (2FA) ─────────────────────────────────────────
-  void _toggleTwoFactor() {
+  Future<void> _toggleTwoFactor() async {
     if (_settings.twoFactorEnabled) {
       // Tampilkan dialog konfirmasi nonaktifkan
-      showDialog<void>(
+      final confirm = await showDialog<bool>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
           shape: RoundedRectangleBorder(
@@ -120,7 +121,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             ),
           ),
           content: Text(
-            'Tingkat keamanan akun Anda akan berkurang dan tidak memerlukan kode verifikasi OTP via email saat masuk di perangkat baru.',
+            'Untuk mengonfirmasi penonaktifan Autentikasi 2 Langkah, kami akan mengirimkan kode verifikasi OTP ke email terdaftar Anda ($_maskedEmail).',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               height: 1.5,
@@ -129,7 +130,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
+              onPressed: () => Navigator.pop(dialogCtx, false),
               child: Text(
                 'Batal',
                 style: GoogleFonts.plusJakartaSans(
@@ -139,12 +140,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(dialogCtx);
-                _settings.setTwoFactor(false);
-                setState(() {});
-                _showFeedback('Autentikasi 2 Langkah dinonaktifkan.');
-              },
+              onPressed: () => Navigator.pop(dialogCtx, true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.danger,
                 foregroundColor: AppColors.white,
@@ -152,7 +148,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                 elevation: 0,
               ),
               child: Text(
-                'Nonaktifkan',
+                'Kirim OTP & Nonaktifkan',
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
@@ -162,6 +158,21 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           ],
         ),
       );
+
+      if (confirm == true && mounted) {
+        final uri = Uri(
+          path: '/verify-otp',
+          queryParameters: {
+            'from': 'disable_2fa',
+            'email': _userEmail,
+          },
+        );
+        final res = await context.push<bool>(uri.toString());
+        if (res == true && mounted) {
+          setState(() {});
+          _showFeedback('Autentikasi 2 Langkah (2FA) berhasil dinonaktifkan.');
+        }
+      }
     } else {
       // Buka bottom sheet untuk aktifkan via Email
       _showAppBottomSheet<void>(
@@ -222,7 +233,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                   ),
                   SizedBox(height: 12),
                   Text(
-                    'Setiap kali Anda masuk di perangkat baru, DinoyoCraft akan mengirimkan kode verifikasi 6 digit ke alamat email terdaftar Anda.',
+                    'Untuk mengaktifkan Autentikasi 2 Langkah, DinoyoCraft akan mengirimkan kode verifikasi 6 digit ke alamat email terdaftar Anda.',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       height: 1.5,
@@ -334,13 +345,22 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(sheetContext);
-                        _settings.setTwoFactor(true);
-                        setState(() {});
-                        _showFeedback(
-                          'Autentikasi 2 Langkah via Email berhasil diaktifkan.',
+                        final uri = Uri(
+                          path: '/verify-otp',
+                          queryParameters: {
+                            'from': 'enable_2fa',
+                            'email': _userEmail,
+                          },
                         );
+                        final res = await context.push<bool>(uri.toString());
+                        if (res == true && mounted) {
+                          setState(() {});
+                          _showFeedback(
+                            'Autentikasi 2 Langkah via Email berhasil diaktifkan.',
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.black,
@@ -349,7 +369,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         elevation: 0,
                       ),
                       child: Text(
-                        'Aktifkan via Email Sekarang',
+                        'Kirim Kode OTP Verifikasi',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -372,6 +392,9 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
+            final currentDev = _settings.currentDevice;
+            final otherList = _settings.otherDevices;
+
             return Container(
               decoration: BoxDecoration(
                 color: AppColors.surfaceElevated,
@@ -380,121 +403,39 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: SafeArea(
                 top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: AppColors.borderAlt,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Perangkat Terhubung',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.ink,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Daftar perangkat yang aktif mengakses akun Anda',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: AppColors.borderAlt,
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        IconButton(
-                          icon: Icon(Icons.close_rounded, size: 20),
-                          onPressed: () => Navigator.pop(sheetContext),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-                    // Perangkat 1: Smartphone ini
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.inputBg,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.borderAlt),
                       ),
-                      child: Row(
+                      Row(
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceElevated,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.phone_android_rounded,
-                              size: 22,
-                              color: AppColors.ink,
-                            ),
-                          ),
-                          SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        'Smartphone Ini',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.ink,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 7,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.successSurface,
-                                        borderRadius: BorderRadius.circular(
-                                          999,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'Aktif',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.successText,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 3),
                                 Text(
-                                  'Malang, Indonesia • DinoyoCraft App v1.0.0',
+                                  'Perangkat Terhubung',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Kelola perangkat yang aktif mengakses akun Anda',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     color: AppColors.textSecondary,
@@ -503,30 +444,44 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               ],
                             ),
                           ),
+                          IconButton(
+                            icon: Icon(Icons.close_rounded, size: 20),
+                            onPressed: () => Navigator.pop(sheetContext),
+                          ),
                         ],
                       ),
-                    ),
-                    if (_settings.hasOtherDevices) ...[
-                      SizedBox(height: 10),
-                      // Perangkat 2: Laptop / Browser
+                      SizedBox(height: 16),
+
+                      // Section: Perangkat Ini
+                      Text(
+                        'PERANGKAT SAAT INI',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: AppColors.inputBg,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: AppColors.borderAlt),
                         ),
                         child: Row(
                           children: [
                             Container(
-                              width: 40,
-                              height: 40,
+                              width: 42,
+                              height: 42,
                               decoration: BoxDecoration(
-                                color: AppColors.inputBg,
+                                color: AppColors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
-                                Icons.laptop_chromebook_rounded,
+                                currentDev.icon,
                                 size: 22,
                                 color: AppColors.ink,
                               ),
@@ -536,17 +491,44 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Chrome di Windows 11',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.ink,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          currentDev.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.ink,
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 7,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.successSurface,
+                                          borderRadius: BorderRadius.circular(999),
+                                        ),
+                                        child: Text(
+                                          'Aktif Saat Ini',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.successText,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   SizedBox(height: 3),
                                   Text(
-                                    'Surabaya, Indonesia • Aktif kemarin',
+                                    '${currentDev.location} • ${currentDev.details}',
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 12,
                                       color: AppColors.textSecondary,
@@ -555,27 +537,76 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 ],
                               ),
                             ),
+                            SizedBox(width: 8),
                             OutlinedButton(
                               onPressed: () {
-                                // Sesi perangkat tersebut dicabut —
-                                // perangkat itu harus login kembali.
-                                _settings.removeOtherDevice(0);
-                                setSheetState(() {});
-                                setState(() {});
-                                _showFeedback(
-                                  'Berhasil keluar dari sesi Chrome di Windows.',
+                                showDialog<void>(
+                                  context: context,
+                                  builder: (dlgCtx) => AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                    title: Text(
+                                      'Keluar dari Perangkat Ini?',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.ink,
+                                      ),
+                                    ),
+                                    content: Text(
+                                      'Sesi akun pada perangkat ini akan dihapus dan Anda akan otomatis keluar ke halaman masuk.',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        height: 1.5,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(dlgCtx),
+                                        child: Text(
+                                          'Batal',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(dlgCtx);
+                                          Navigator.pop(sheetContext);
+                                          _settings.logoutCurrentDevice();
+                                          context.go('/login');
+                                          _showFeedback(
+                                            'Perangkat ini telah dihapus. Anda telah otomatis keluar dari akun.',
+                                          );
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.danger,
+                                          foregroundColor: AppColors.white,
+                                          shape: StadiumBorder(),
+                                          elevation: 0,
+                                        ),
+                                        child: Text(
+                                          'Keluar',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 );
                               },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.danger,
-                                side: BorderSide(
-                                  color: AppColors.danger,
-                                ),
+                                side: BorderSide(color: AppColors.danger),
                                 shape: StadiumBorder(),
                                 minimumSize: Size(0, 32),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
                               ),
                               child: Text(
                                 'Keluar',
@@ -588,48 +619,271 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                           ],
                         ),
                       ),
+
                       SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            _settings.removeAllOtherDevices();
-                            setSheetState(() {});
-                            setState(() {});
-                            Navigator.pop(sheetContext);
-                            _showFeedback(
-                              'Berhasil keluar dari semua perangkat lain.',
-                            );
-                          },
-                          icon: Icon(Icons.logout_rounded, size: 18),
-                          label: Text(
-                            'Keluar dari Semua Perangkat Lain',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+
+                      // Section: Perangkat Lain
+                      Text(
+                        'PERANGKAT LAIN YANG TERHUBUNG',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+
+                      if (otherList.isNotEmpty) ...[
+                        for (int i = 0; i < otherList.length; i++) ...[
+                          if (i > 0) SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.borderAlt),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.inputBg,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    otherList[i].icon,
+                                    size: 22,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        otherList[i].name,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.ink,
+                                        ),
+                                      ),
+                                      SizedBox(height: 3),
+                                      Text(
+                                        '${otherList[i].location} • ${otherList[i].lastActive}',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 12,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                OutlinedButton(
+                                  onPressed: () {
+                                    final target = otherList[i];
+                                    showDialog<void>(
+                                      context: context,
+                                      builder: (dlgCtx) => AlertDialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(18),
+                                        ),
+                                        title: Text(
+                                          'Hapus Sesi Perangkat?',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.ink,
+                                          ),
+                                        ),
+                                        content: Text(
+                                          'Sesi "${target.name}" akan dicabut dan perangkat tersebut otomatis ter-logout dari akun Anda.',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 13,
+                                            height: 1.5,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(dlgCtx),
+                                            child: Text(
+                                              'Batal',
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              Navigator.pop(dlgCtx);
+                                              final removed = _settings.removeOtherDevice(i);
+                                              setSheetState(() {});
+                                              setState(() {});
+                                              _showFeedback(
+                                                'Sesi "${removed?.name ?? target.name}" berhasil dihapus. Perangkat tersebut otomatis keluar dari akun.',
+                                              );
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.danger,
+                                              foregroundColor: AppColors.white,
+                                              shape: StadiumBorder(),
+                                              elevation: 0,
+                                            ),
+                                            child: Text(
+                                              'Hapus & Logout',
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.danger,
+                                    side: BorderSide(color: AppColors.danger),
+                                    shape: StadiumBorder(),
+                                    minimumSize: Size(0, 32),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  ),
+                                  child: Text(
+                                    'Keluar',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.danger,
-                            side: BorderSide(color: AppColors.danger),
-                            shape: StadiumBorder(),
+                        ],
+
+                        SizedBox(height: 20),
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              showDialog<void>(
+                                context: context,
+                                builder: (dlgCtx) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  title: Text(
+                                    'Keluar dari Semua Perangkat Lain?',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                  content: Text(
+                                    'Semua sesi perangkat lain yang terhubung akan dicabut dan seluruh perangkat tersebut otomatis ter-logout.',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      height: 1.5,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(dlgCtx),
+                                      child: Text(
+                                        'Batal',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.pop(dlgCtx);
+                                        _settings.removeAllOtherDevices();
+                                        setSheetState(() {});
+                                        setState(() {});
+                                        Navigator.pop(sheetContext);
+                                        _showFeedback(
+                                          'Berhasil keluar dari semua perangkat lain. Semua perangkat tersebut otomatis logout.',
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.danger,
+                                        foregroundColor: AppColors.white,
+                                        shape: StadiumBorder(),
+                                        elevation: 0,
+                                      ),
+                                      child: Text(
+                                        'Keluar Semua',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            icon: Icon(Icons.logout_rounded, size: 18),
+                            label: Text(
+                              'Keluar dari Semua Perangkat Lain',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.danger,
+                              side: BorderSide(color: AppColors.danger),
+                              shape: StadiumBorder(),
+                            ),
                           ),
                         ),
-                      ),
-                    ] else ...[
-                      SizedBox(height: 16),
-                      Center(
-                        child: Text(
-                          'Hanya perangkat ini yang sedang aktif.',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                      ] else ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceSubtle,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.divider),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.shield_outlined,
+                                size: 22,
+                                color: AppColors.textSecondary,
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Hanya perangkat ini yang aktif mengakses akun Anda. Tidak ada sesi perangkat lain yang terhubung.',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    height: 1.4,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             );

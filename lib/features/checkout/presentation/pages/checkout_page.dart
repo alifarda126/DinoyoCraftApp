@@ -710,27 +710,45 @@ class _ShippingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
+    final selectedBorderColor = isDark ? Colors.white : AppColors.black;
+    final selectedRadioColor = isDark ? Colors.white : AppColors.black;
+    final backgroundColor = selected
+        ? (isDark ? const Color(0xFF282828) : AppColors.surface)
+        : AppColors.surface;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? AppColors.black : Color(0xFFEEEEEE),
+              color: selected ? selectedBorderColor : AppColors.border,
               width: selected ? 1.5 : 1,
             ),
+            boxShadow: (selected && isDark)
+                ? [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      spreadRadius: 0.5,
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             children: [
               Icon(
                 selected ? Icons.radio_button_checked : Icons.radio_button_off,
                 size: 20,
-                color: selected ? AppColors.black : AppColors.textMuted,
+                color: selected ? selectedRadioColor : AppColors.textMuted,
               ),
               SizedBox(width: 12),
               Expanded(
@@ -793,18 +811,36 @@ class _PaymentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
+    final selectedBorderColor = isDark ? Colors.white : AppColors.black;
+    final selectedRadioColor = isDark ? Colors.white : AppColors.black;
+    final backgroundColor = selected
+        ? (isDark ? const Color(0xFF282828) : AppColors.surface)
+        : AppColors.surface;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppColors.black : Color(0xFFEEEEEE),
+            color: selected ? selectedBorderColor : AppColors.border,
             width: selected ? 1.5 : 1,
           ),
+          boxShadow: (selected && isDark)
+              ? [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    spreadRadius: 0.5,
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -816,7 +852,7 @@ class _PaymentCard extends StatelessWidget {
                       ? Icons.radio_button_checked
                       : Icons.radio_button_off,
                   size: 20,
-                  color: selected ? AppColors.black : AppColors.textMuted,
+                  color: selected ? selectedRadioColor : AppColors.textMuted,
                 ),
                 SizedBox(width: 10),
                 Text(
@@ -835,8 +871,11 @@ class _PaymentCard extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.black,
+                      color: isDark ? const Color(0xFF333333) : AppColors.black,
                       borderRadius: BorderRadius.circular(4),
+                      border: isDark
+                          ? Border.all(color: Colors.white.withValues(alpha: 0.25))
+                          : null,
                     ),
                     child: Text(
                       badge!,

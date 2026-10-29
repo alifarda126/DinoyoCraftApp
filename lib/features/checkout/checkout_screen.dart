@@ -206,25 +206,43 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         shrinkWrap: true,
                         itemCount: _addresses.length,
                         separatorBuilder: (_, _) => SizedBox(height: 10),
-                        itemBuilder: (_, i) {
+                        itemBuilder: (itemCtx, i) {
                           final a = _addresses[i];
                           final sel = i == _selected;
+                          final isDark =
+                              Theme.of(itemCtx).brightness == Brightness.dark ||
+                                  AppColors.isDark;
                           return InkWell(
                             onTap: () {
                               setState(() => _selected = i);
                               Navigator.of(ctx).pop();
                             },
                             borderRadius: BorderRadius.circular(12),
-                            child: Container(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
                               padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
                               decoration: BoxDecoration(
+                                color: sel
+                                    ? (isDark
+                                        ? const Color(0xFF282828)
+                                        : AppColors.surface)
+                                    : AppColors.surface,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: sel
-                                      ? AppColors.black
+                                      ? (isDark ? Colors.white : AppColors.black)
                                       : AppColors.border,
                                   width: sel ? 1.5 : 1,
                                 ),
+                                boxShadow: (sel && isDark)
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.white.withValues(alpha: 0.08),
+                                          blurRadius: 8,
+                                          spreadRadius: 0.5,
+                                        ),
+                                      ]
+                                    : null,
                               ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,7 +255,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                           : Icons.radio_button_off,
                                       size: 20,
                                       color: sel
-                                          ? AppColors.black
+                                          ? (isDark ? Colors.white : AppColors.black)
                                           : AppColors.textMuted,
                                     ),
                                   ),
@@ -1138,11 +1156,16 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.black,
+        color: isDark ? const Color(0xFF333333) : AppColors.black,
         borderRadius: BorderRadius.circular(4),
+        border: isDark
+            ? Border.all(color: Colors.white.withValues(alpha: 0.25))
+            : null,
       ),
       child: Text(
         text,
@@ -1285,29 +1308,47 @@ class _ShippingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
+    final selectedBorderColor = isDark ? Colors.white : AppColors.black;
+    final selectedRadioColor = isDark ? Colors.white : AppColors.black;
+    final backgroundColor = selected
+        ? (isDark ? const Color(0xFF282828) : AppColors.surface)
+        : AppColors.surface;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? AppColors.black : AppColors.border,
+              color: selected ? selectedBorderColor : AppColors.border,
               width: selected ? 1.5 : 1,
             ),
+            boxShadow: (selected && isDark)
+                ? [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      spreadRadius: 0.5,
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             children: [
               Icon(
                 selected ? Icons.radio_button_checked : Icons.radio_button_off,
                 size: 22,
-                color: selected ? AppColors.black : AppColors.textMuted,
+                color: selected ? selectedRadioColor : AppColors.textMuted,
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1320,7 +1361,7 @@ class _ShippingTile extends StatelessWidget {
                         color: AppColors.ink,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: GoogleFonts.plusJakartaSans(
@@ -1369,20 +1410,38 @@ class _PaymentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
+    final selectedBorderColor = isDark ? Colors.white : AppColors.black;
+    final selectedRadioColor = isDark ? Colors.white : AppColors.black;
+    final backgroundColor = selected
+        ? (isDark ? const Color(0xFF282828) : AppColors.surface)
+        : AppColors.surface;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? AppColors.black : AppColors.border,
+              color: selected ? selectedBorderColor : AppColors.border,
               width: selected ? 1.5 : 1,
             ),
+            boxShadow: (selected && isDark)
+                ? [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      spreadRadius: 0.5,
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1394,11 +1453,11 @@ class _PaymentCard extends StatelessWidget {
                         ? Icons.radio_button_checked
                         : Icons.radio_button_off,
                     size: 22,
-                    color: selected ? AppColors.black : AppColors.textMuted,
+                    color: selected ? selectedRadioColor : AppColors.textMuted,
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Icon(icon, size: 18, color: AppColors.ink),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       title,
@@ -1410,10 +1469,10 @@ class _PaymentCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Spacer(),
+                  const Spacer(),
                   if (badge != null) ...[
                     _Badge(badge!),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                   ],
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
@@ -1433,7 +1492,7 @@ class _PaymentCard extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Padding(
                 padding: const EdgeInsets.only(left: 34),
                 child: Wrap(
@@ -1459,38 +1518,43 @@ class _BrandChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
     Color textColor = AppColors.ink;
     Color? dot;
     var bold = false;
 
     switch (tag) {
       case 'QRIS':
-        textColor = Color(0xFF000000);
+        textColor = isDark ? Colors.white : const Color(0xFF000000);
         bold = true;
         break;
       case 'GoPay':
-        dot = textColor = Color(0xFF00AED6);
+        dot = textColor = const Color(0xFF00AED6);
         break;
       case 'OVO':
-        dot = textColor = Color(0xFF4C2A86);
+        dot = textColor =
+            isDark ? const Color(0xFFA875F0) : const Color(0xFF4C2A86);
         break;
       case 'ShopeePay':
-        dot = textColor = Color(0xFFEE4D2D);
+        dot = textColor = const Color(0xFFEE4D2D);
         break;
       case 'DANA':
-        dot = textColor = Color(0xFF118EEA);
+        dot = textColor = const Color(0xFF118EEA);
         break;
       case 'BCA':
-        textColor = _blue;
+        textColor = isDark ? const Color(0xFF4DA3FF) : _blue;
         bold = true;
         break;
       case 'Mandiri':
-        dot = Color(0xFFF5A623);
-        textColor = Color(0xFF002D62);
+        dot = const Color(0xFFF5A623);
+        textColor =
+            isDark ? const Color(0xFF64B5F6) : const Color(0xFF002D62);
         bold = true;
         break;
       case 'BRI':
-        textColor = Color(0xFF085EA8);
+        textColor =
+            isDark ? const Color(0xFF42A5F5) : const Color(0xFF085EA8);
         bold = true;
         break;
     }
@@ -1509,14 +1573,14 @@ class _BrandChip extends StatelessWidget {
             TextSpan(
               text: 'BNI ',
               style: style.copyWith(
-                color: Color(0xFFF15A24),
+                color: const Color(0xFFF15A24),
                 fontWeight: FontWeight.w800,
               ),
             ),
             TextSpan(
               text: '46',
               style: style.copyWith(
-                color: Color(0xFF006666),
+                color: isDark ? const Color(0xFF4DD0E1) : const Color(0xFF006666),
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -1530,9 +1594,13 @@ class _BrandChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: isDark ? const Color(0xFF222224) : AppColors.surface,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.15)
+              : AppColors.border,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1543,7 +1611,7 @@ class _BrandChip extends StatelessWidget {
               height: 7,
               decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
             ),
-            SizedBox(width: 4),
+            const SizedBox(width: 4),
           ],
           label,
         ],
@@ -1854,6 +1922,9 @@ class _AddressFormState extends State<_AddressForm> {
                       runSpacing: 6,
                       children: _labelOptions.map((opt) {
                         final isSelected = _label == opt;
+                        final isDark =
+                            Theme.of(context).brightness == Brightness.dark ||
+                                AppColors.isDark;
                         return ChoiceChip(
                           label: Text(opt),
                           labelPadding: const EdgeInsets.symmetric(
@@ -1863,17 +1934,20 @@ class _AddressFormState extends State<_AddressForm> {
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
                           selected: isSelected,
-                          selectedColor: AppColors.black,
+                          selectedColor:
+                              isDark ? Colors.white : AppColors.black,
                           backgroundColor: AppColors.inputBg,
                           labelStyle: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: isSelected ? AppColors.white : AppColors.ink,
+                            color: isSelected
+                                ? (isDark ? AppColors.black : AppColors.white)
+                                : AppColors.ink,
                           ),
-                          shape: StadiumBorder(),
+                          shape: const StadiumBorder(),
                           side: BorderSide(
                             color: isSelected
-                                ? AppColors.black
+                                ? (isDark ? Colors.white : AppColors.black)
                                 : AppColors.borderAlt,
                           ),
                           onSelected: (_) => setState(() => _label = opt),

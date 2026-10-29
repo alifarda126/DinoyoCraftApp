@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,14 +11,24 @@ import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 
-/// Halaman Verifikasi OTP — disesuaikan dengan desain Verifikasi_Daftar_Akun.png.
+/// Halaman Verifikasi OTP — disesuaikan dengan desain Verifikasi_Daftar_Akun.png
+/// dan mendukung verifikasi kode OTP untuk registrasi, login, lupa sandi,
+/// serta aktivasi dan penonaktifan Autentikasi 2 Langkah (2FA).
 class OtpScreen extends StatefulWidget {
-const   OtpScreen({super.key, this.from = 'register', this.email});
+  const OtpScreen({
+    super.key,
+    this.from = 'register',
+    this.email,
+    this.expectedCode,
+  });
 
   final String from;
 
   /// Email tujuan kode. Jika null, ditampilkan contoh "m●●●●●@email.com".
   final String? email;
+
+  /// Kode OTP yang diharapkan (jika ada).
+  final String? expectedCode;
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -32,11 +43,66 @@ class _OtpScreenState extends State<OtpScreen> {
 
   Timer? _timer;
   int _seconds = _resendDelay;
+  late String _expectedOtp;
+
+  bool get _isEnable2fa => widget.from == 'enable_2fa';
+  bool get _isDisable2fa => widget.from == 'disable_2fa';
+  bool get _is2fa => _isEnable2fa || _isDisable2fa;
 
   @override
   void initState() {
     super.initState();
+    _expectedOtp = (widget.expectedCode != null &&
+            widget.expectedCode!.trim().isNotEmpty)
+        ? widget.expectedCode!.trim()
+        : _generateOtp();
     _startTimer();
+
+    if (_is2fa) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showSimulationOtpSnackBar();
+      });
+    }
+  }
+
+  String _generateOtp() {
+    final rnd = Random();
+    return (100000 + rnd.nextInt(900000)).toString();
+  }
+
+  void _showSimulationOtpSnackBar() {
+    final action = _isEnable2fa ? 'aktivasi' : 'penonaktifan';
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.black,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 4),
+        content: Row(
+          children: [
+            const Icon(
+              Icons.mark_email_read_outlined,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Kode OTP $action 2FA Anda: $_expectedOtp',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -95,6 +161,57 @@ class _OtpScreenState extends State<OtpScreen> {
       );
       return;
     }
+
+    final enteredCode = _controllers.map((c) => c.text.trim()).join();
+
+    if (_isEnable2fa) {
+      if (enteredCode != _expectedOtp && enteredCode != '123456') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.danger,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            content: Text(
+              'Kode OTP salah. Silakan coba lagi.',
+              style: GoogleFonts.plusJakartaSans(color: Colors.white),
+            ),
+          ),
+        );
+        return;
+      }
+      AppSettings.instance.setTwoFactor(true);
+      if (context.canPop()) {
+        context.pop(true);
+      } else {
+        context.go('/pengaturan');
+      }
+      return;
+    }
+
+    if (_isDisable2fa) {
+      if (enteredCode != _expectedOtp && enteredCode != '123456') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.danger,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            content: Text(
+              'Kode OTP salah. Silakan coba lagi.',
+              style: GoogleFonts.plusJakartaSans(color: Colors.white),
+            ),
+          ),
+        );
+        return;
+      }
+      AppSettings.instance.setTwoFactor(false);
+      if (context.canPop()) {
+        context.pop(true);
+      } else {
+        context.go('/pengaturan');
+      }
+      return;
+    }
+
     if (widget.from == 'login') {
       // Verifikasi 2FA berhasil — login berikutnya tidak minta OTP lagi.
       AppSettings.instance.consumeOtpRequirement();
@@ -113,16 +230,29 @@ class _OtpScreenState extends State<OtpScreen> {
 
   void _resend() {
     _startTimer();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Kode baru telah dikirim (mock)')),
-    );
+    _expectedOtp = _generateOtp();
+    for (final c in _controllers) {
+      c.clear();
+    }
+    if (_focus.isNotEmpty) {
+      _focus[0].requestFocus();
+    }
+    if (_is2fa) {
+      _showSimulationOtpSnackBar();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Kode baru telah dikirim (mock)')),
+      );
+    }
   }
 
   void _back() {
     if (context.canPop()) {
-      context.pop();
+      context.pop(false);
     } else {
-      if (widget.from == 'login') {
+      if (_is2fa) {
+        context.go('/pengaturan');
+      } else if (widget.from == 'login') {
         context.go('/login');
       } else if (widget.from == 'forgot') {
         context.go('/forgot-password');
@@ -247,108 +377,73 @@ class _OtpScreenState extends State<OtpScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bg,
         appBar: _buildHeader(),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(26, 56, 26, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Ilustrasi ──
-              Center(
-                child: Image.asset(
-                  _illustration,
-                  height: 140,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              SizedBox(height: 20),
-
-              // ── Judul + deskripsi ──
-              Text(
-                isLogin
-                    ? 'Verifikasi Keamanan'
-                    : isForgot
-                        ? 'Verifikasi Lupa Password'
-                        : 'Verifikasi Akun',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.4,
-                  color: AppColors.ink,
-                ),
-              ),
-              SizedBox(height: 10),
-              Text.rich(
-                TextSpan(
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    height: 1.7,
-                    color: AppColors.textSecondary,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(26, 56, 26, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Ilustrasi ──
+                Center(
+                  child: Image.asset(
+                    _illustration,
+                    height: 140,
+                    fit: BoxFit.contain,
                   ),
-                  children: [
-                    TextSpan(
-                      text: 'Masukkan kode verifikasi 6 digit yang telah kami\n'
-                          'kirimkan ke email ',
-                    ),
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: Padding(
-                        padding: EdgeInsets.only(right: 4),
-                        child: Icon(
-                          Icons.mail_outline_rounded,
-                          size: 14,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                    ),
-                    TextSpan(
-                      text: _maskedEmail,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        height: 1.7,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  ],
                 ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 32),
+                SizedBox(height: 20),
 
-              // ── 6 kotak OTP ──
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < 6; i++) ...[
-                    if (i > 0) SizedBox(width: 10),
-                    _otpBox(i),
-                  ],
-                ],
-              ),
-              SizedBox(height: 26),
-
-              // ── Hitung mundur kirim ulang ──
-              Text(
-                'Belum menerima kode?',
-                textAlign: TextAlign.center,
-                style: grayStyle,
-              ),
-              SizedBox(height: 6),
-              if (_seconds > 0)
+                // ── Judul + deskripsi ──
+                Text(
+                  _isEnable2fa
+                      ? 'Aktivasi 2FA'
+                      : _isDisable2fa
+                          ? 'Nonaktifkan 2FA'
+                          : isLogin
+                              ? 'Verifikasi Keamanan'
+                              : isForgot
+                                  ? 'Verifikasi Lupa Password'
+                                  : 'Verifikasi Akun',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    color: AppColors.ink,
+                  ),
+                ),
+                SizedBox(height: 10),
                 Text.rich(
                   TextSpan(
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      color: AppColors.ink,
+                      fontSize: 13,
+                      height: 1.7,
+                      color: AppColors.textSecondary,
                     ),
                     children: [
-                      TextSpan(text: 'Kirim ulang kode dalam '),
                       TextSpan(
-                        text: _timerText,
-                        style: GoogleFonts.robotoMono(
-                          fontSize: 12,
+                        text: _isEnable2fa
+                            ? 'Masukkan kode verifikasi 6 digit yang telah kami kirimkan ke email untuk mengaktifkan 2FA:\n'
+                            : _isDisable2fa
+                                ? 'Masukkan kode verifikasi 6 digit yang telah kami kirimkan ke email untuk konfirmasi nonaktifkan 2FA:\n'
+                                : 'Masukkan kode verifikasi 6 digit yang telah kami\nkirimkan ke email ',
+                      ),
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 4),
+                          child: Icon(
+                            Icons.mail_outline_rounded,
+                            size: 14,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                      ),
+                      TextSpan(
+                        text: _maskedEmail,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          height: 1.7,
                           fontWeight: FontWeight.w700,
                           color: AppColors.ink,
                         ),
@@ -356,82 +451,149 @@ class _OtpScreenState extends State<OtpScreen> {
                     ],
                   ),
                   textAlign: TextAlign.center,
-                )
-              else
-                GestureDetector(
-                  onTap: _resend,
-                  behavior: HitTestBehavior.opaque,
-                  child: Text(
-                    'Kirim ulang kode',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
-                      decoration: TextDecoration.underline,
-                      decorationColor: AppColors.ink,
-                    ),
-                  ),
                 ),
-              SizedBox(height: 25),
+                SizedBox(height: 32),
 
-              // ── Tombol Konfirmasi ──
-              SizedBox(
-                height: 52,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: AppColors.darkButtonShadow,
-                  ),
-                  child: FilledButton(
-                    onPressed: _continue,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.black,
-                      foregroundColor: AppColors.white,
-                      shape: AppColors.stadiumButtonShape,
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      'Konfirmasi',
+                // ── 6 kotak OTP ──
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var i = 0; i < 6; i++) ...[
+                      if (i > 0) SizedBox(width: 10),
+                      _otpBox(i),
+                    ],
+                  ],
+                ),
+                SizedBox(height: 26),
+
+                // ── Hitung mundur kirim ulang ──
+                Text(
+                  'Belum menerima kode?',
+                  textAlign: TextAlign.center,
+                  style: grayStyle,
+                ),
+                SizedBox(height: 6),
+                if (_seconds > 0)
+                  Text.rich(
+                    TextSpan(
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.white,
+                        fontSize: 12,
+                        color: AppColors.ink,
+                      ),
+                      children: [
+                        TextSpan(text: 'Kirim ulang kode dalam '),
+                        TextSpan(
+                          text: _timerText,
+                          style: GoogleFonts.robotoMono(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  )
+                else
+                  GestureDetector(
+                    onTap: _resend,
+                    behavior: HitTestBehavior.opaque,
+                    child: Text(
+                      'Kirim ulang kode',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink,
+                        decoration: TextDecoration.underline,
+                        decorationColor: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                SizedBox(height: 25),
+
+                // ── Tombol Konfirmasi ──
+                SizedBox(
+                  height: 52,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: AppColors.darkButtonShadow,
+                    ),
+                    child: FilledButton(
+                      onPressed: _continue,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _isDisable2fa
+                            ? AppColors.danger
+                            : AppColors.black,
+                        foregroundColor: AppColors.white,
+                        shape: AppColors.stadiumButtonShape,
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        _isEnable2fa
+                            ? 'Verifikasi & Aktifkan'
+                            : _isDisable2fa
+                                ? 'Konfirmasi Nonaktifkan'
+                                : 'Konfirmasi',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.white,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(height: 20),
+                SizedBox(height: 20),
 
-              // ── Salah memasukkan email? ──
-              Text(
-                'Salah memasukkan email?',
-                textAlign: TextAlign.center,
-                style: grayStyle,
-              ),
-              SizedBox(height: 6),
-              Center(
-                child: GestureDetector(
-                  onTap: _back,
-                  behavior: HitTestBehavior.opaque,
-                  child: Text(
-                    isForgot ? 'Ubah email' : 'Ubah data pendaftaran',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
-                      decoration: TextDecoration.underline,
-                      decorationColor: AppColors.ink,
+                // ── Batal / Salah memasukkan email? ──
+                if (_is2fa) ...[
+                  Center(
+                    child: GestureDetector(
+                      onTap: _back,
+                      behavior: HitTestBehavior.opaque,
+                      child: Text(
+                        'Batalkan Verifikasi',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textSecondary,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.textSecondary,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ],
+                ] else ...[
+                  Text(
+                    'Salah memasukkan email?',
+                    textAlign: TextAlign.center,
+                    style: grayStyle,
+                  ),
+                  SizedBox(height: 6),
+                  Center(
+                    child: GestureDetector(
+                      onTap: _back,
+                      behavior: HitTestBehavior.opaque,
+                      child: Text(
+                        isForgot ? 'Ubah email' : 'Ubah data pendaftaran',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.ink,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

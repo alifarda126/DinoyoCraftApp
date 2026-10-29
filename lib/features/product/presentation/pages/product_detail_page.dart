@@ -634,10 +634,14 @@ class _BottomActionBar extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: onAddToCart,
                 style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   side: BorderSide(color: AppColors.border),
                   shape: StadiumBorder(),
                 ),
-                child: Text('Keranjang', style: AppTextStyles.seeAll),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Keranjang', maxLines: 1, softWrap: false, style: AppTextStyles.seeAll),
+                ),
               ),
             ),
           ),
@@ -649,12 +653,16 @@ class _BottomActionBar extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onBuyNow,
                 style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   backgroundColor: AppColors.black,
                   foregroundColor: AppColors.white,
                   elevation: 0,
                   shape: StadiumBorder(),
                 ),
-                child: Text('Beli Langsung', style: AppTextStyles.buttonLabel),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Beli Langsung', maxLines: 1, softWrap: false, style: AppTextStyles.buttonLabel),
+                ),
               ),
             ),
           ),
