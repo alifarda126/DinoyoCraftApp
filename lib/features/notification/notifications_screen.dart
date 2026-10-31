@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/models/fcm_notification_model.dart';
+import '../../core/services/fcm_service.dart';
 import '../../data/mock_data.dart';
 
 /// Menampilkan modal notifikasi sesuai desain Figma (Notif.dart)
@@ -235,6 +237,23 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Kartu notifikasi masuk dari FCM (Backend)
+                  for (final fcmNotif in FcmService.instance.notificationsHistory)
+                    if (_shouldShowCategory(fcmNotif.category)) ...[
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          fcmNotif.isRead = true;
+                          _openNotificationTarget(
+                            fcmNotif.id,
+                            fcmNotif.route ?? '/notifications',
+                          );
+                        },
+                        child: _buildDynamicFcmCard(fcmNotif),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
                   // Kartu 1: Voucher Diskon
                   if (_shouldShow('Transaksi & Pesanan')) ...[
                     GestureDetector(
@@ -302,6 +321,145 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
   bool _shouldShow(String category) {
     if (_selectedFilter == 'Semua') return true;
     return _selectedFilter == category;
+  }
+
+  bool _shouldShowCategory(FcmNotificationCategory cat) {
+    if (_selectedFilter == 'Semua') return true;
+    if (_selectedFilter == 'Transaksi & Pesanan') {
+      return cat == FcmNotificationCategory.transaction ||
+          cat == FcmNotificationCategory.promo;
+    }
+    if (_selectedFilter == 'Info Akun') {
+      return cat == FcmNotificationCategory.account ||
+          cat == FcmNotificationCategory.chat ||
+          cat == FcmNotificationCategory.system;
+    }
+    return true;
+  }
+
+  Widget _buildDynamicFcmCard(FcmNotificationModel item) {
+    final isUnread = !item.isRead && !_readIds.contains(item.id);
+    final (iconData, categoryLabel) = switch (item.category) {
+      FcmNotificationCategory.transaction => (
+          Icons.local_shipping_outlined,
+          'PESANAN & PENGIRIMAN'.tr,
+        ),
+      FcmNotificationCategory.chat => (
+          Icons.chat_bubble_outline_rounded,
+          'PESAN TOKO'.tr,
+        ),
+      FcmNotificationCategory.promo => (
+          Icons.local_offer_outlined,
+          'PROMO SPESIAL'.tr,
+        ),
+      FcmNotificationCategory.account => (
+          Icons.shield_outlined,
+          'INFO KEAMANAN'.tr,
+        ),
+      FcmNotificationCategory.system => (
+          Icons.notifications_outlined,
+          'PEMBERITAHUAN'.tr,
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isUnread ? _cardBgUnread : _cardBgRead,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isUnread ? _cardBorderUnread : _borderRead,
+          width: isUnread ? 1.5 : 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isUnread ? AppColors.surface : _cardBgUnread,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Icon(
+              iconData,
+              size: 20,
+              color: _textDark,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        categoryLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: _textGray,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Row(
+                      children: [
+                        Text(
+                          item.timeLabel,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: _textGray,
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (isUnread) ...[
+                          const SizedBox(width: 7),
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _unreadDotColor,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  item.title,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: _textDark,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (item.body.isNotEmpty) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    item.body,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: _textDesc,
+                      fontSize: 12,
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Tandai kartu sudah dibaca, tutup modal, lalu buka halaman terkait.

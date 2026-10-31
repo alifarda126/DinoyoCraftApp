@@ -16,7 +16,13 @@ import '../../data/mock_data.dart';
 /// Figma (ProfilPesananDikemas / ProfilPesananDikrim / ProfilPesananDiterima).
 /// Foto produk pesanan tetap memakai data project (MockData).
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.initialTab});
+
+  final String? initialTab;
+
+  /// Global notifier/holder jika dipanggil dari luar (misal: tombol 'Bayar Nanti' di PaymentScreen).
+  static final ValueNotifier<String?> selectedTabNotifier =
+      ValueNotifier<String?>(null);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -44,6 +50,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   String _orderTab = 'Dikemas';
 
+  @override
+  void initState() {
+    super.initState();
+    final target = ProfileScreen.selectedTabNotifier.value;
+    if (target != null) {
+      _orderTab = target;
+      ProfileScreen.selectedTabNotifier.value = null;
+    } else if (widget.initialTab != null) {
+      _orderTab = widget.initialTab!;
+    }
+    ProfileScreen.selectedTabNotifier.addListener(_onSelectedTabChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTab != null && widget.initialTab != _orderTab) {
+      setState(() => _orderTab = widget.initialTab!);
+    }
+  }
+
+  @override
+  void dispose() {
+    ProfileScreen.selectedTabNotifier.removeListener(_onSelectedTabChanged);
+    super.dispose();
+  }
+
+  void _onSelectedTabChanged() {
+    final target = ProfileScreen.selectedTabNotifier.value;
+    if (target != null && mounted) {
+      setState(() => _orderTab = target);
+      ProfileScreen.selectedTabNotifier.value = null;
+    }
+  }
+
   // Produk dari project (MockData) — hanya dipakai untuk gambar.
   Product get _vasProduct => MockData.products.firstWhere((p) => p.id == '1');
   Product get _cangkirProduct =>
@@ -58,7 +99,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const tabs = ['Dikemas', 'Dikirim', 'Diterima'];
+    const tabs = ['Belum Bayar', 'Dikemas', 'Dikirim', 'Diterima'];
     final topHeaderHeight = DcAppHeader.totalHeight(context);
 
     return Scaffold(
@@ -309,8 +350,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap: () => setState(() => _orderTab = tabs[i]),
                 child: AnimatedContainer(
                   duration: Duration(milliseconds: 200),
-                  margin: EdgeInsets.only(right: i < tabs.length - 1 ? 9 : 0),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  margin: EdgeInsets.only(right: i < tabs.length - 1 ? 4 : 0),
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
                   decoration: BoxDecoration(
                     color: tabs[i] == _orderTab
                         ? AppColors.black
@@ -327,13 +368,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         : null,
                   ),
                   child: Center(
-                    child: Text(
-                      tabs[i].tr,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color:
-                            tabs[i] == _orderTab ? AppColors.white : _chipGray,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        tabs[i].tr,
+                        maxLines: 1,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: tabs[i] == _orderTab
+                              ? AppColors.white
+                              : _chipGray,
+                        ),
                       ),
                     ),
                   ),
@@ -346,6 +392,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   List<Widget> _buildOrderCards(BuildContext context) => switch (_orderTab) {
+        'Belum Bayar' => [_belumBayarCard(context)],
         'Dikemas' => [_dikemasCard()],
         'Dikirim' => [_dikirimCard(context)],
         _ => [
@@ -378,6 +425,152 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       };
+
+  // ═══ Kartu: BELUM BAYAR ═════════════════════════════════════════════════
+  Widget _belumBayarCard(BuildContext context) {
+    return _cardShell(
+      borderColor: _borderGray,
+      radius: 16,
+      padding: const EdgeInsets.all(16),
+      children: [
+        _cardHeader(
+          id: '#DNC-005',
+          store: 'Dinoyo Ceramic Studio',
+          badge: 'Menunggu Pembayaran'.tr,
+          fontSize: 12,
+          storeColor: _textGray,
+          badgeBorder: _borderGray,
+          badgeFill: _badgeGray,
+          showBullet: true,
+        ),
+        const SizedBox(height: 12),
+        Divider(height: 1, thickness: 1, color: _lineGray),
+        const SizedBox(height: 12),
+        _statusBox(
+          icon: Icons.hourglass_top_rounded,
+          title: 'Menunggu Pembayaran'.tr,
+          titleTrailing: '23:59:45',
+          dotColor: _dikemasAmber,
+          note: 'Selesaikan pembayaran sebelum batas waktu berakhir\n'
+              'agar pesanan tidak dibatalkan otomatis.'.tr,
+          noteColor: _dikemasAmber,
+        ),
+        const SizedBox(height: 12),
+        _simpleProductRow(
+          product: _vasProduct,
+          name: 'Vas Keramik Minimalis',
+          subtitle: 'Sand White Glossy • 1x',
+          qty: 'Jumlah: 1'.tr,
+          price: 'Rp85.000',
+          imageSize: 76,
+          imageRadius: 10,
+          gap: 12,
+        ),
+        const SizedBox(height: 10),
+        _totalRow('Total (1 Produk):'.tr, 'Rp102.000', _lineGray),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _actionButton(
+                label: 'Batalkan'.tr,
+                icon: Icons.close_rounded,
+                bg: _btnLight,
+                fg: _text,
+                borderColor: _borderGray,
+                bold: true,
+                height: 40,
+                onTap: () => _confirmCancelOrder(context),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _actionButton(
+                label: 'Bayar Sekarang'.tr,
+                icon: Icons.payment_rounded,
+                bg: AppColors.black,
+                fg: AppColors.white,
+                bold: true,
+                height: 40,
+                onTap: () {
+                  context.push('/checkout/payment');
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _confirmCancelOrder(BuildContext context) {
+    showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Batalkan Pesanan?'.tr,
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink,
+          ),
+        ),
+        content: Text(
+          'Pesanan #DNC-005 akan dibatalkan. Tindakan ini tidak dapat diurungkan.'.tr,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Kembali'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx, true);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: AppColors.black,
+                  content: Text(
+                    'Pesanan #DNC-005 berhasil dibatalkan.'.tr,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              shape: const StadiumBorder(),
+              elevation: 0,
+            ),
+            child: Text(
+              'Batalkan Pesanan'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   // ═══ Kartu: DIKEMAS ═════════════════════════════════════════════════════
   Widget _dikemasCard() {
@@ -691,6 +884,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required Color dotColor,
     required String note,
     required Color noteColor,
+    IconData icon = Icons.local_shipping_outlined,
   }) {
     return Container(
       width: double.infinity,
@@ -705,8 +899,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.local_shipping_outlined,
-                  size: 14, color: _black),
+              Icon(icon, size: 14, color: _black),
               SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -1021,6 +1214,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 controller: scrollCtrl,
                 padding: const EdgeInsets.all(16),
                 children: [
+                  _belumBayarCard(ctx),
+                  SizedBox(height: 12),
                   _dikemasCard(),
                   SizedBox(height: 12),
                   _dikirimCard(ctx),

@@ -7,6 +7,7 @@ import '../../data/mock_data.dart';
 import '../../features/product/presentation/modal_pilih_variasi.dart';
 import '../assets.dart';
 import '../theme/app_colors.dart';
+import 'dc_cached_image.dart';
 
 class ProductCard extends StatelessWidget {
 const   ProductCard({super.key, required this.product, this.onAdd});
@@ -49,17 +50,11 @@ const   ProductCard({super.key, required this.product, this.onAdd});
                     children: [
                       ColoredBox(
                         color: AppColors.inputBg,
-                        child: Image.asset(
-                          product.image,
+                        child: DcCachedImage(
+                          imageUrl: product.image,
                           width: double.infinity,
                           height: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Center(
-                            child: Icon(
-                              Icons.image_not_supported_outlined,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
                         ),
                       ),
                       if (product.hot)

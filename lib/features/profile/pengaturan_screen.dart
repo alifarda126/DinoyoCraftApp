@@ -7,6 +7,7 @@ import '../../core/app_settings.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/services/app_info_service.dart';
 
 class PengaturanScreen extends StatefulWidget {
   const PengaturanScreen({super.key});
@@ -1920,7 +1921,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                   SizedBox(height: 20),
                   Center(
                     child: Text(
-                      'DinoyoCraft App v1.0.0',
+                      AppInfoService.instance.versionLabel,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,

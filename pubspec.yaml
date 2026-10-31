@@ -18,6 +18,17 @@ dependencies:
   photo_manager: ^3.12.0
   path_provider: ^2.1.6
   device_info_plus: ^13.3.0
+  http: ^1.6.0
+  pusher_channels_flutter: ^2.6.0
+  firebase_core: ^5.1.0
+  firebase_messaging: ^17.0.1
+  cached_network_image: ^4.0.6
+  connectivity_plus: ^7.3.2
+  package_info_plus: ^10.2.2
+  flutter_native_splash: ^2.4.8
+  shimmer: ^4.0.0
+  firebase_crashlytics: ^6.0.1
+  firebase_analytics: ^13.0.1
 
 dev_dependencies:
   flutter_test:
@@ -28,17 +39,34 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/
-    - assets/icons/
+    - assets/images/branding/
+    - assets/images/banners/
+    - assets/images/products/
+    - assets/images/places/
+    - assets/images/auth/
+    - assets/icons/payment/
+    - assets/icons/nav/
+    - assets/icons/auth/
+    - assets/icons/common/
     - assets/stickers/
 
 flutter_launcher_icons:
   # iOS - pakai image dengan background putih sudah di-embed
   ios: true
-  image_path: "assets/images/logo_icon_zoomed.png"
+  image_path: "assets/images/branding/logo_icon_zoomed.png"
   remove_alpha_ios: true
   # Android - adaptive icon: background putih, foreground logo transparan
-  # Android launcher otomatis memotong menjadi bulat/circle
   android: "launcher_icon"
   adaptive_icon_background: "#ffffff"
-  adaptive_icon_foreground: "assets/images/logo_adaptive_fg.png"
+  adaptive_icon_foreground: "assets/images/branding/logo_adaptive_fg.png"
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: "assets/images/branding/logo_icon_zoomed.png"
+  color_dark: "#121212"
+  image_dark: "assets/images/branding/logo_icon_zoomed.png"
+  android_12:
+    color: "#ffffff"
+    image: "assets/images/branding/logo_icon_zoomed.png"
+    color_dark: "#121212"
+    image_dark: "assets/images/branding/logo_icon_zoomed.png"

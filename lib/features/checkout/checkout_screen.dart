@@ -11,7 +11,10 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../data/mock_data.dart';
 
+import 'payment_screen.dart';
+
 export '../../data/mock_data.dart' show CartItem;
+export 'payment_screen.dart' show PaymentArgs, PaymentScreen;
 
 /// Halaman Checkout — disesuaikan dengan desain CO.png.
 class CheckoutScreen extends StatefulWidget {
@@ -432,40 +435,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _pay() async {
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Pembayaran berhasil'.tr,
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-        ),
-        content: Text(
-          'Metode $_payment · Total ${MockData.formatPrice(_total)}\n'
-          'Ini simulasi MVP — belum terhubung gateway nyata.',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            height: 1.5,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              context.go('/home');
-            },
-            child: Text(
-              'Kembali ke Beranda'.tr,
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
-              ),
-            ),
-          ),
-        ],
-      ),
+    final now = DateTime.now();
+    final args = PaymentArgs(
+      orderId:
+          'DC-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${1000 + (now.millisecondsSinceEpoch % 9000)}',
+      items: List<CartItem>.from(_items),
+      qtys: List<int>.from(_qtys),
+      subtotal: _subtotal,
+      shippingFee: _shippingFee,
+      serviceFee: _serviceFee,
+      total: _total,
+      paymentMethod: _payment,
+      shippingMethod: _shipping,
+      recipientName: _currentAddress.name,
+      recipientPhone: _currentAddress.phone,
+      recipientAddress: _currentAddress.address,
+      note: _noteCtrl.text.trim().isNotEmpty ? _noteCtrl.text.trim() : null,
     );
+
+    try {
+      context.push('/checkout/payment', extra: args);
+    } catch (_) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => PaymentScreen(args: args),
+        ),
+      );
+    }
   }
 
   // ═══ AppBar: ← Checkout ........ (?) ═══════════════════════════════════
@@ -1514,106 +1510,125 @@ class _BrandChip extends StatelessWidget {
   const _BrandChip(this.tag);
   final String tag;
 
-  static const _blue = Color(0xFF005EAA);
-
   @override
   Widget build(BuildContext context) {
     final isDark =
         Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
-    Color textColor = AppColors.ink;
-    Color? dot;
-    var bold = false;
 
+    Widget content;
     switch (tag) {
       case 'QRIS':
-        textColor = isDark ? Colors.white : const Color(0xFF000000);
-        bold = true;
-        break;
-      case 'GoPay':
-        dot = textColor = const Color(0xFF00AED6);
-        break;
-      case 'OVO':
-        dot = textColor =
-            isDark ? const Color(0xFFA875F0) : const Color(0xFF4C2A86);
-        break;
-      case 'ShopeePay':
-        dot = textColor = const Color(0xFFEE4D2D);
-        break;
-      case 'DANA':
-        dot = textColor = const Color(0xFF118EEA);
+        content = SvgPicture.asset(
+          AppAssets.paymentQris,
+          height: 12,
+          fit: BoxFit.contain,
+        );
         break;
       case 'BCA':
-        textColor = isDark ? const Color(0xFF4DA3FF) : _blue;
-        bold = true;
+        content = SvgPicture.asset(
+          AppAssets.paymentBca,
+          height: 12,
+          fit: BoxFit.contain,
+        );
         break;
-      case 'Mandiri':
-        dot = const Color(0xFFF5A623);
-        textColor =
-            isDark ? const Color(0xFF64B5F6) : const Color(0xFF002D62);
-        bold = true;
+      case 'BNI':
+      case 'BNI 46':
+        content = SvgPicture.asset(
+          AppAssets.paymentBni,
+          height: 12,
+          fit: BoxFit.contain,
+        );
         break;
       case 'BRI':
-        textColor =
-            isDark ? const Color(0xFF42A5F5) : const Color(0xFF085EA8);
-        bold = true;
+        content = SvgPicture.asset(
+          AppAssets.paymentBri,
+          height: 14,
+          fit: BoxFit.contain,
+        );
         break;
-    }
-
-    final style = GoogleFonts.plusJakartaSans(
-      fontSize: 10,
-      fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-      color: textColor,
-    );
-
-    Widget label;
-    if (tag == 'BNI 46') {
-      label = Text.rich(
-        TextSpan(
+      case 'Mandiri':
+        content = SvgPicture.asset(
+          AppAssets.paymentMandiri,
+          height: 12,
+          fit: BoxFit.contain,
+        );
+        break;
+      case 'GoPay':
+        content = SvgPicture.asset(
+          AppAssets.paymentGopay,
+          height: 10,
+          fit: BoxFit.contain,
+        );
+        break;
+      case 'OVO':
+        content = Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            TextSpan(
-              text: 'BNI ',
-              style: style.copyWith(
-                color: const Color(0xFFF15A24),
-                fontWeight: FontWeight.w800,
-              ),
+            SvgPicture.asset(
+              AppAssets.paymentOvo,
+              height: 12,
+              width: 12,
             ),
-            TextSpan(
-              text: '46',
-              style: style.copyWith(
-                color: isDark ? const Color(0xFF4DD0E1) : const Color(0xFF006666),
+            const SizedBox(width: 4),
+            Text(
+              'OVO',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
                 fontWeight: FontWeight.w800,
+                color: const Color(0xFF4C2A86),
               ),
             ),
           ],
-        ),
-      );
-    } else {
-      label = Text(tag, style: style);
+        );
+        break;
+      case 'ShopeePay':
+        content = SvgPicture.asset(
+          AppAssets.paymentShopeepay,
+          height: 13,
+          fit: BoxFit.contain,
+        );
+        break;
+      case 'DANA':
+        content = SvgPicture.asset(
+          AppAssets.paymentDana,
+          height: 11,
+          fit: BoxFit.contain,
+        );
+        break;
+      default:
+        content = Text(
+          tag,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : AppColors.ink,
+          ),
+        );
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF222224) : AppColors.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.15)
-              : AppColors.border,
+          color: isDark ? const Color(0xFF383838) : const Color(0xFFE2E8F0),
+          width: 0.8,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (dot != null) ...[
-            Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 4),
-          ],
-          label,
+          content,
         ],
       ),
     );

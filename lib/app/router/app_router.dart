@@ -100,7 +100,9 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/profile',
-      builder: (context, state) => ProfileScreen(),
+      builder: (context, state) => ProfileScreen(
+        initialTab: state.uri.queryParameters['tab'],
+      ),
     ),
     GoRoute(
       path: '/checkout',
@@ -111,6 +113,25 @@ final GoRouter appRouter = GoRouter(
         return CheckoutScreen(directBuyItems: items);
       },
     ),
+    GoRoute(
+      path: '/checkout/payment',
+      builder: (context, state) {
+        final args = state.extra is PaymentArgs
+            ? state.extra as PaymentArgs
+            : null;
+        return PaymentScreen(args: args);
+      },
+    ),
+    GoRoute(
+      path: '/payment',
+      builder: (context, state) {
+        final args = state.extra is PaymentArgs
+            ? state.extra as PaymentArgs
+            : null;
+        return PaymentScreen(args: args);
+      },
+    ),
+
     GoRoute(
       path: '/chatbot',
       builder: (context, state) => ChatbotScreen(),

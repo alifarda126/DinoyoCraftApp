@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/assets.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -270,7 +271,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: Image.asset(
-                                  'assets/images/product_vas.jpg',
+                                  AppAssets.productVas,
                                   width: 60,
                                   height: 60,
                                   fit: BoxFit.cover,

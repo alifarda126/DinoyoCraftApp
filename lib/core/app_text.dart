@@ -257,6 +257,16 @@ abstract final class AppText {
     'Batalkan': 'Cancel',
     'Riwayat Pesanan': 'Order History',
     '1 Pesanan': '1 Order',
+    'Belum Bayar': 'Unpaid',
+    'Menunggu Pembayaran': 'Waiting for Payment',
+    'Batalkan Pesanan': 'Cancel Order',
+    'Batalkan Pesanan?': 'Cancel Order?',
+    'Pesanan #DNC-005 akan dibatalkan. Tindakan ini tidak dapat diurungkan.':
+        'Order #DNC-005 will be canceled. This action cannot be undone.',
+    'Pesanan #DNC-005 berhasil dibatalkan.':
+        'Order #DNC-005 has been successfully canceled.',
+    'Selesaikan pembayaran sebelum batas waktu berakhir\nagar pesanan tidak dibatalkan otomatis.':
+        'Complete the payment before the deadline\nso the order is not automatically canceled.',
     'Dikemas': 'Packed',
     'Dikirim': 'Shipped',
     'Diterima': 'Delivered',
@@ -677,6 +687,16 @@ abstract final class AppText {
 
     // ── Chat Room ────────────────────────────────────────────────────────────
     'Lihat Profil Toko': 'View Store Profile',
+    'Asisten Toko (Bot)': 'Store Assistant (Bot)',
+    'Asisten Toko Siaga': 'Store Assistant Ready',
+    'Penjual Online': 'Seller Online',
+    'Chat dengan Penjual': 'Chat with Seller',
+    'Chat Penjual': 'Chat Seller',
+    'Chat dengan Penjual Langsung': 'Chat with Seller Directly',
+    'Menghubungkan ke Pemilik Toko... Mohon tunggu sebentar ya.':
+        'Connecting to the Store Owner... Please wait a moment.',
+    'Beralih ke Asisten Bot': 'Switch to Bot Assistant',
+    'Penjual Toko': 'Store Seller',
     'Hapus Percakapan': 'Clear Conversation',
     'Laporkan Percakapan': 'Report Conversation',
     'Terima kasih, laporanmu kami terima.':

@@ -1,11 +1,18 @@
+import 'dart:async';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'core/app_settings.dart';
 import 'core/router/app_router.dart';
+import 'core/services/app_info_service.dart';
+import 'core/services/connectivity_service.dart';
+import 'core/services/fcm_service.dart';
+import 'core/services/pusher_service.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/fcm_notification_banner.dart';
 import 'core/widgets/keyboard_dismiss_wrapper.dart';
 
 Future<void> main() async {
@@ -14,6 +21,24 @@ Future<void> main() async {
   if (!kIsWeb) {
     AppSettings.instance.syncCacheSize();
   }
+  // Crashlytics Global Error Handler
+  try {
+    FlutterError.onError = (errorDetails) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  } catch (e) {
+    debugPrint('[Crashlytics] Safe initialization fallback: ');
+  }
+
+  // Inisialisasi background services secara aman dan non-blocking
+  unawaited(ConnectivityService.instance.initialize());
+  unawaited(AppInfoService.instance.initialize());
+  unawaited(FcmService.instance.initialize());
+  unawaited(PusherService.instance.init());
   runApp(const DinoyoCraftApp());
 }
 
@@ -94,7 +119,11 @@ class _DinoyoCraftAppState extends State<DinoyoCraftApp> {
             return KeyboardDismissWrapper(
               child: KeyedSubtree(
                 key: ValueKey((isDark, settings.locale)),
-                child: child ?? const SizedBox.shrink(),
+                child: OfflineBannerWrapper(
+                  child: FcmNotificationHost(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                ),
               ),
             );
           },

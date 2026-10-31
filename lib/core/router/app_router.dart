@@ -12,6 +12,7 @@ import '../../features/chat/chat_list_screen.dart';
 import '../../features/chat/chat_room_screen.dart';
 import '../../features/chatbot/chatbot_screen.dart';
 import '../../features/checkout/checkout_screen.dart';
+
 import '../../features/cart/cart_screen.dart';
 import '../../features/help/help_screen.dart';
 import '../../features/home/home_screen.dart';
@@ -165,7 +166,11 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/profile',
-              builder: (context, state) => _live(ProfileScreen.new),
+              builder: (context, state) => _live(
+                () => ProfileScreen(
+                  initialTab: state.uri.queryParameters['tab'],
+                ),
+              ),
             ),
           ],
         ),
@@ -184,6 +189,25 @@ final GoRouter appRouter = GoRouter(
         return _live(() => CheckoutScreen(directBuyItems: items));
       },
     ),
+    GoRoute(
+      path: '/checkout/payment',
+      builder: (context, state) {
+        final args = state.extra is PaymentArgs
+            ? state.extra as PaymentArgs
+            : null;
+        return _live(() => PaymentScreen(args: args));
+      },
+    ),
+    GoRoute(
+      path: '/payment',
+      builder: (context, state) {
+        final args = state.extra is PaymentArgs
+            ? state.extra as PaymentArgs
+            : null;
+        return _live(() => PaymentScreen(args: args));
+      },
+    ),
+
     GoRoute(path: '/cart', builder: (context, state) => _live(CartScreen.new)),
     GoRoute(
       path: '/product/:id',

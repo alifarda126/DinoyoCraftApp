@@ -21,25 +21,28 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _category = 'Semua';
 
-  // ── Banner carousel ──────────────────────────────────────────────────────
+  // ── Banner carousel (Infinite Loop UX) ──────────────────────────────────
   static const _banners = [
     AppAssets.bannerDiskon,
     AppAssets.bannerPromo,
     AppAssets.bannerTradisi,
   ];
-  final _pageCtrl = PageController();
-  int _bannerPage = 0;
+  static const int _kInitialPage = 3000;
+  late final PageController _pageCtrl =
+      PageController(initialPage: _kInitialPage);
+  int _bannerPage = _kInitialPage;
   Timer? _bannerTimer;
+
+  int get _activeBannerIndex =>
+      ((_bannerPage % _banners.length) + _banners.length) % _banners.length;
 
   @override
   void initState() {
     super.initState();
-    _bannerTimer = Timer.periodic(Duration(seconds: 4), (_) {
-      if (!mounted) return;
-      final next = (_bannerPage + 1) % _banners.length;
-      _pageCtrl.animateToPage(
-        next,
-        duration: Duration(milliseconds: 500),
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted || !_pageCtrl.hasClients) return;
+      _pageCtrl.nextPage(
+        duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       );
     });
@@ -122,17 +125,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         PageView.builder(
                           controller: _pageCtrl,
-                          itemCount: _banners.length,
                           onPageChanged: (i) =>
                               setState(() => _bannerPage = i),
-                          itemBuilder: (context, i) => GestureDetector(
-                            onTap: () => context.go('/products'),
-                            child: Image.asset(
-                              _banners[i],
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                            ),
-                          ),
+                          itemBuilder: (context, i) {
+                            final bannerIndex =
+                                ((i % _banners.length) + _banners.length) %
+                                    _banners.length;
+                            return GestureDetector(
+                              onTap: () => context.go('/products'),
+                              child: Image.asset(
+                                _banners[bannerIndex],
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              ),
+                            );
+                          },
                         ),
                         // Dot indicator
                         Positioned(
@@ -145,24 +152,33 @@ class _HomeScreenState extends State<HomeScreen> {
                               _banners.length,
                               (i) => GestureDetector(
                                 behavior: HitTestBehavior.opaque,
-                                onTap: () => _pageCtrl.animateToPage(
-                                  i,
-                                  duration: Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                ),
+                                onTap: () {
+                                  final currentDot = _activeBannerIndex;
+                                  final diff = i - currentDot;
+                                  if (diff != 0 && _pageCtrl.hasClients) {
+                                    _pageCtrl.animateToPage(
+                                      _bannerPage + diff,
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  }
+                                },
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 3),
                                   child: AnimatedContainer(
-                                    duration: Duration(milliseconds: 250),
-                                    width: _bannerPage == i ? 20 : 6,
+                                    duration:
+                                        const Duration(milliseconds: 250),
+                                    width: _activeBannerIndex == i ? 20 : 6,
                                     height: 6,
                                     decoration: BoxDecoration(
-                                      color: _bannerPage == i
+                                      color: _activeBannerIndex == i
                                           ? Colors.white
                                           : Colors.white
                                               .withValues(alpha: 0.55),
-                                      borderRadius: BorderRadius.circular(3),
+                                      borderRadius:
+                                          BorderRadius.circular(3),
                                     ),
                                   ),
                                 ),

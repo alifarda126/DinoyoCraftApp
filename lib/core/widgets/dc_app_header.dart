@@ -11,7 +11,7 @@ import '../theme/app_colors.dart';
 import 'cart_fly_animation.dart';
 
 class DcAppHeader extends StatelessWidget {
-const   DcAppHeader({
+  const DcAppHeader({
     super.key,
     this.showActions = true,
     this.showBorder = false,
@@ -22,22 +22,25 @@ const   DcAppHeader({
 
   /// Faktor skala responsif berbasis lebar layar logis (dp).
   ///
-  /// Semua ukuran header (padding, logo, judul, ikon, badge) adalah angka
-  /// tetap yang dirancang pada lebar dasar 360dp. Di perangkat lebih lebar
-  /// (mis. Pixel 8 ~411dp, tablet, foldable) angka tetap membuat logo/ikon
-  /// terlihat kecil dan posisinya "mengambang" berbeda dari ponsel sempit.
-  /// Dengan menskalakan seluruh metrik terhadap lebar layar, proporsi header
-  /// terlihat konsisten di semua perangkat. Dibatasi 0.88–1.20 agar tetap
-  /// nyaman di layar sangat sempit dan tidak membengkak di tablet.
+  /// Di ponsel sempit (< 600dp), metrik diskalakan proporsional (0.88–1.20)
+  /// agar tampilan pas di segala ukuran hp.
   static double widthScale(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     return (width / 360.0).clamp(0.88, 1.20);
   }
 
+  /// True bila perangkat berlayar lebar (tablet, iPad, foldable unfolded).
+  static bool isTablet(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= 600;
+
   /// Tinggi area konten header (tanpa status bar) — dipakai
   /// [SliverPinnedDcHeader] dan konsumen lain (edgeOffset RefreshIndicator).
-  static double contentHeight(BuildContext context) =>
-      48.0 * widthScale(context);
+  static double contentHeight(BuildContext context) {
+    if (isTablet(context)) {
+      return 56.0;
+    }
+    return 48.0 * widthScale(context);
+  }
 
   /// Tinggi total header = status bar + konten.
   static double totalHeight(BuildContext context) =>
@@ -48,83 +51,89 @@ const   DcAppHeader({
     final isDark =
         Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
     final logoAsset = isDark ? AppAssets.logoWhite : AppAssets.logoBlack;
+    final tablet = isTablet(context);
     final s = widthScale(context);
+
+    // Pada tablet/iPad, padding horizontal mengikuti margin konten halaman (20dp).
+    // Padding kiri 16dp mengompensasi whitespace bawaan aset logo tembikar
+    // sehingga visual logo sejajar sempurna di garis 20dp.
+    final hPadding = tablet
+        ? const EdgeInsets.fromLTRB(16, 6, 20, 6)
+        : EdgeInsets.fromLTRB(12 * s, 4 * s, 16 * s, 4 * s);
+
+    final logoSize = tablet ? 42.0 : 36.0 * s;
+    final logoTextGap = tablet ? 10.0 : 8.0 * s;
+    final titleFontSize = tablet ? 21.0 : 18.0 * s;
+    final actionGap = tablet ? 12.0 : 8.0 * s;
 
     Widget content = SafeArea(
       bottom: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(12 * s, 4 * s, 16 * s, 4 * s),
-        // Di layar lebar (tablet/landscape) konten header tidak meregang
-        // memenuhi seluruh lebar — dibatasi dan dipusatkan.
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Image.asset(logoAsset, width: 36 * s, height: 36 * s),
-                      SizedBox(width: 8 * s),
-                      Flexible(
-                        child: Text(
-                          'DinoyoCraft',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 18 * s,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.ink,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
+        padding: hPadding,
+        child: Row(
+          children: [
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(logoAsset, width: logoSize, height: logoSize),
+                  SizedBox(width: logoTextGap),
+                  Flexible(
+                    child: Text(
+                      'DinoyoCraft',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: titleFontSize,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                        letterSpacing: -0.3,
                       ),
-                    ],
-                  ),
-                ),
-                if (showActions) ...[
-                  ValueListenableBuilder<int>(
-                    valueListenable: MockData.unreadNotificationsNotifier,
-                    builder: (context, count, _) => _IconBtn(
-                      asset: AppAssets.iconNotification,
-                      iconSize: 19,
-                      badge: count > 0 ? '$count' : null,
-                      badgeTop: -2,
-                      badgeRight: -2,
-                      onTap: () => showNotificationsModal(context),
-                    ),
-                  ),
-                  SizedBox(width: 8 * s),
-                  ValueListenableBuilder<int>(
-                    valueListenable: MockData.cartCountNotifier,
-                    builder: (context, cartCount, _) => CartBounceTarget(
-                      child: _IconBtn(
-                        asset: AppAssets.iconCart,
-                        iconSize: 19,
-                        badge: cartCount > 0 ? '$cartCount' : null,
-                        badgeTop: -2,
-                        badgeRight: -3,
-                        onTap: () => showCartModal(context),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8 * s),
-                  ValueListenableBuilder<int>(
-                    valueListenable: MockData.unreadChatNotifier,
-                    builder: (context, chatCount, _) => _IconBtn(
-                      asset: AppAssets.iconChat,
-                      iconSize: 19,
-                      badge: chatCount > 0 ? '$chatCount' : null,
-                      badgeTop: -2,
-                      badgeRight: -2,
-                      onTap: () => context.push('/messages'),
                     ),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
+            if (showActions) ...[
+              ValueListenableBuilder<int>(
+                valueListenable: MockData.unreadNotificationsNotifier,
+                builder: (context, count, _) => _IconBtn(
+                  asset: AppAssets.iconNotification,
+                  iconSize: tablet ? 21 : 19,
+                  badge: count > 0 ? '$count' : null,
+                  badgeTop: -2,
+                  badgeRight: -2,
+                  onTap: () => showNotificationsModal(context),
+                ),
+              ),
+              SizedBox(width: actionGap),
+              ValueListenableBuilder<int>(
+                valueListenable: MockData.cartCountNotifier,
+                builder: (context, cartCount, _) => CartBounceTarget(
+                  child: _IconBtn(
+                    asset: AppAssets.iconCart,
+                    iconSize: tablet ? 21 : 19,
+                    badge: cartCount > 0 ? '$cartCount' : null,
+                    badgeTop: -2,
+                    badgeRight: -3,
+                    onTap: () => showCartModal(context),
+                  ),
+                ),
+              ),
+              SizedBox(width: actionGap),
+              ValueListenableBuilder<int>(
+                valueListenable: MockData.unreadChatNotifier,
+                builder: (context, chatCount, _) => _IconBtn(
+                  asset: AppAssets.iconChat,
+                  iconSize: tablet ? 21 : 19,
+                  badge: chatCount > 0 ? '$chatCount' : null,
+                  badgeTop: -2,
+                  badgeRight: -2,
+                  onTap: () => context.push('/messages'),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -164,24 +173,30 @@ class _IconBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Semua ukuran mengikuti skala lebar layar agar proporsi ikon + badge
-    // konsisten di semua perangkat.
+    final tablet = DcAppHeader.isTablet(context);
     final s = DcAppHeader.widthScale(context);
+
+    final btnSize = tablet ? 38.0 : 30.0 * s;
+    final iSize = tablet ? iconSize : iconSize * s;
+    final bTop = tablet ? badgeTop : badgeTop * s;
+    final bRight = tablet ? badgeRight : badgeRight * s;
+    final bMinWidth = tablet ? 16.0 : 14.0 * s;
+    final bFontSize = tablet ? 9.5 : 8.0 * s;
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20 * s),
+      borderRadius: BorderRadius.circular(btnSize / 2),
       child: SizedBox(
-        width: 30 * s,
-        height: 30 * s,
+        width: btnSize,
+        height: btnSize,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
             Center(
               child: SvgPicture.asset(
                 asset,
-                width: iconSize * s,
-                height: iconSize * s,
+                width: iSize,
+                height: iSize,
                 fit: BoxFit.contain,
                 colorFilter: ColorFilter.mode(
                   AppColors.ink,
@@ -191,13 +206,15 @@ class _IconBtn extends StatelessWidget {
             ),
             if (badge != null && badge!.isNotEmpty)
               Positioned(
-                top: badgeTop * s,
-                right: badgeRight * s,
+                top: bTop,
+                right: bRight,
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 3.5 * s),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tablet ? 4.0 : 3.5 * s,
+                  ),
                   constraints: BoxConstraints(
-                    minWidth: 14 * s,
-                    minHeight: 14 * s,
+                    minWidth: bMinWidth,
+                    minHeight: bMinWidth,
                   ),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
@@ -209,7 +226,7 @@ class _IconBtn extends StatelessWidget {
                     badge!,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 8.0 * s,
+                      fontSize: bFontSize,
                       fontWeight: FontWeight.w700,
                       color: AppColors.surface,
                     ),
@@ -225,7 +242,7 @@ class _IconBtn extends StatelessWidget {
 
 // ─── Pinned sliver header — pakai ini di CustomScrollView ────────────────────
 class SliverPinnedDcHeader extends StatelessWidget {
-const   SliverPinnedDcHeader({super.key, this.showActions = true});
+  const SliverPinnedDcHeader({super.key, this.showActions = true});
 
   final bool showActions;
 

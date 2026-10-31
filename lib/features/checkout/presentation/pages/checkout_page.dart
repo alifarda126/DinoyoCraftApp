@@ -1,10 +1,12 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/assets.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../payment_screen.dart';
+
 import '../../../../core/widgets/dc_button.dart';
 import '../../../../data/mock_data.dart';
 
@@ -59,40 +61,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   int get _total => _subtotal + _shippingFee + _serviceFee;
 
   Future<void> _pay() async {
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Pembayaran berhasil',
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-        ),
-        content: Text(
-          'Metode $_payment Â· Total ${MockData.formatPrice(_total)}\n'
-          'Ini simulasi MVP â€” belum terhubung gateway nyata.',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            height: 1.5,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              context.go('/home');
-            },
-            child: Text(
-              'Kembali ke Beranda',
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
-              ),
-            ),
-          ),
-        ],
-      ),
+    final now = DateTime.now();
+    final args = PaymentArgs(
+      orderId:
+          'DC-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${1000 + (now.millisecondsSinceEpoch % 9000)}',
+      items: List<CartItem>.from(MockData.mockCart),
+      qtys: List<int>.from(_qtys),
+      subtotal: _subtotal,
+      shippingFee: _shippingFee,
+      serviceFee: _serviceFee,
+      total: _total,
+      paymentMethod: _payment,
+      shippingMethod: _shipping,
+      recipientName: 'Customer',
+      recipientPhone: '0859-777-588-138',
+      recipientAddress:
+          'Jl. Sawiji Sari No.14, Kel. Mulyorejo, Kec. Sukun, Kota Malang, Jawa Timur 65147',
+      note: _noteCtrl.text.trim().isNotEmpty ? _noteCtrl.text.trim() : null,
     );
+
+    try {
+      context.push('/checkout/payment', extra: args);
+    } catch (_) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => PaymentScreen(args: args),
+        ),
+      );
+    }
   }
 
   @override
@@ -912,30 +908,141 @@ class _PaymentCard extends StatelessWidget {
               child: Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: tags.map((tag) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.inputBg,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      tag,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  );
-                }).toList(),
+                children: tags.map((tag) => _BrandChip(tag)).toList(),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Chip merek pembayaran (QRIS, GoPay, OVO, ...) ────────────────────────────
+class _BrandChip extends StatelessWidget {
+  const _BrandChip(this.tag);
+  final String tag;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark || AppColors.isDark;
+
+    Widget content;
+    switch (tag) {
+      case 'QRIS':
+        content = SvgPicture.asset(
+          AppAssets.paymentQris,
+          height: 12,
+          fit: BoxFit.contain,
+        );
+        break;
+      case 'BCA':
+        content = SvgPicture.asset(
+          AppAssets.paymentBca,
+          height: 12,
+          fit: BoxFit.contain,
+        );
+        break;
+      case 'BNI':
+      case 'BNI 46':
+        content = SvgPicture.asset(
+          AppAssets.paymentBni,
+          height: 12,
+          fit: BoxFit.contain,
+        );
+        break;
+      case 'BRI':
+        content = SvgPicture.asset(
+          AppAssets.paymentBri,
+          height: 14,
+          fit: BoxFit.contain,
+        );
+        break;
+      case 'Mandiri':
+        content = SvgPicture.asset(
+          AppAssets.paymentMandiri,
+          height: 12,
+          fit: BoxFit.contain,
+        );
+        break;
+      case 'GoPay':
+        content = SvgPicture.asset(
+          AppAssets.paymentGopay,
+          height: 10,
+          fit: BoxFit.contain,
+        );
+        break;
+      case 'OVO':
+        content = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              AppAssets.paymentOvo,
+              height: 12,
+              width: 12,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'OVO',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF4C2A86),
+              ),
+            ),
+          ],
+        );
+        break;
+      case 'ShopeePay':
+        content = SvgPicture.asset(
+          AppAssets.paymentShopeepay,
+          height: 13,
+          fit: BoxFit.contain,
+        );
+        break;
+      case 'DANA':
+        content = SvgPicture.asset(
+          AppAssets.paymentDana,
+          height: 11,
+          fit: BoxFit.contain,
+        );
+        break;
+      default:
+        content = Text(
+          tag,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : AppColors.ink,
+          ),
+        );
+    }
+
+    return Container(
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isDark ? const Color(0xFF383838) : const Color(0xFFE2E8F0),
+          width: 0.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          content,
+        ],
       ),
     );
   }
