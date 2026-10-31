@@ -75,3 +75,6 @@ ios/Runner/GeneratedPluginRegistrant.*
 
 # Hasil konversi Figma (tidak perlu di version control)
 Convert Figma To Flutter/
+
+# PRD documentation (local only)
+PRD_*.md
