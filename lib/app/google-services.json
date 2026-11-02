@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "978012424956",
+    "project_id": "dinoyocraft-338fd",
+    "storage_bucket": "dinoyocraft-338fd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:978012424956:android:fbcc69161e1c817b5ca579",
+        "android_client_info": {
+          "package_name": "com.example.dinoyocraftmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBR6LloJcRbGFbaMVJo63LvrRhgHo4Gxv4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

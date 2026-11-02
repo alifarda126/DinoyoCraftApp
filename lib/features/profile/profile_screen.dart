@@ -10,6 +10,7 @@ import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
 import '../../core/widgets/image_preview_dialog.dart';
+import '../../core/storage/local_storage.dart';
 import '../../data/mock_data.dart';
 
 /// Halaman Profil — bagian "Riwayat Pesanan" disesuaikan 1:1 dengan desain
@@ -86,11 +87,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Produk dari project (MockData) — hanya dipakai untuk gambar.
-  Product get _vasProduct => MockData.products.firstWhere((p) => p.id == '1');
+  Product get _vasProduct => MockData.products.firstWhere((p) => p.id == '1', orElse: () => MockData.fallbackProduct);
   Product get _cangkirProduct =>
-      MockData.products.firstWhere((p) => p.id == '2');
+      MockData.products.firstWhere((p) => p.id == '2', orElse: () => MockData.fallbackProduct);
   Product get _mangkukProduct =>
-      MockData.products.firstWhere((p) => p.id == '3');
+      MockData.products.firstWhere((p) => p.id == '3', orElse: () => MockData.fallbackProduct);
 
   Future<void> _handleRefresh() async {
     await Future<void>.delayed(const Duration(milliseconds: 700));
@@ -244,7 +245,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SizedBox(height: 14),
         Center(
           child: Text(
-            'Customer',
+            LocalStorage.getUser()?['name'] ?? 'Customer',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 20,
@@ -256,7 +257,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SizedBox(height: 4),
         Center(
           child: Text(
-            '@customer',
+            LocalStorage.getUser()?['email'] ?? '@customer',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               color: AppColors.textMuted,

@@ -19,8 +19,18 @@ class StoresScreen extends StatefulWidget {
 class _StoresScreenState extends State<StoresScreen> {
   String _query = '';
 
+  @override
+  void initState() {
+    super.initState();
+    if (MockData.stores.isEmpty) {
+      MockData.fetchPublicData().then((_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
   Future<void> _handleRefresh() async {
-    await Future<void>.delayed(const Duration(milliseconds: 700));
+    await MockData.fetchPublicData();
     if (mounted) setState(() {});
   }
 

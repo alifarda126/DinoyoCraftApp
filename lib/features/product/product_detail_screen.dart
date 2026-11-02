@@ -9,6 +9,7 @@ import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/image_preview_dialog.dart';
+import '../../core/network/api_client.dart';
 import '../../data/mock_data.dart';
 import '../review/presentation/modal_laporkan_ulasan.dart';
 import 'presentation/modal_laporkan_produk.dart';
@@ -33,6 +34,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void initState() {
     super.initState();
     _imagePageController = PageController();
+    if (!MockData.products.any((p) => p.id == widget.productId)) {
+      _loadProduct();
+    }
+  }
+
+  Future<void> _loadProduct() async {
+    try {
+      final res = await ApiClient.get('/products//public');
+      if (res['success'] == true && res['data'] is Map<String, dynamic>) {
+        final p = Product.fromJson(res['data'] as Map<String, dynamic>);
+        final idx = MockData.products.indexWhere((item) => item.id == p.id);
+        if (idx >= 0) {
+          MockData.products[idx] = p;
+        } else {
+          MockData.products.add(p);
+        }
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
   }
 
   @override
@@ -49,7 +69,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget build(BuildContext context) {
     final product = MockData.products.firstWhere(
       (item) => item.id == widget.productId,
-      orElse: () => MockData.products.first,
+      orElse: () => MockData.products.isNotEmpty ? MockData.products.first : MockData.fallbackProduct,
     );
 
     // Harga coret (mock) — sekitar 30% di atas harga jual.

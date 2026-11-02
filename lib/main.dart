@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'core/app_settings.dart';
+import 'core/storage/local_storage.dart';
 import 'core/router/app_router.dart';
 import 'core/services/app_info_service.dart';
 import 'core/services/connectivity_service.dart';
@@ -14,10 +15,13 @@ import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/fcm_notification_banner.dart';
 import 'core/widgets/keyboard_dismiss_wrapper.dart';
+import 'data/mock_data.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await LocalStorage.init();
   await AppSettings.instance.loadSavedPreferences();
+  unawaited(MockData.fetchPublicData());
   if (!kIsWeb) {
     AppSettings.instance.syncCacheSize();
   }
@@ -94,7 +98,7 @@ class _DinoyoCraftAppState extends State<DinoyoCraftApp> {
             final isDark = Theme.of(context).brightness == Brightness.dark;
             AppColors.isDark = isDark;
 
-            // Status bar & navigation bar ikut mode tema — tanpa ini ikon
+            // Status bar & navigation bar ikut mode tema â€” tanpa ini ikon
             // status bar gelap tak terlihat di mode gelap.
             SystemChrome.setSystemUIOverlayStyle(
               SystemUiOverlayStyle(
@@ -114,7 +118,7 @@ class _DinoyoCraftAppState extends State<DinoyoCraftApp> {
             // tema/bahasa tidak otomatis membangun ulang subtree di bawah
             // Router, sehingga warna lama terpakai sampai hot reload. Key
             // di bawah memaksa seluruh subtree dibangun ulang SAAT mode
-            // berubah — state navigator (route, input, scroll) tetap utuh
+            // berubah â€” state navigator (route, input, scroll) tetap utuh
             // karena reparenting GlobalKey milik go_router.
             return KeyboardDismissWrapper(
               child: KeyedSubtree(

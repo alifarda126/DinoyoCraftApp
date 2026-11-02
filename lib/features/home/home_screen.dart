@@ -39,6 +39,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    if (MockData.products.isEmpty) {
+      unawaited(MockData.fetchPublicData().then((_) {
+        if (mounted) setState(() {});
+      }));
+    }
     _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (!mounted || !_pageCtrl.hasClients) return;
       _pageCtrl.nextPage(
@@ -56,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    await Future<void>.delayed(const Duration(milliseconds: 700));
+    await MockData.fetchPublicData();
     if (mounted) setState(() {});
   }
 

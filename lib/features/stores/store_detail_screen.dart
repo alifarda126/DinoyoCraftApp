@@ -34,8 +34,9 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = AppColors.isDark;
-    final store = MockData.stores[
-        widget.storeIndex.clamp(0, MockData.stores.length - 1)];
+    final store = MockData.stores.isNotEmpty
+        ? MockData.stores[widget.storeIndex.clamp(0, MockData.stores.length - 1)]
+        : MockData.fallbackStore;
     final products = MockData.products
         .where((product) => product.studio == store.name)
         .toList();

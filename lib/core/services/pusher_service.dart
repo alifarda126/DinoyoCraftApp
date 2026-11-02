@@ -11,7 +11,7 @@ class PusherConfig {
   /// App Key Pusher (didapat dari dashboard Pusher / backend .env).
   static String apiKey = const String.fromEnvironment(
     'PUSHER_APP_KEY',
-    defaultValue: '',
+    defaultValue: 'b0fa050e0050acfb222a',
   );
 
   /// Cluster Pusher (contoh: 'ap1' untuk Asia Pacific / Jakarta/Singapore).
@@ -23,7 +23,7 @@ class PusherConfig {
   /// Endpoint autentikasi untuk private / presence channels.
   static String authEndpoint = const String.fromEnvironment(
     'PUSHER_AUTH_ENDPOINT',
-    defaultValue: '',
+    defaultValue: 'b0fa050e0050acfb222a',
   );
 
   /// Gunakan enkripsi TLS/WSS.

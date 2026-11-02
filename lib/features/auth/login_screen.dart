@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_settings.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/fcm_service.dart';
+import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 
@@ -30,25 +34,58 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _submit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      // 2FA: setelah logout / login dari perangkat berbeda, wajib OTP email.
-      if (AppSettings.instance.twoFactorEnabled &&
-          AppSettings.instance.requireOtpNextLogin) {
-        final email = _email.text.trim();
-        AppSettings.instance.lastAuthEmail = email;
-        final uri = Uri(
-          path: '/verify-otp',
-          queryParameters: {
-            'from': 'login',
-            if (email.isNotEmpty) 'email': email,
-          },
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final email = _email.text.trim();
+    final password = _password.text;
+
+    try {
+      final response = await ApiClient.post('/auth/login', {
+        'email': email,
+        'password': password,
+      });
+
+      if (response['success'] == true) {
+        final data = response['data'] as Map<String, dynamic>?;
+        final token = data?['token'] as String? ?? '';
+        if (token.isNotEmpty) {
+          await LocalStorage.saveAuth(token: token, user: data);
+          ApiClient.authToken = token;
+          unawaited(FcmService.instance.syncTokenWithBackend());
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response['message']?.toString() ?? 'Login gagal')),
+          );
+          return;
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        final errMsg = e.toString().replaceFirst('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errMsg)),
         );
-        context.push(uri.toString());
         return;
       }
-      context.go('/home');
     }
+
+    if (!mounted) return;
+    if (AppSettings.instance.twoFactorEnabled &&
+        AppSettings.instance.requireOtpNextLogin) {
+      AppSettings.instance.lastAuthEmail = email;
+      final uri = Uri(
+        path: '/verify-otp',
+        queryParameters: {
+          'from': 'login',
+          if (email.isNotEmpty) 'email': email,
+        },
+      );
+      context.push(uri.toString());
+      return;
+    }
+    context.go('/home');
   }
 
   void _back() {

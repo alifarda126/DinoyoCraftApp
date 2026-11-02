@@ -1,8 +1,8 @@
 import 'dart:collection';
-
 import 'package:flutter/foundation.dart';
 
 import '../core/assets.dart';
+import '../core/network/api_client.dart';
 
 class Product {
   const Product({
@@ -27,46 +27,65 @@ class Product {
   final List<String>? images;
   final bool hot;
 
-  /// Daftar foto galeri produk untuk carousel (selalu minimal 4 foto sesuai indikator 1/4)
+  factory Product.fromJson(Map<String, dynamic> json) {
+    final rawPrice = json['price'];
+    final int price;
+    if (rawPrice is num) {
+      price = rawPrice.toInt();
+    } else if (rawPrice is String) {
+      price = double.tryParse(rawPrice)?.toInt() ?? 0;
+    } else {
+      price = 0;
+    }
+
+    final rawImages = json['images'];
+    List<String>? imagesList;
+    if (rawImages is List) {
+      imagesList = rawImages
+          .where((e) => e != null)
+          .map((e) => ApiClient.resolveImageUrl(e.toString()))
+          .toList();
+    }
+
+    final imagePath = json['image']?.toString() ??
+        json['image_url']?.toString() ??
+        (imagesList != null && imagesList.isNotEmpty ? imagesList.first : null);
+    final resolvedImage = ApiClient.resolveImageUrl(imagePath);
+
+    return Product(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? json['title']?.toString() ?? '',
+      studio: json['studio']?.toString() ??
+          json['store_name']?.toString() ??
+          'Dinoyo Craft',
+      price: price,
+      rating: (json['rating'] is num)
+          ? (json['rating'] as num).toDouble()
+          : 4.8,
+      category: json['category']?.toString() ??
+          json['category_name']?.toString() ??
+          'Keramik',
+      image: resolvedImage,
+      images: imagesList,
+      hot: json['hot'] == true,
+    );
+  }
+
+  /// Daftar foto galeri produk untuk carousel
   List<String> get gallery {
     if (images != null && images!.isNotEmpty) return images!;
-    return switch (category) {
-      'Vas' => [
-          image,
-          AppAssets.productVasModern,
-          AppAssets.workshopHero,
-          AppAssets.storeDinoyo,
-        ],
-      'Cangkir' => [
-          image,
-          AppAssets.productCangkirSpeckle,
-          AppAssets.productCangkir,
-          AppAssets.storeRuangTanah,
-        ],
-      'Piring' => [
-          image,
-          AppAssets.productSetPiring,
-          AppAssets.productPiring,
-          AppAssets.storeDinoyo,
-        ],
-      'Mangkuk' => [
-          image,
-          AppAssets.productMangkukRamen,
-          AppAssets.productMangkuk,
-          AppAssets.workshopHero,
-        ],
-      _ => [
-          image,
-          AppAssets.productVasModern,
-          AppAssets.productSetPiring,
-          AppAssets.productCangkirSpeckle,
-        ],
-    };
+    if (image.isNotEmpty) return [image];
+    return [
+      AppAssets.productVas,
+      AppAssets.productMangkuk,
+      AppAssets.productPiring,
+      AppAssets.productCangkir,
+    ];
   }
 }
 
 class Store {
-const   Store({
+  const Store({
     required this.name,
     required this.location,
     required this.description,
@@ -79,10 +98,30 @@ const   Store({
   final String description;
   final double rating;
   final String image;
+
+  factory Store.fromJson(Map<String, dynamic> json) {
+    final imagePath = json['image']?.toString() ??
+        json['avatar_url']?.toString() ??
+        json['banner_url']?.toString();
+    final resolvedImage = ApiClient.resolveImageUrl(imagePath);
+
+    return Store(
+      name: json['store_name']?.toString() ?? json['name']?.toString() ?? 'Studio Dinoyo',
+      location: json['location']?.toString() ??
+          json['workshop_address']?.toString() ??
+          'Dinoyo, Malang',
+      description: json['description']?.toString() ??
+          'Studio keramik pengrajin Dinoyo.',
+      rating: (json['rating'] is num)
+          ? (json['rating'] as num).toDouble()
+          : 4.8,
+      image: resolvedImage,
+    );
+  }
 }
 
 class FaqItem {
-const   FaqItem({required this.question, required this.answer});
+  const FaqItem({required this.question, required this.answer});
 
   final String question;
   final String answer;
@@ -101,133 +140,75 @@ class CartItem {
 }
 
 abstract final class MockData {
+  static final Product fallbackProduct = const Product(
+    id: '0',
+    name: 'Produk Keramik',
+    studio: 'Dinoyo Craft',
+    price: 0,
+    rating: 5.0,
+    category: 'Keramik',
+    image: '',
+  );
+
+  static final Store fallbackStore = const Store(
+    name: 'Dinoyo Ceramic Studio',
+    location: 'Dinoyo, Malang',
+    description: 'Studio keramik Dinoyo.',
+    rating: 5.0,
+    image: '',
+  );
+
   /// Path foto profil pengguna (hasil kamera/galeri) untuk sesi ini.
-  /// Null = foto profil default (ikon person). Sengaja in-memory: seluruh
-  /// data profil di aplikasi mock belum dipersisten antar-restart.
   static String? userProfilePhotoPath;
   static Uint8List? userProfilePhotoBytes;
 
-  static const List<String> categories = [
-    'Semua',
-    'Vas',
-    'Cangkir',
-    'Piring',
-    'Mangkuk',
-  ];
+  static List<String> categories = ['Semua'];
 
-  // Image paths mapped to actual photo content (asset QA).
-  static const List<Product> products = [
-    Product(
-      id: '1',
-      name: 'Vas Minimalis',
-      studio: 'Dinoyo Ceramic Studio',
-      price: 85000,
-      rating: 4.8,
-      category: 'Vas',
-      image: AppAssets.productVas,
-      hot: true,
-    ),
-    Product(
-      id: '2',
-      name: 'Cangkir Handmade',
-      studio: 'Karya Tanah',
-      price: 65000,
-      rating: 4.6,
-      category: 'Cangkir',
-      image: AppAssets.productMangkuk,
-      hot: true,
-    ),
-    Product(
-      id: '3',
-      name: 'Mangkuk Keramik',
-      studio: 'Ruang Tanah',
-      price: 75000,
-      rating: 4.7,
-      category: 'Mangkuk',
-      image: AppAssets.productPiring,
-    ),
-    Product(
-      id: '4',
-      name: 'Piring Artisan',
-      studio: 'Dinoyo Craft House',
-      price: 95000,
-      rating: 4.9,
-      category: 'Piring',
-      image: AppAssets.productMangkukRamen,
-      hot: true,
-    ),
-    Product(
-      id: '5',
-      name: 'Vas Modern',
-      studio: 'Ruang Tanah',
-      price: 120000,
-      rating: 4.5,
-      category: 'Vas',
-      image: AppAssets.productVasModern,
-    ),
-    Product(
-      id: '6',
-      name: 'Cangkir Speckle',
-      studio: 'Dinoyo Ceramic Studio',
-      price: 70000,
-      rating: 4.4,
-      category: 'Cangkir',
-      image: AppAssets.productCangkirSpeckle,
-    ),
-    Product(
-      id: '7',
-      name: 'Set Piring Dinoyo',
-      studio: 'Dinoyo Craft House',
-      price: 110000,
-      rating: 4.8,
-      category: 'Piring',
-      image: AppAssets.productSetPiring,
-    ),
-    Product(
-      id: '8',
-      name: 'Mangkuk Spekel',
-      studio: 'Karya Tanah',
-      price: 80000,
-      rating: 4.6,
-      category: 'Mangkuk',
-      image: AppAssets.productPiring,
-    ),
-  ];
+  /// Daftar produk nyata dari backend
+  static List<Product> products = [];
 
-  static const List<Store> stores = [
-    Store(
-      name: 'Dinoyo Ceramic Studio',
-      location: 'Jl. MT Haryono, Dinoyo, Malang',
-      description:
-          'Studio keramik klasik Dinoyo dengan koleksi vas dan cangkir handmade.',
-      rating: 4.9,
-      image: AppAssets.storeDinoyo,
-    ),
-    Store(
-      name: 'Karya Tanah',
-      location: 'Kampung Keramik Dinoyo, Malang',
-      description:
-          'Pengrajin muda yang fokus pada cangkir dan mangkuk spekel unik.',
-      rating: 4.7,
-      image: AppAssets.storeRuangTanah,
-    ),
-    Store(
-      name: 'Ruang Tanah',
-      location: 'Jl. Keramik No. 12, Dinoyo',
-      description:
-          'Galeri dan workshop terbuka untuk eksplorasi tanah liat kontemporer.',
-      rating: 4.8,
-      image: AppAssets.storeRuangTanah,
-    ),
-    Store(
-      name: 'Dinoyo Craft House',
-      location: 'Jl. Simpang Gajayana, Malang',
-      description:
-          'Rumah craft dengan set piring artisan dan merchandise lokal.',
-      rating: 4.6,
-      image: AppAssets.storeDinoyo,
-    ),
-  ];
+  /// Daftar toko nyata dari backend
+  static List<Store> stores = [];
+
+  static bool isLoadingPublicData = false;
+
+  /// Mengambil data katalog produk dan toko mitra secara nyata dari Backend API
+  static Future<void> fetchPublicData() async {
+    if (isLoadingPublicData) return;
+    isLoadingPublicData = true;
+    try {
+      // 1. Fetch Produk Publik
+      final prodRes = await ApiClient.get('/products/public');
+      if (prodRes['success'] == true && prodRes['data'] is List) {
+        final list = (prodRes['data'] as List)
+            .map((item) => Product.fromJson(item as Map<String, dynamic>))
+            .toList();
+        products = list;
+
+        // Ekstrak kategori unik
+        final catSet = <String>{'Semua'};
+        for (final p in list) {
+          if (p.category.trim().isNotEmpty) {
+            catSet.add(p.category.trim());
+          }
+        }
+        categories = catSet.toList();
+      }
+
+      // 2. Fetch Mitra/Toko Publik
+      final mitraRes = await ApiClient.get('/mitra/public');
+      if (mitraRes['success'] == true && mitraRes['data'] is List) {
+        final list = (mitraRes['data'] as List)
+            .map((item) => Store.fromJson(item as Map<String, dynamic>))
+            .toList();
+        stores = list;
+      }
+    } catch (e) {
+      debugPrint('[MockData] Error fetching public data from backend: $e');
+    } finally {
+      isLoadingPublicData = false;
+    }
+  }
 
   static const List<FaqItem> faqs = [
     FaqItem(
@@ -262,8 +243,8 @@ abstract final class MockData {
     ),
   ];
 
-  /// ValueNotifier untuk jumlah jenis produk di keranjang agar header dan badge reaktif seketika
-  static final ValueNotifier<int> cartCountNotifier = ValueNotifier<int>(2);
+  /// ValueNotifier untuk jumlah jenis produk di keranjang (dimulai dari 0)
+  static final ValueNotifier<int> cartCountNotifier = ValueNotifier<int>(0);
 
   /// Jumlah item keranjang untuk badge di header
   static int get cartCount => cartCountNotifier.value;
@@ -271,17 +252,17 @@ abstract final class MockData {
     cartCountNotifier.value = val;
   }
 
-  // Keranjang sesi: mutable & reaktif agar aksi tambah/hapus langsung mengupdate badge header seketika.
+  /// Keranjang sesi nyata: dimulai dari KOSONG (tanpa data mockup)
   static final List<CartItem> mockCart = _CartList();
 
-  /// Set ID notifikasi yang sudah dibaca. Item '1' dan '2' belum dibaca sejak awal (hanya 2 teratas yang baru).
-  static final Set<String> readNotificationIds = {'3', '4', '5'};
+  /// Set ID notifikasi yang sudah dibaca
+  static final Set<String> readNotificationIds = {};
 
-  /// ValueNotifier untuk jumlah notifikasi belum dibaca agar header reaktif secara langsung.
+  /// ValueNotifier untuk jumlah notifikasi belum dibaca (dimulai dari 0)
   static final ValueNotifier<int> unreadNotificationsNotifier =
-      ValueNotifier<int>(2);
+      ValueNotifier<int>(0);
 
-  /// Jumlah notifikasi belum dibaca untuk badge angka di header (default 2)
+  /// Jumlah notifikasi belum dibaca untuk badge angka di header (default 0)
   static int get unreadNotificationsCount => unreadNotificationsNotifier.value;
   static set unreadNotificationsCount(int val) {
     unreadNotificationsNotifier.value = val;
@@ -291,24 +272,21 @@ abstract final class MockData {
   static void markNotificationAsRead(String id) {
     if (!readNotificationIds.contains(id)) {
       readNotificationIds.add(id);
-      unreadNotificationsCount =
-          {'1', '2'}.difference(readNotificationIds).length;
+      unreadNotificationsCount = 0;
     }
   }
 
-  /// Reset state notifikasi ke kondisi awal (hanya untuk pengujian atau reset).
+  /// Reset state notifikasi ke kondisi kosong
   static void resetNotifications() {
-    readNotificationIds
-      ..clear()
-      ..addAll({'3', '4', '5'});
-    unreadNotificationsCount = 2;
+    readNotificationIds.clear();
+    unreadNotificationsCount = 0;
   }
 
-  /// Set nama toko dengan chat yang belum dibaca (default: 'Karya Tanah')
-  static final Set<String> unreadChatStores = {'Karya Tanah'};
+  /// Set nama toko dengan chat yang belum dibaca (dimulai dari KOSONG)
+  static final Set<String> unreadChatStores = {};
 
-  /// ValueNotifier untuk jumlah pesan chat belum dibaca agar reaktif
-  static final ValueNotifier<int> unreadChatNotifier = ValueNotifier<int>(1);
+  /// ValueNotifier untuk jumlah pesan chat belum dibaca (default 0)
+  static final ValueNotifier<int> unreadChatNotifier = ValueNotifier<int>(0);
 
   /// Jumlah pesan chat belum dibaca untuk badge angka di header
   static int get unreadChatCount => unreadChatNotifier.value;
@@ -336,12 +314,10 @@ abstract final class MockData {
     return unreadChatStores.any((s) => s.trim().toLowerCase() == trimmed);
   }
 
-  /// Reset state chat (untuk pengujian)
+  /// Reset state chat (kosong)
   static void resetChats() {
-    unreadChatStores
-      ..clear()
-      ..add('Karya Tanah');
-    unreadChatCount = 1;
+    unreadChatStores.clear();
+    unreadChatCount = 0;
   }
 
   /// Tambah produk ke keranjang; qty di-merge bila produk dan varian sama.
@@ -370,13 +346,9 @@ abstract final class MockData {
     }
   }
 
-  /// Reset keranjang ke kondisi awal (berguna untuk pengujian)
+  /// Reset keranjang ke kondisi kosong
   static void resetCart() {
     mockCart.clear();
-    mockCart.addAll([
-      CartItem(product: products[0], qty: 1),
-      CartItem(product: products[1], qty: 2),
-    ]);
   }
 
   static String formatPrice(int price) {
@@ -421,10 +393,8 @@ abstract final class MockData {
 /// List keranjang yang secara otomatis memicu [MockData.cartCountNotifier]
 /// seketika terjadi penambahan, penghapusan, atau perubahan isi keranjang.
 class _CartList extends ListBase<CartItem> {
-  final List<CartItem> _inner = [
-    CartItem(product: MockData.products[0], qty: 1),
-    CartItem(product: MockData.products[1], qty: 2),
-  ];
+  // Dimulai dari list KOSONG murni (tanpa item dummy Vas atau Cangkir)
+  final List<CartItem> _inner = [];
 
   @override
   int get length => _inner.length;
@@ -484,4 +454,3 @@ class _CartList extends ListBase<CartItem> {
     MockData.cartCountNotifier.value = 0;
   }
 }
-

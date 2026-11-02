@@ -28,6 +28,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
     super.initState();
     final cat = widget.initialCategory;
     _category = MockData.categories.contains(cat) ? cat : 'Semua';
+    if (MockData.products.isEmpty) {
+      MockData.fetchPublicData().then((_) {
+        if (mounted) setState(() {});
+      });
+    }
   }
 
   @override
@@ -40,7 +45,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    await Future<void>.delayed(const Duration(milliseconds: 700));
+    await MockData.fetchPublicData();
     if (mounted) setState(() {});
   }
 

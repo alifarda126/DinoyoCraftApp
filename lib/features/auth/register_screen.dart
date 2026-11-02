@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,6 +8,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_settings.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/fcm_service.dart';
+import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 
@@ -35,6 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirm = true;
   DateTime? _birthDate;
   bool _isGoogleAuth = false;
+  bool _isLoading = false;
 
   late final TapGestureRecognizer _termsLinkTap = TapGestureRecognizer()
     ..onTap = _showTermsDialog;
@@ -75,7 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (!_terms) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -86,29 +91,69 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
     ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
-    if (_isGoogleAuth) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(
-            AppText.isEnglish
-                ? 'Registration successful! Welcome, ${_name.text.trim().isNotEmpty ? _name.text.trim() : "User"}.'
-                : 'Pendaftaran berhasil! Selamat datang, ${_name.text.trim().isNotEmpty ? _name.text.trim() : "Pengguna"}.',
-          ),
-        ),
-      );
-      context.go('/home');
-      return;
-    }
+
+    final name = _name.text.trim();
     final email = _email.text.trim();
-    AppSettings.instance.lastAuthEmail = email;
-    final uri = Uri(
-      path: '/verify-otp',
-      queryParameters: {
-        'from': 'register',
-        if (email.isNotEmpty) 'email': email,
-      },
-    );
-    context.push(uri.toString());
+    final password = _password.text;
+    final phone = _wa.text.trim();
+
+    setState(() => _isLoading = true);
+
+    try {
+      final Map<String, dynamic> response;
+      if (_isGoogleAuth) {
+        response = await ApiClient.post('/auth/google', {
+          'userInfo': {
+            'name': name.isNotEmpty ? name : 'Pengguna Google',
+            'email': email,
+          },
+          'role': 'pengunjung',
+        });
+      } else {
+        response = await ApiClient.post('/auth/register-customer', {
+          'name': name,
+          'email': email,
+          'password': password,
+          'phone': phone,
+        });
+      }
+
+      if (response['success'] == true) {
+        final data = response['data'] as Map<String, dynamic>?;
+        final token = data?['token'] as String? ?? '';
+        if (token.isNotEmpty) {
+          await LocalStorage.saveAuth(token: token, user: data);
+          ApiClient.authToken = token;
+          unawaited(FcmService.instance.syncTokenWithBackend());
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(content: Text('Pendaftaran berhasil!'.tr)),
+          );
+        }
+        if (!mounted) return;
+        AppSettings.instance.lastAuthEmail = email;
+        context.go('/home');
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(content: Text(response['message']?.toString() ?? 'Pendaftaran gagal')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        final errMsg = e.toString().replaceFirst('Exception: ', '');
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(errMsg)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _onGoogleRegisterTap() {
@@ -926,14 +971,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             boxShadow: AppColors.darkButtonShadow,
                           ),
                           child: FilledButton(
-                            onPressed: _submit,
+                            onPressed: _isLoading ? null : _submit,
                             style: FilledButton.styleFrom(
                               backgroundColor: AppColors.black,
                               foregroundColor: AppColors.white,
                               shape: AppColors.stadiumButtonShape,
                               elevation: 0,
                             ),
-                            child: Text(
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
                               'Daftar'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 14,
