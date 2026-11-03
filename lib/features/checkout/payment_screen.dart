@@ -13,6 +13,10 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_bottom_nav.dart';
 import '../../data/mock_data.dart';
+import 'dart:convert';
+
+import 'package:qr_flutter/qr_flutter.dart';
+
 import '../payment/data/datasources/payment_remote_datasource.dart';
 import '../payment/data/models/payment_model.dart';
 import '../profile/profile_screen.dart';
@@ -900,6 +904,48 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+  /// Konten QR: utamakan data ASLI dari gateway agar bisa discan & dibayar.
+  /// 1) qr_string berupa URL gambar  -> Image.network
+  /// 2) qr_string data URI base64    -> Image.memory
+  /// 3) qr_string payload EMVCo QRIS -> QR sungguhan via qr_flutter
+  /// 4) kosong (mode demo)           -> pola ilustrasi
+  Widget _buildQrContent() {
+    final qr = _paymentInfo?.qrString ?? '';
+
+    if (_qrImageUrl != null) {
+      return Image.network(
+        _qrImageUrl!,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => _IllustrativeQr(seed: _data.orderId.hashCode ^ _totalToPay),
+      );
+    }
+
+    if (qr.startsWith('data:image')) {
+      try {
+        final base64Part = qr.split(',').last;
+        return Image.memory(
+          base64Decode(base64Part),
+          fit: BoxFit.contain,
+          errorBuilder: (_, _, _) => _IllustrativeQr(seed: _data.orderId.hashCode ^ _totalToPay),
+        );
+      } catch (_) {}
+    }
+
+    if (qr.isNotEmpty) {
+      // Payload QRIS asli dari gateway (mis. 000201...CO.QRIS.WWW...) —
+      // dirender ulang menjadi QR yang benar-benar bisa discan.
+      return QrImageView(
+        data: qr,
+        version: QrVersions.auto,
+        size: 200,
+        backgroundColor: Colors.white,
+        errorStateBuilder: (_, _) => _IllustrativeQr(seed: _data.orderId.hashCode ^ _totalToPay),
+      );
+    }
+
+    return _IllustrativeQr(seed: _data.orderId.hashCode ^ _totalToPay);
+  }
+
   // ═══ 3. Selector Metode Pembayaran (Bisa diubah jika diinginkan) ═════════
   Widget _buildPaymentMethodTabs() {
     return Column(
@@ -1160,21 +1206,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             ),
                           ],
                         )
-                      : (_qrImageUrl != null
-                          ? Image.network(
-                              _qrImageUrl!,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => CustomPaint(
-                                painter: _QrisCodePainter(
-                                  seed: _data.orderId.hashCode ^ _totalToPay,
-                                ),
-                              ),
-                            )
-                          : CustomPaint(
-                              painter: _QrisCodePainter(
-                                seed: _data.orderId.hashCode ^ _totalToPay,
-                              ),
-                            )),
+                      : _buildQrContent()
             ),
           ),
           const SizedBox(height: 14),
@@ -2184,6 +2216,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
 }
 
 /// CustomPainter untuk menggambar QR Code QRIS yang tajam dan otentik.
+/// QR ilustrasi untuk mode demo (tanpa data gateway) — TIDAK bisa discan.
+class _IllustrativeQr extends StatelessWidget {
+  const _IllustrativeQr({this.seed = 0});
+
+  final int seed;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _QrisCodePainter(seed: seed));
+  }
+}
+
 class _QrisCodePainter extends CustomPainter {
   _QrisCodePainter({required this.seed});
 

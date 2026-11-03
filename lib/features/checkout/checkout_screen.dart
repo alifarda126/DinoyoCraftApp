@@ -118,7 +118,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  static const int _serviceFee = 2000;
+  /// Biaya layanan — total yang DIBEBANKAN ke pembayar, dihitung dengan
+  /// rumus yang sama persis dengan backend + gateway:
+  ///   platform : Rp1.000 + 5% nilai pesanan (subtotal + ongkir)
+  ///   channel  : round(nilai x 0,705%)  (fee borne QRIS, terverifikasi)
+  /// Sehingga total di checkout == total di layar pembayaran == isi QR.
+  int get _platformFee => 1000 + (((_subtotal + _shippingFee) * 5) / 100).round();
+
+  int get _channelFee =>
+      (((_subtotal + _shippingFee + _platformFee) * 705) / 100000).round();
+
+  int get _serviceFee => _platformFee + _channelFee;
 
   int get _total => _items.isEmpty ? 0 : _subtotal + _shippingFee + _serviceFee;
 
