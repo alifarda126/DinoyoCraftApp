@@ -13,6 +13,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_bottom_nav.dart';
 import '../../data/mock_data.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import 'dart:convert';
 
 import 'package:qr_flutter/qr_flutter.dart';
@@ -1978,12 +1979,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.asset(
-                            _data.items[i].product.image,
-                            width: 44,
-                            height: 44,
-                            fit: BoxFit.cover,
-                          ),
+                          child: _data.items[i].product.image
+                                  .startsWith('http')
+                              ? DcCachedImage(
+                                  imageUrl: _data.items[i].product.image,
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.cover,
+                                  errorWidget: Icon(
+                                    Icons.image_outlined,
+                                    size: 22,
+                                    color: AppColors.textMuted,
+                                  ),
+                                )
+                              : Image.asset(
+                                  _data.items[i].product.image,
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => Icon(
+                                    Icons.image_outlined,
+                                    size: 22,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -2060,16 +2079,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   Divider(height: 1, thickness: 1, color: AppColors.border),
                   const SizedBox(height: 10),
 
-                  // Rincian Biaya
+                  // Rincian Biaya — diturunkan dari Total Pembayaran resmi
+                  // (_totalToPay = nominal gateway yang tercetak di QR),
+                  // sehingga baris-baris ini MUSTAHIL beda dengan angka atas.
                   _buildCostRow('Subtotal Produk'.tr, _data.subtotal),
                   const SizedBox(height: 4),
                   _buildCostRow('Biaya Pengiriman'.tr, _data.shippingFee),
                   const SizedBox(height: 4),
-                  _buildCostRow('Biaya Layanan'.tr, _data.serviceFee),
+                  _buildCostRow(
+                    'Biaya Layanan'.tr,
+                    (_totalToPay - _data.subtotal - _data.shippingFee)
+                        .clamp(0, _totalToPay),
+                  ),
                   const SizedBox(height: 8),
                   _buildCostRow(
                     'Total Pembayaran'.tr,
-                    _data.total,
+                    _totalToPay,
                     isTotal: true,
                   ),
                 ],
