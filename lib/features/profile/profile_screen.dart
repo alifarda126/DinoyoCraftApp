@@ -774,8 +774,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _cancelOrderNow(Map<String, dynamic> order) async {
     try {
-      await ApiClient.patch(
-          '/orders/${order['id']}/status', {'status': 'cancelled'});
+      await ApiClient.post('/orders/${order['id']}/cancel', {});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
