@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/auth_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../data/mock_data.dart';
@@ -28,6 +30,7 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   String _shipping = 'Regular';
+  bool _isPaying = false;
   String _payment = 'QRIS';
   final TextEditingController _noteCtrl = TextEditingController();
 
@@ -435,32 +438,112 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _pay() async {
-    final now = DateTime.now();
-    final args = PaymentArgs(
-      orderId:
-          'DC-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${1000 + (now.millisecondsSinceEpoch % 9000)}',
-      items: List<CartItem>.from(_items),
-      qtys: List<int>.from(_qtys),
-      subtotal: _subtotal,
-      shippingFee: _shippingFee,
-      serviceFee: _serviceFee,
-      total: _total,
-      paymentMethod: _payment,
-      shippingMethod: _shipping,
-      recipientName: _currentAddress.name,
-      recipientPhone: _currentAddress.phone,
-      recipientAddress: _currentAddress.address,
-      note: _noteCtrl.text.trim().isNotEmpty ? _noteCtrl.text.trim() : null,
-    );
-
-    try {
-      context.push('/checkout/payment', extra: args);
-    } catch (_) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => PaymentScreen(args: args),
-        ),
+    if (!AuthSession.isLoggedIn) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Silakan login terlebih dahulu')),
       );
+      return;
+    }
+    if (_items.isEmpty) return;
+
+    setState(() => _isPaying = true);
+    try {
+      // 1. Alamat dari server — wajib punya address_id untuk checkout BE.
+      final addrRes = await ApiClient.get('/addresses');
+      final List addrList =
+          (addrRes['data'] as List?)?.whereType<Map<String, dynamic>>().toList() ?? [];
+      Map<String, dynamic>? addr;
+      for (final a in addrList) {
+        if (a['is_default'] == 1 || a['is_default'] == true) {
+          addr = a;
+          break;
+        }
+      }
+      addr ??= addrList.isNotEmpty ? addrList.first : null;
+      if (addr == null) {
+        if (mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Belum ada alamat pengiriman. Tambahkan alamat terlebih dahulu di menu Alamat.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      // 2. mitra_id dari produk pertama (satu pesanan = satu toko).
+      final mitraId = _items.first.product.mitraId;
+      if (mitraId <= 0) {
+        if (mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            const SnackBar(content: Text('Produk tidak valid (mitra tidak diketahui).')),
+          );
+        }
+        return;
+      }
+
+      // 3. Buat pesanan REAL di backend.
+      final res = await ApiClient.post('/orders/checkout', {
+        'mitra_id': mitraId,
+        'address_id': addr['id'],
+        'shipping_method': _shipping,
+        'shipping_cost': _shippingFee,
+        'payment_method': 'qris',
+        if (_noteCtrl.text.trim().isNotEmpty) 'customer_notes': _noteCtrl.text.trim(),
+        'items': [
+          for (int i = 0; i < _items.length; i++)
+            {
+              'product_id': int.tryParse(_items[i].product.id) ?? 0,
+              'quantity': _qtys[i],
+              if (_items[i].variant != null && _items[i].variant!.isNotEmpty)
+                'variant': _items[i].variant,
+              'unit_price': _items[i].product.price,
+            },
+        ],
+      });
+
+      if (res['success'] != true) {
+        throw Exception(res['message']?.toString() ?? 'Checkout gagal');
+      }
+      final data = res['data'] as Map<String, dynamic>;
+      final realOrderId = data['order_id']?.toString() ?? '';
+
+      if (!mounted) return;
+      final args = PaymentArgs(
+        orderId: realOrderId,
+        items: List<CartItem>.from(_items),
+        qtys: List<int>.from(_qtys),
+        subtotal: _subtotal,
+        shippingFee: _shippingFee,
+        serviceFee: _serviceFee,
+        total: _total,
+        paymentMethod: _payment,
+        shippingMethod: _shipping,
+        recipientName: addr['recipient_name']?.toString() ?? _currentAddress.name,
+        recipientPhone: addr['phone']?.toString() ?? _currentAddress.phone,
+        recipientAddress: addr['full_address']?.toString() ?? _currentAddress.address,
+        note: _noteCtrl.text.trim().isNotEmpty ? _noteCtrl.text.trim() : null,
+      );
+
+      try {
+        context.push('/checkout/payment', extra: args);
+      } catch (_) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => PaymentScreen(args: args),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text('Checkout gagal: $msg')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPaying = false);
     }
   }
 
@@ -1050,7 +1133,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           boxShadow: AppColors.darkButtonShadow,
                         ),
                         child: FilledButton(
-                          onPressed: _items.isEmpty ? null : _pay,
+                          onPressed: (_items.isEmpty || _isPaying) ? null : _pay,
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.black,
                             foregroundColor: AppColors.white,

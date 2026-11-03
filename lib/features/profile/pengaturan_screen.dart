@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/services/auth_session.dart';
+import '../../core/services/google_auth_service.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
@@ -1554,12 +1556,15 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(dialogCtx);
-              // Logout dari perangkat ini → login berikutnya butuh OTP
-              // (jika 2FA aktif).
+              // Logout → bersihkan sesi (token + data user) & akun Google.
+              await AuthSession.signOut();
+              await GoogleAuthService.signOut();
               AppSettings.instance.markLoggedOut();
-              context.go('/login');
+              if (mounted) {
+                context.go('/login');
+              }
               _showFeedback('Anda telah berhasil keluar dari akun.');
             },
             style: ElevatedButton.styleFrom(

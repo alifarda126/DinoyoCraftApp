@@ -45,7 +45,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    await MockData.fetchPublicData();
+    await MockData.fetchPublicData(force: true);
     if (mounted) setState(() {});
   }
 

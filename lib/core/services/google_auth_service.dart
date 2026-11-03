@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../network/api_client.dart';
 import '../storage/local_storage.dart';
+import 'auth_session.dart';
 
 /// Service untuk menangani Google Sign-In terintegrasi dengan Backend DinoyoCraft
 class GoogleAuthService {
@@ -90,12 +91,15 @@ class GoogleAuthService {
         if (response['success'] == true || response['token'] != null) {
           final token = (response['token'] ?? response['data']?['token']) as String?;
           if (token != null && token.isNotEmpty) {
-            ApiClient.authToken = token;
             final userMap = response['data'] is Map<String, dynamic>
                 ? response['data'] as Map<String, dynamic>
                 : {'name': userInfo['name'], 'email': userInfo['email']};
 
-            await LocalStorage.saveAuth(token: token, user: userMap);
+            await AuthSession.signIn(
+              token: token,
+              refreshToken: response['data']?['refresh_token']?.toString(),
+              user: userMap,
+            );
 
             // Daftarkan FCM token otomatis ke backend jika tersedia
             final fcmToken = LocalStorage.getFcmToken();

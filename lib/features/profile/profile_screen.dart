@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -7,9 +8,14 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_settings.dart';
 import '../../core/app_text.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/auth_session.dart';
+import '../../core/services/google_auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/image_preview_dialog.dart';
+import 'tracking_sheet.dart';
 import '../../core/storage/local_storage.dart';
 import '../../data/mock_data.dart';
 
@@ -51,6 +57,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   String _orderTab = 'Dikemas';
 
+  // --- Riwayat pesanan REAL dari backend (GET /orders) ---
+  List<Map<String, dynamic>> _orders = [];
+  bool _ordersLoading = true;
+
+  Future<void> _fetchOrders() async {
+    if (!AuthSession.isLoggedIn) {
+      _orders = [];
+      if (mounted) setState(() => _ordersLoading = false);
+      return;
+    }
+    try {
+      final res = await ApiClient.get('/orders');
+      if (res['success'] == true && res['data'] is List) {
+        _orders = (res['data'] as List)
+            .whereType<Map<String, dynamic>>()
+            .toList();
+      }
+    } catch (_) {
+      // Offline / sesi berakhir: pertahankan list terakhir.
+    }
+    if (mounted) setState(() => _ordersLoading = false);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +91,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _orderTab = widget.initialTab!;
     }
     ProfileScreen.selectedTabNotifier.addListener(_onSelectedTabChanged);
+    // Tarik profil terbaru dari backend agar nama/email/foto selalu data asli.
+    _refreshProfileFromServer();
+    // Tarik riwayat pesanan real dari backend.
+    _fetchOrders();
+  }
+
+  /// GET /auth/profile → perbarui data user tersimpan (nama, email, avatar).
+  Future<void> _refreshProfileFromServer() async {
+    if (!AuthSession.isLoggedIn) return;
+    try {
+      final profile = await ApiClient.get('/auth/profile');
+      if (profile['success'] == true && profile['data'] is Map<String, dynamic>) {
+        final data = profile['data'] as Map<String, dynamic>;
+        // Gabungkan dengan data lama agar field opsional tidak hilang.
+        final merged = {...?AuthSession.user, ...data};
+        await AuthSession.updateUser(merged);
+        if (mounted) setState(() {});
+      }
+    } catch (_) {
+      // Offline / sesi berakhir — tampilkan data cache yang tersimpan.
+    }
   }
 
   @override
@@ -86,15 +136,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Produk dari project (MockData) — hanya dipakai untuk gambar.
-  Product get _vasProduct => MockData.products.firstWhere((p) => p.id == '1', orElse: () => MockData.fallbackProduct);
-  Product get _cangkirProduct =>
-      MockData.products.firstWhere((p) => p.id == '2', orElse: () => MockData.fallbackProduct);
-  Product get _mangkukProduct =>
-      MockData.products.firstWhere((p) => p.id == '3', orElse: () => MockData.fallbackProduct);
-
   Future<void> _handleRefresh() async {
-    await Future<void>.delayed(const Duration(milliseconds: 700));
+    await Future.wait([_refreshProfileFromServer(), _fetchOrders()]);
     if (mounted) setState(() {});
   }
 
@@ -217,7 +260,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         errorBuilder: (_, _, _) => _avatarPlaceholder(),
       );
     } else {
-      imageContent = _avatarPlaceholder();
+      // Tidak ada foto lokal → pakai avatar dari akun (server) bila ada.
+      final avatarUrl = ApiClient.resolveImageUrl(
+        AuthSession.user?['avatar_url']?.toString(),
+      );
+      if (AuthSession.user?['avatar_url']?.toString().isNotEmpty ?? false) {
+        imageContent = DcCachedImage(
+          imageUrl: avatarUrl,
+          width: 88,
+          height: 88,
+          fit: BoxFit.cover,
+          errorWidget: _avatarPlaceholder(),
+        );
+      } else {
+        imageContent = _avatarPlaceholder();
+      }
     }
 
     return GestureDetector(
@@ -322,7 +379,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           // Sesuai desain: selalu "1 Pesanan" di ketiga tab.
           child: Text(
-            '1 Pesanan'.tr,
+            '${_tabOrders.length} Pesanan',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -392,52 +449,154 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  List<Widget> _buildOrderCards(BuildContext context) => switch (_orderTab) {
-        'Belum Bayar' => [_belumBayarCard(context)],
-        'Dikemas' => [_dikemasCard()],
-        'Dikirim' => [_dikirimCard(context)],
-        _ => [
-          _diterimaCard(
-            id: '#DNC-001',
-            store: 'Dinoyo Ceramic Studio',
-            deliveredText: 'Diterima pada 12 Feb 2025 - Diterima oleh Penerima',
-            product: _vasProduct,
-            name: 'Vas Keramik Minimalis',
-            variant: 'Sand White Glossy • 1x',
-            price: 'Rp85.000',
-            total: 'Rp102.000',
-            leftLabel: 'Beri Ulasan',
-            onLeft: () => context.push('/review/write'),
-            onBuyAgain: () => context.push('/product/1'),
+  List<Widget> _buildOrderCards(BuildContext context) {
+    if (_ordersLoading) {
+      return [
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: CircularProgressIndicator(),
           ),
-          const SizedBox(height: 12),
-          _diterimaCard(
-            id: '#DNC-000',
-            store: 'Ruang Tanah Studio',
-            deliveredText: 'Diterima pada 28 Jan 2025 - Diterima oleh Satpam',
-            product: _mangkukProduct,
-            name: 'Mangkuk Keramik Artisanal',
-            variant: 'Terracotta Glaze • 1x',
-            price: 'Rp75.000',
-            total: 'Rp90.000',
-            leftLabel: 'Lihat Ulasan',
-            onLeft: () => context.push('/reviews'),
-            onBuyAgain: () => context.push('/product/3'),
+        ),
+      ];
+    }
+    final orders = _tabOrders;
+    if (orders.isEmpty) {
+      return [_ordersEmpty()];
+    }
+    return [
+      for (int i = 0; i < orders.length; i++) ...[
+        if (i > 0) const SizedBox(height: 12),
+        _orderCard(context, orders[i]),
+      ],
+    ];
+  }
+
+  /// Pesanan sesuai tab aktif. Mapping status BE:
+  /// pending -> Belum Bayar, paid/packed -> Dikemas, shipped -> Dikirim,
+  /// completed -> Diterima. Cancelled tidak ditampilkan di tab mana pun.
+  List<Map<String, dynamic>> get _tabOrders {
+    return _orders.where((o) {
+      final st = (o['status'] ?? 'pending').toString();
+      return switch (_orderTab) {
+        'Belum Bayar' => st == 'pending',
+        'Dikemas' => st == 'paid' || st == 'packed',
+        'Dikirim' => st == 'shipped',
+        _ => st == 'completed',
+      };
+    }).toList();
+  }
+
+  Widget _ordersEmpty() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 36),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _borderGray),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.receipt_long_outlined,
+              size: 40, color: AppColors.textMuted),
+          const SizedBox(height: 10),
+          Text(
+            'Belum ada pesanan di sini'.tr,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _textGray,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Yuk jelajahi keramik buatan pengrajin Dinoyo!'.tr,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              color: _textGray,
+            ),
           ),
         ],
-      };
+      ),
+    );
+  }
 
-  // ═══ Kartu: BELUM BAYAR ═════════════════════════════════════════════════
-  Widget _belumBayarCard(BuildContext context) {
+  /// Kartu pesanan REAL dari backend (GET /orders).
+  Widget _orderCard(BuildContext context, Map<String, dynamic> order) {
+    final status = (order['status'] ?? 'pending').toString();
+    final items = (order['items'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+    final first = items.isNotEmpty ? items.first : null;
+    final firstProduct =
+        first == null ? MockData.fallbackProduct : _orderItemProduct(first);
+    final firstQty =
+        first == null ? 1 : ((first['quantity'] as num?)?.toInt() ?? 1);
+    final firstPrice =
+        first == null ? 0 : ((first['unit_price'] as num?)?.toInt() ?? 0);
+    final firstVariant =
+        first == null ? '' : (first['variant']?.toString() ?? '');
+    final totalQty = items.fold<int>(
+        0, (sum, it) => sum + ((it['quantity'] as num?)?.toInt() ?? 0));
+    final totalAmount = ((order['total_amount'] as num?)?.toInt() ?? 0);
+    final store = (order['store_name'] ?? '-').toString();
+    final orderId = '#DNC-${order['id']}';
+    final tracking = order['tracking_number']?.toString();
+
+    final Widget statusWidget;
+    switch (status) {
+      case 'pending':
+        statusWidget = _statusBox(
+          icon: Icons.hourglass_top_rounded,
+          title: 'Menunggu Pembayaran'.tr,
+          dotColor: _dikemasAmber,
+          note: 'Selesaikan pembayaran agar pesanan\nsegera diproses penjual.'.tr,
+          noteColor: _dikemasAmber,
+        );
+        break;
+      case 'paid':
+      case 'packed':
+        statusWidget = _statusBox(
+          title: 'Dikemas Penjual'.tr,
+          dotColor: _dikemasAmber,
+          note: 'Penjual sedang menyiapkan pesanan Anda.'.tr,
+          noteColor: _dikemasAmber,
+        );
+        break;
+      case 'shipped':
+        statusWidget = _statusBox(
+          title: 'Sedang Dikirim'.tr,
+          titleTrailing:
+              (tracking != null && tracking.isNotEmpty) ? tracking : null,
+          dotColor: _dikirimBlue,
+          note: 'Paket sedang dalam perjalanan menuju alamat Anda.'.tr,
+          noteColor: _dikirimBlue,
+        );
+        break;
+      default:
+        statusWidget = _deliveredStatusBox(
+          'Pesanan telah diterima. Terima kasih telah berbelanja!'.tr,
+        );
+    }
+
+    final badge = switch (status) {
+      'pending' => 'Menunggu Pembayaran'.tr,
+      'paid' => 'Dibayar'.tr,
+      'packed' => 'Dikemas Penjual'.tr,
+      'shipped' => 'Sedang Dikirim'.tr,
+      _ => 'Pesanan Selesai'.tr,
+    };
+
     return _cardShell(
       borderColor: _borderGray,
       radius: 16,
       padding: const EdgeInsets.all(16),
       children: [
         _cardHeader(
-          id: '#DNC-005',
-          store: 'Dinoyo Ceramic Studio',
-          badge: 'Menunggu Pembayaran'.tr,
+          id: orderId,
+          store: store,
+          badge: badge,
           fontSize: 12,
           storeColor: _textGray,
           badgeBorder: _borderGray,
@@ -447,84 +606,219 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 12),
         Divider(height: 1, thickness: 1, color: _lineGray),
         const SizedBox(height: 12),
-        _statusBox(
-          icon: Icons.hourglass_top_rounded,
-          title: 'Menunggu Pembayaran'.tr,
-          titleTrailing: '23:59:45',
-          dotColor: _dikemasAmber,
-          note: 'Selesaikan pembayaran sebelum batas waktu berakhir\n'
-              'agar pesanan tidak dibatalkan otomatis.'.tr,
-          noteColor: _dikemasAmber,
-        ),
+        statusWidget,
         const SizedBox(height: 12),
-        _simpleProductRow(
-          product: _vasProduct,
-          name: 'Vas Keramik Minimalis',
-          subtitle: 'Sand White Glossy • 1x',
-          qty: 'Jumlah: 1'.tr,
-          price: 'Rp85.000',
-          imageSize: 76,
-          imageRadius: 10,
-          gap: 12,
-        ),
+        if (first != null)
+          _simpleProductRow(
+            product: firstProduct,
+            name: first['product_name']?.toString() ?? 'Produk',
+            subtitle: firstVariant.isNotEmpty
+                ? '$firstVariant \u2022 ${firstQty}x'
+                : '${firstQty}x',
+            qty: 'Jumlah: $firstQty'.tr,
+            price: MockData.formatPrice(firstPrice),
+            imageSize: 76,
+            imageRadius: 10,
+            gap: 12,
+          ),
+        if (items.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              '+ ${items.length - 1} produk lainnya'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: _textGray,
+              ),
+            ),
+          ),
         const SizedBox(height: 10),
-        _totalRow('Total (1 Produk):'.tr, 'Rp102.000', _lineGray),
+        _totalRow('Total ($totalQty Produk):'.tr,
+            MockData.formatPrice(totalAmount), _lineGray),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _actionButton(
-                label: 'Batalkan'.tr,
-                icon: Icons.close_rounded,
-                bg: _btnLight,
-                fg: _text,
-                borderColor: _borderGray,
-                bold: true,
-                height: 40,
-                onTap: () => _confirmCancelOrder(context),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _actionButton(
-                label: 'Bayar Sekarang'.tr,
-                icon: Icons.payment_rounded,
-                bg: AppColors.black,
-                fg: AppColors.white,
-                bold: true,
-                height: 40,
-                onTap: () {
-                  context.push('/checkout/payment');
-                },
-              ),
-            ),
-          ],
-        ),
+        _orderActions(context, order, status, store),
       ],
     );
   }
 
-  void _confirmCancelOrder(BuildContext context) {
+  Product _orderItemProduct(Map<String, dynamic> item) {
+    return Product.fromJson({
+      'id': item['product_id']?.toString() ?? '0',
+      'name': item['product_name']?.toString() ?? 'Produk',
+      'price': item['unit_price'],
+      'image': _itemFirstImage(item),
+    });
+  }
+
+  String _itemFirstImage(Map<String, dynamic> item) {
+    final raw = item['image_urls'];
+    if (raw is List && raw.isNotEmpty) return raw.first.toString();
+    if (raw is String && raw.trim().isNotEmpty) {
+      final trimmed = raw.trim();
+      if (trimmed.startsWith('[')) {
+        try {
+          final decoded = jsonDecode(trimmed);
+          if (decoded is List && decoded.isNotEmpty) {
+            return decoded.first.toString();
+          }
+        } catch (_) {}
+      }
+      return trimmed;
+    }
+    return '';
+  }
+
+  Widget _orderActions(BuildContext context, Map<String, dynamic> order,
+      String status, String store) {
+    final actions = <Widget>[];
+    if (status == 'pending') {
+      actions.add(_actionButton(
+        label: 'Batalkan'.tr,
+        icon: Icons.close_rounded,
+        bg: _btnLight,
+        fg: _text,
+        borderColor: _borderGray,
+        bold: true,
+        height: 40,
+        onTap: () => _confirmCancelOrder(context, order),
+      ));
+      actions.add(_actionButton(
+        label: 'Bayar Sekarang'.tr,
+        icon: Icons.payment_rounded,
+        bg: AppColors.black,
+        fg: AppColors.white,
+        bold: true,
+        height: 40,
+        onTap: () => context.push('/checkout/payment'),
+      ));
+    } else if (status == 'paid' || status == 'packed') {
+      actions.add(_actionButton(
+        label: 'Lacak Pesanan'.tr,
+        icon: Icons.local_shipping_outlined,
+        bg: AppColors.black,
+        fg: AppColors.white,
+        bold: true,
+        height: 40,
+        onTap: () => showOrderTrackingSheet(context, (order['id'] as num).toInt()),
+      ));
+      actions.add(_actionButton(
+        label: 'Hubungi Penjual'.tr,
+        icon: Icons.chat_bubble_outline_rounded,
+        bg: _btnLight,
+        fg: _text,
+        borderColor: _borderGray,
+        bold: true,
+        height: 40,
+        onTap: () =>
+            context.push('/chat-room?store=${Uri.encodeComponent(store)}'),
+      ));
+    } else if (status == 'shipped') {
+      actions.add(_actionButton(
+        label: 'Lacak Pesanan'.tr,
+        icon: Icons.route_rounded,
+        bg: AppColors.black,
+        fg: AppColors.white,
+        bold: true,
+        height: 40,
+        onTap: () => showOrderTrackingSheet(context, (order['id'] as num).toInt()),
+      ));
+      actions.add(_actionButton(
+        label: 'Hubungi Penjual'.tr,
+        icon: Icons.chat_bubble_outline_rounded,
+        bg: _btnLight,
+        fg: _text,
+        borderColor: _borderGray,
+        bold: true,
+        height: 40,
+        onTap: () =>
+            context.push('/chat-room?store=${Uri.encodeComponent(store)}'),
+      ));
+    } else {
+      actions.add(_actionButton(
+        label: 'Beri Ulasan'.tr,
+        bg: _btnLight,
+        fg: _text,
+        borderColor: _borderGray,
+        bold: true,
+        height: 40,
+        onTap: () => context.push('/review/write'),
+      ));
+      final items = order['items'] as List? ?? const [];
+      final productId = items.isNotEmpty
+          ? (((items.first as Map<String, dynamic>)['product_id']?.toString()) ??
+              '1')
+          : '1';
+      actions.add(_actionButton(
+        label: 'Beli Lagi'.tr,
+        bg: AppColors.black,
+        fg: AppColors.white,
+        bold: true,
+        height: 40,
+        onTap: () => context.push('/product/$productId'),
+      ));
+    }
+
+    return Row(
+      children: [
+        for (int i = 0; i < actions.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(child: actions[i]),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _cancelOrderNow(Map<String, dynamic> order) async {
+    try {
+      await ApiClient.patch(
+          '/orders/${order['id']}/status', {'status': 'cancelled'});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.black,
+            content: Text(
+              'Pesanan berhasil dibatalkan.'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13, color: AppColors.white),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.danger,
+            content: Text(
+              'Gagal membatalkan pesanan: $msg'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13, color: AppColors.white),
+            ),
+          ),
+        );
+      }
+    }
+    await _fetchOrders();
+  }
+
+  void _confirmCancelOrder(BuildContext context, Map<String, dynamic> order) {
     showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surfaceElevated,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Batalkan Pesanan?'.tr,
           style: GoogleFonts.plusJakartaSans(
-            fontWeight: FontWeight.w800,
-            color: AppColors.ink,
-          ),
+              fontWeight: FontWeight.w800, color: AppColors.ink),
         ),
         content: Text(
-          'Pesanan #DNC-005 akan dibatalkan. Tindakan ini tidak dapat diurungkan.'.tr,
+          'Pesanan #DNC-${order['id']} akan dibatalkan. Tindakan ini tidak dapat diurungkan.'.tr,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-          ),
+              fontSize: 13, color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -532,27 +826,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(
               'Kembali'.tr,
               style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
-              ),
+                  fontWeight: FontWeight.w700, color: AppColors.ink),
             ),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx, true);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: AppColors.black,
-                  content: Text(
-                    'Pesanan #DNC-005 berhasil dibatalkan.'.tr,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      color: AppColors.white,
-                    ),
-                  ),
-                ),
-              );
+              _cancelOrderNow(order);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.danger,
@@ -563,229 +843,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(
               'Batalkan Pesanan'.tr,
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
+                  fontSize: 13, fontWeight: FontWeight.w700),
             ),
           ),
         ],
       ),
     );
   }
-
-  // ═══ Kartu: DIKEMAS ═════════════════════════════════════════════════════
-  Widget _dikemasCard() {
-    return _cardShell(
-      borderColor: _borderGray,
-      radius: 16,
-      padding: const EdgeInsets.all(16),
-      children: [
-        _cardHeader(
-          id: '#DNC-001',
-          store: 'Dinoyo Ceramic Studio',
-          badge: 'Dikemas Penjual'.tr,
-          fontSize: 12,
-          storeColor: _textGray,
-          badgeBorder: _borderGray,
-          badgeFill: _badgeGray,
-          showBullet: true,
-        ),
-        const SizedBox(height: 12),
-        Divider(height: 1, thickness: 1, color: _lineGray),
-        const SizedBox(height: 12),
-        _statusBox(
-          title: 'Menyerahkan ke Pihak Jasa Kirim'.tr,
-          dotColor: _dikemasAmber,
-          note: 'Paket sedang dalam perjalanan untuk diserahkan\n'
-              'ke Pihak Jasa Kirim'.tr,
-          noteColor: _dikemasAmber,
-        ),
-        const SizedBox(height: 12),
-        _simpleProductRow(
-          product: _mangkukProduct,
-          name: 'Mangkuk Keramik',
-          subtitle: 'Karya Tanah Keramik Dinoyo',
-          qty: 'Jumlah: 1'.tr,
-          price: 'Rp20.000',
-          imageSize: 76,
-          imageRadius: 10,
-          gap: 12,
-        ),
-        const SizedBox(height: 10),
-        _totalRow('Total (1 Produk):'.tr, 'Rp25.000', _lineGray),
-      ],
-    );
-  }
-
-  // ═══ Kartu: DIKIRIM ═════════════════════════════════════════════════════
-  Widget _dikirimCard(BuildContext context) {
-    return _cardShell(
-      borderColor: _borderGray,
-      radius: 16,
-      padding: const EdgeInsets.all(16),
-      children: [
-        _cardHeader(
-          id: '#DNC-004',
-          store: 'Karya Tanah',
-          badge: 'Sedang Dikirim'.tr,
-          fontSize: 12,
-          storeColor: _textGray,
-          badgeBorder: _borderGray,
-          badgeFill: _badgeGray,
-          showBullet: true,
-        ),
-        const SizedBox(height: 12),
-        Divider(height: 1, thickness: 1, color: _lineGray),
-        const SizedBox(height: 12),
-        _statusBox(
-          title: 'J&T Express - Reguler',
-          titleTrailing: 'JT92817294820',
-          dotColor: _dikirimBlue,
-          note: 'Paket sedang dalam perjalanan menuju kota\n'
-              'Malang (Hub Sukun)'.tr,
-          noteColor: _dikirimBlue,
-        ),
-        const SizedBox(height: 12),
-        _simpleProductRow(
-          product: _cangkirProduct,
-          name: 'Cangkir Handmade Artisan',
-          subtitle: 'Karya Tanah Keramik Dinoyo',
-          qty: 'Jumlah: 2'.tr,
-          price: 'Rp130.000',
-          imageSize: 76,
-          imageRadius: 10,
-          gap: 12,
-        ),
-        const SizedBox(height: 10),
-        _totalRow('Total (2 Produk):'.tr, 'Rp145.000', _lineGray),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _actionButton(
-                label: 'Lacak Resi'.tr,
-                icon: Icons.local_shipping_outlined,
-                bg: _btnLight,
-                fg: _text,
-                borderColor: _borderGray,
-                bold: true,
-                height: 40,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: AppColors.black,
-                      content: Text(
-                        'Resi JT92817294820 sedang dalam perjalanan.',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          color: AppColors.white,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _actionButton(
-                label: 'Hubungi Penjual',
-                icon: Icons.chat_bubble_outline_rounded,
-                bg: AppColors.black,
-                fg: AppColors.white,
-                bold: true,
-                height: 40,
-                onTap: () {
-                  context.push('/chat-room?store='
-                      '${Uri.encodeComponent('Dinoyo Ceramic Studio')}');
-                },
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // ═══ Kartu: DITERIMA ════════════════════════════════════════════════════
-  Widget _diterimaCard({
-    required String id,
-    required String store,
-    required String deliveredText,
-    required Product product,
-    required String name,
-    required String variant,
-    required String price,
-    required String total,
-    required String leftLabel,
-    required VoidCallback onLeft,
-    required VoidCallback onBuyAgain,
-  }) {
-    return _cardShell(
-      borderColor: _borderGray,
-      radius: 16,
-      padding: const EdgeInsets.all(16),
-      children: [
-        _cardHeader(
-          id: id,
-          store: store,
-          badge: 'Pesanan Selesai'.tr,
-          fontSize: 12,
-          storeColor: _textGray,
-          badgeBorder: _borderGray,
-          badgeFill: _badgeGray,
-          showBullet: true,
-        ),
-        const SizedBox(height: 12),
-        Divider(height: 1, thickness: 1, color: _lineGray),
-        const SizedBox(height: 12),
-        _deliveredStatusBox(deliveredText),
-        const SizedBox(height: 12),
-        _simpleProductRow(
-          product: product,
-          name: name,
-          subtitle: variant,
-          qty: 'Jumlah: 1'.tr,
-          price: price,
-          imageSize: 76,
-          imageRadius: 10,
-          gap: 12,
-        ),
-        const SizedBox(height: 10),
-        _totalRow('Total (1 Produk):'.tr, total, _lineGray),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _actionButton(
-                label: leftLabel.tr,
-                bg: _btnLight,
-                fg: _text,
-                borderColor: _borderGray,
-                bold: true,
-                height: 40,
-                onTap: onLeft,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _actionButton(
-                label: 'Beli Lagi'.tr,
-                bg: AppColors.black,
-                fg: AppColors.white,
-                bold: true,
-                height: 40,
-                onTap: onBuyAgain,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // ═══ Komponen bersama kartu pesanan ═════════════════════════════════════
   Widget _cardShell({
     required Color borderColor,
     required double radius,
@@ -984,20 +1048,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _productImage(Product product, double size, double radius) {
+    final isNetwork = product.image.startsWith('http://') ||
+        product.image.startsWith('https://');
+    final Widget image = isNetwork
+        ? Image.network(
+            product.image,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (ctx, err, stack) => Container(
+              width: size,
+              height: size,
+              color: AppColors.inputBg,
+              child: Icon(Icons.image_outlined, color: AppColors.textMuted),
+            ),
+          )
+        : Image.asset(
+            product.image,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (ctx, err, stack) => Container(
+              width: size,
+              height: size,
+              color: AppColors.inputBg,
+              child: Icon(Icons.image_outlined, color: AppColors.textMuted),
+            ),
+          );
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
-      child: Image.asset(
-        product.image,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        errorBuilder: (ctx, err, stack) => Container(
-          width: size,
-          height: size,
-          color: AppColors.inputBg,
-          child: Icon(Icons.image_outlined, color: AppColors.textMuted),
-        ),
-      ),
+      child: image,
     );
   }
 
@@ -1170,8 +1250,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Sheet berisi seluruh pesanan dari ketiga tab status.
+  /// Sheet berisi seluruh pesanan real dari backend.
   void _showAllOrdersSheet(BuildContext context) {
+    _fetchOrders(); // segarkan data real setiap sheet dibuka
     showModalBottomSheet<void>(
       context: context,
       // Root navigator agar sheet tampil di atas bottom navbar (seperti
@@ -1215,41 +1296,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 controller: scrollCtrl,
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _belumBayarCard(ctx),
-                  SizedBox(height: 12),
-                  _dikemasCard(),
-                  SizedBox(height: 12),
-                  _dikirimCard(ctx),
-                  SizedBox(height: 12),
-                  _diterimaCard(
-                    id: '#DNC-001',
-                    store: 'Dinoyo Ceramic Studio',
-                    deliveredText:
-                        'Diterima pada 12 Feb 2025 - Diterima oleh Penerima',
-                    product: _vasProduct,
-                    name: 'Vas Keramik Minimalis',
-                    variant: 'Sand White Glossy • 1x',
-                    price: 'Rp85.000',
-                    total: 'Rp102.000',
-                    leftLabel: 'Beri Ulasan',
-                    onLeft: () => ctx.push('/review/write'),
-                    onBuyAgain: () => ctx.push('/product/1'),
-                  ),
-                  const SizedBox(height: 12),
-                  _diterimaCard(
-                    id: '#DNC-000',
-                    store: 'Ruang Tanah Studio',
-                    deliveredText:
-                        'Diterima pada 28 Jan 2025 - Diterima oleh Satpam',
-                    product: _mangkukProduct,
-                    name: 'Mangkuk Keramik Artisanal',
-                    variant: 'Terracotta Glaze • 1x',
-                    price: 'Rp75.000',
-                    total: 'Rp90.000',
-                    leftLabel: 'Lihat Ulasan',
-                    onLeft: () => ctx.push('/reviews'),
-                    onBuyAgain: () => ctx.push('/product/3'),
-                  ),
+                  if (_ordersLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (_orders.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 24),
+                      child: _ordersEmpty(),
+                    )
+                  else
+                    for (int i = 0; i < _orders.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 12),
+                      _orderCard(ctx, _orders[i]),
+                    ],
                 ],
               ),
             ),
@@ -1428,10 +1491,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       height: 56,
       child: OutlinedButton.icon(
-        onPressed: () {
-          // Logout → login berikutnya butuh OTP (jika 2FA aktif).
+        onPressed: () async {
+          // Logout → bersihkan sesi (token + data user) & akun Google.
+          await AuthSession.signOut();
+          await GoogleAuthService.signOut();
           AppSettings.instance.markLoggedOut();
-          context.go('/login');
+          if (context.mounted) {
+            context.go('/login');
+          }
         },
         icon: Icon(
           Icons.logout_rounded,

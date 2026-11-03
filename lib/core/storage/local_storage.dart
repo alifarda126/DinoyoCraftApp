@@ -9,6 +9,7 @@ abstract final class LocalStorage {
   static const String _fileName = 'dinoyocraft_auth.json';
 
   static String? _cachedToken;
+  static String? _cachedRefreshToken;
   static Map<String, dynamic>? _cachedUser;
   static String? _cachedFcmToken;
 
@@ -34,10 +35,11 @@ abstract final class LocalStorage {
       if (await file.exists()) {
         final content = await file.readAsString();
         if (content.trim().isNotEmpty) {
-          final data = jsonDecode(content) as Map<String, dynamic>;
-          _cachedToken = data['token'] as String?;
-          _cachedUser = data['user'] as Map<String, dynamic>?;
-          _cachedFcmToken = data['fcm_token'] as String?;
+        final data = jsonDecode(content) as Map<String, dynamic>;
+        _cachedToken = data['token'] as String?;
+        _cachedRefreshToken = data['refresh_token'] as String?;
+        _cachedUser = data['user'] as Map<String, dynamic>?;
+        _cachedFcmToken = data['fcm_token'] as String?;
         }
       }
     } catch (e) {
@@ -47,6 +49,8 @@ abstract final class LocalStorage {
 
   static String? getToken() => _cachedToken;
 
+  static String? getRefreshToken() => _cachedRefreshToken;
+
   static Map<String, dynamic>? getUser() => _cachedUser;
 
   static String? getFcmToken() => _cachedFcmToken;
@@ -55,10 +59,21 @@ abstract final class LocalStorage {
 
   static Future<void> saveAuth({
     required String token,
+    String? refreshToken,
     Map<String, dynamic>? user,
   }) async {
     _cachedToken = token;
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      _cachedRefreshToken = refreshToken;
+    }
     if (user != null) _cachedUser = user;
+    await _persist();
+  }
+
+  /// Simpan/perbarui data user saja (mis. setelah fetch /auth/profile)
+  /// tanpa menyentuh token.
+  static Future<void> saveUser(Map<String, dynamic> user) async {
+    _cachedUser = user;
     await _persist();
   }
 
@@ -69,6 +84,7 @@ abstract final class LocalStorage {
 
   static Future<void> clearAuth() async {
     _cachedToken = null;
+    _cachedRefreshToken = null;
     _cachedUser = null;
     await _persist();
   }
@@ -81,12 +97,13 @@ abstract final class LocalStorage {
       if (!parent.existsSync()) {
         parent.createSync(recursive: true);
       }
-      final payload = {
-        'token': _cachedToken,
-        'user': _cachedUser,
-        'fcm_token': _cachedFcmToken,
-        'saved_at': DateTime.now().toIso8601String(),
-      };
+    final payload = {
+      'token': _cachedToken,
+      'refresh_token': _cachedRefreshToken,
+      'user': _cachedUser,
+      'fcm_token': _cachedFcmToken,
+      'saved_at': DateTime.now().toIso8601String(),
+    };
       await file.writeAsString(jsonEncode(payload), flush: true);
     } catch (e) {
       debugPrint('[LocalStorage] Error persisting auth: $e');

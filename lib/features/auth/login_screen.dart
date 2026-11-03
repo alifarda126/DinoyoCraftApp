@@ -8,9 +8,9 @@ import '../../core/app_settings.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/auth_session.dart';
 import '../../core/services/fcm_service.dart';
 import '../../core/services/google_auth_service.dart';
-import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 
@@ -114,9 +114,19 @@ class _LoginScreenState extends State<LoginScreen> {
         final data = response['data'] as Map<String, dynamic>?;
         final token = data?['token'] as String? ?? '';
         if (token.isNotEmpty) {
-          await LocalStorage.saveAuth(token: token, user: data);
-          ApiClient.authToken = token;
+          await AuthSession.signIn(
+            token: token,
+            refreshToken: data?['refresh_token']?.toString(),
+            user: data,
+          );
           unawaited(FcmService.instance.syncTokenWithBackend());
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Login gagal: token tidak diterima dari server')),
+            );
+          }
+          return;
         }
       } else {
         if (mounted) {

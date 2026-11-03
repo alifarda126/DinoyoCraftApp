@@ -40,6 +40,9 @@ Future<void> main() async {
 
   // Inisialisasi background services secara aman dan non-blocking
   unawaited(ConnectivityService.instance.initialize());
+  // Saat perangkat (kembali) terhubung, katalog otomatis diambil ulang
+  // dari backend agar selalu data real, bukan cache/mock lama.
+  MockData.hookConnectivity(ConnectivityService.instance.isOnlineNotifier);
   unawaited(AppInfoService.instance.initialize());
   unawaited(FcmService.instance.initialize());
   unawaited(PusherService.instance.init());

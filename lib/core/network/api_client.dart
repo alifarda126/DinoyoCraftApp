@@ -91,7 +91,14 @@ class ApiClient {
       final url = Uri.parse('$host/api$path');
       return http.get(url, headers: _headers());
     });
-    return _processResponse(response);
+    return _handleResponseWithRefresh(
+      response,
+      path,
+      () => _executeWithFallback((host) {
+        final url = Uri.parse('$host/api$path');
+        return http.get(url, headers: _headers());
+      }),
+    );
   }
 
   static Future<Map<String, dynamic>> post(String path, dynamic body) async {
@@ -103,7 +110,18 @@ class ApiClient {
         body: jsonEncode(body),
       );
     });
-    return _processResponse(response);
+    return _handleResponseWithRefresh(
+      response,
+      path,
+      () => _executeWithFallback((host) {
+        final url = Uri.parse('$host/api$path');
+        return http.post(
+          url,
+          headers: _headers(),
+          body: jsonEncode(body),
+        );
+      }),
+    );
   }
 
   static Future<Map<String, dynamic>> put(String path, dynamic body) async {
@@ -115,7 +133,18 @@ class ApiClient {
         body: jsonEncode(body),
       );
     });
-    return _processResponse(response);
+    return _handleResponseWithRefresh(
+      response,
+      path,
+      () => _executeWithFallback((host) {
+        final url = Uri.parse('$host/api$path');
+        return http.put(
+          url,
+          headers: _headers(),
+          body: jsonEncode(body),
+        );
+      }),
+    );
   }
 
   static Future<Map<String, dynamic>> patch(String path, [dynamic body]) async {
@@ -127,7 +156,18 @@ class ApiClient {
         body: body != null ? jsonEncode(body) : null,
       );
     });
-    return _processResponse(response);
+    return _handleResponseWithRefresh(
+      response,
+      path,
+      () => _executeWithFallback((host) {
+        final url = Uri.parse('$host/api$path');
+        return http.patch(
+          url,
+          headers: _headers(),
+          body: body != null ? jsonEncode(body) : null,
+        );
+      }),
+    );
   }
 
   static Future<Map<String, dynamic>> delete(String path) async {
@@ -135,7 +175,97 @@ class ApiClient {
       final url = Uri.parse('$host/api$path');
       return http.delete(url, headers: _headers());
     });
+    return _handleResponseWithRefresh(
+      response,
+      path,
+      () => _executeWithFallback((host) {
+        final url = Uri.parse('$host/api$path');
+        return http.delete(url, headers: _headers());
+      }),
+    );
+  }
+
+  /// Jika response 401 dan path bukan endpoint auth, coba refresh token
+  /// lalu ulangi request sekali. Gagal refresh → session dibersihkan.
+  static Future<Map<String, dynamic>> _handleResponseWithRefresh(
+    http.Response response,
+    String path,
+    Future<http.Response> Function() retry,
+  ) async {
+    if (response.statusCode == 401 &&
+        !_isAuthPath(path) &&
+        LocalStorage.getRefreshToken() != null) {
+      final refreshed = await _tryRefreshToken();
+      if (refreshed) {
+        return _processResponse(await retry());
+      }
+    }
     return _processResponse(response);
+  }
+
+  /// Endpoint auth tidak di-refresh (kredensial salah bukan token kadaluarsa;
+  /// juga mencegah loop refresh tanpa akhir).
+  static bool _isAuthPath(String path) {
+    return path.startsWith('/auth/login') ||
+        path.startsWith('/auth/refresh') ||
+        path.startsWith('/auth/register') ||
+        path.startsWith('/auth/verify') ||
+        path.startsWith('/auth/resend') ||
+        path.startsWith('/auth/google') ||
+        path.startsWith('/auth/forgot') ||
+        path.startsWith('/auth/reset') ||
+        path.startsWith('/auth/check-username') ||
+        path.startsWith('/auth/fcm-token');
+  }
+
+  /// Panggil POST /auth/refresh untuk mendapat access token baru.
+  /// Berhasil → token disimpan & true. Gagal → session dibersihkan & false.
+  static bool _refreshing = false;
+
+  static Future<bool> _tryRefreshToken() async {
+    final refreshToken = LocalStorage.getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty || _refreshing) {
+      return false;
+    }
+    _refreshing = true;
+    try {
+      final url = Uri.parse('$baseHost/api/auth/refresh');
+      final resp = await http.post(
+        url,
+        headers: const {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'refresh_token': refreshToken}),
+      ).timeout(timeout);
+
+      if (resp.statusCode == 200) {
+        final decoded = jsonDecode(resp.body);
+        if (decoded is Map<String, dynamic> && decoded['success'] == true) {
+          final data = decoded['data'];
+          if (data is Map<String, dynamic>) {
+            final newToken = data['token'] as String?;
+            if (newToken != null && newToken.isNotEmpty) {
+              _authToken = newToken;
+              await LocalStorage.saveAuth(
+                token: newToken,
+                refreshToken: data['refresh_token'] as String?,
+                user: data,
+              );
+              return true;
+            }
+          }
+        }
+      }
+      // Refresh token ditolak → sesi tidak lagi valid.
+      await LocalStorage.clearAuth();
+      return false;
+    } catch (e) {
+      debugPrint('[ApiClient] Refresh token gagal: $e');
+      return false;
+    } finally {
+      _refreshing = false;
+    }
   }
 
   static Map<String, dynamic> _processResponse(http.Response response) {

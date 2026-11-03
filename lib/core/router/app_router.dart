@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../app_settings.dart';
+import '../services/auth_session.dart';
 import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/new_password_screen.dart';
@@ -30,6 +31,24 @@ import '../../features/notification/notifications_screen.dart';
 import '../../features/workshop/workshop_screen.dart';
 
 final GlobalKey<NavigatorState> _rootKey = GlobalKey<NavigatorState>();
+
+/// Rute yang butuh sesi login. Tanpa sesi (logout / di-kick / token mati)
+/// akses ke rute ini dialihkan ke /login.
+const Set<String> _protectedRoutes = {
+  '/profile',
+  '/profile/edit',
+  '/addresses',
+  '/settings',
+  '/hapus-akun',
+  '/cart',
+  '/checkout',
+  '/checkout/payment',
+  '/payment',
+  '/notifications',
+  '/messages',
+  '/chat-room',
+  '/review/write',
+};
 
 /// Membungkus setiap layar dengan pendengar [AppSettings]: saat tema/bahasa
 /// diganti, layar dibangun ulang dengan instance BARU sehingga seluruh token
@@ -103,6 +122,22 @@ class _LiveScreenState extends State<_LiveScreen>
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootKey,
   initialLocation: '/',
+  refreshListenable: Listenable.merge([AppSettings.instance, AuthSession.instance]),
+  redirect: (context, state) {
+    final loggedIn = AuthSession.isLoggedIn;
+    final loc = state.matchedLocation;
+
+    // Sudah login → onboarding & login tidak relevan lagi, langsung Home.
+    if (loggedIn && (loc == '/' || loc == '/login')) {
+      return '/home';
+    }
+    // Sesi hilang (logout / di-kick / token kedaluwarsa) → rute privat
+    // dialihkan ke login; rute publik (katalog) tetap bisa dijelajahi tamu.
+    if (!loggedIn && _protectedRoutes.contains(loc)) {
+      return '/login';
+    }
+    return null;
+  },
   routes: [
     GoRoute(
       path: '/',

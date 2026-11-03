@@ -1,2 +1,0 @@
-﻿// Wishlist model
-class WishlistModel {}

@@ -10,6 +10,8 @@ import '../../core/app_settings.dart';
 import '../../core/app_text.dart';
 import '../../core/network/api_client.dart';
 import '../../core/assets.dart';
+import '../../core/services/auth_session.dart';
+import '../../core/services/fcm_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 
@@ -235,17 +237,27 @@ class _OtpScreenState extends State<OtpScreen> {
         final response = await ApiClient.post('/auth/verify-register-otp', payload);
 
         if (response['success'] == true) {
+          // Auto-login: simpan token + data user dari backend, langsung ke Home.
+          final data = response['data'];
+          if (data is Map<String, dynamic> && (data['token'] ?? '').toString().isNotEmpty) {
+            await AuthSession.signIn(
+              token: data['token'].toString(),
+              refreshToken: data['refresh_token']?.toString(),
+              user: data,
+            );
+            unawaited(FcmService.instance.syncTokenWithBackend());
+          }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  response['message']?.toString() ?? 'Pendaftaran berhasil! Silakan masuk dengan akun baru Anda.'.tr,
+                  response['message']?.toString() ?? 'Pendaftaran berhasil! Selamat datang di DinoyoCraft.'.tr,
                 ),
                 backgroundColor: AppColors.ink,
                 duration: const Duration(seconds: 3),
               ),
             );
-            context.go('/login', extra: {'initialEmail': targetEmail});
+            context.go('/home');
           }
         } else {
           if (mounted) {
@@ -297,10 +309,6 @@ class _OtpScreenState extends State<OtpScreen> {
           'email': targetEmail,
           'name': widget.registrationData?['name'] ?? 'Pengguna',
         });
-
-        if (response['data']?['otp'] != null) {
-          _expectedOtp = response['data']['otp'].toString();
-        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

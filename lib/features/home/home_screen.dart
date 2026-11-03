@@ -61,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    await MockData.fetchPublicData();
+    await MockData.fetchPublicData(force: true);
     if (mounted) setState(() {});
   }
 

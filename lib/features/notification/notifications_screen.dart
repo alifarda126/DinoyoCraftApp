@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/auth_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/models/fcm_notification_model.dart';
 import '../../core/services/fcm_service.dart';
-import '../../data/mock_data.dart';
 
 /// Menampilkan modal notifikasi sesuai desain Figma (Notif.dart)
 /// Menggunakan useRootNavigator: true agar berada di atas navbar dan FAB
@@ -71,15 +71,65 @@ const   NotificationsModalSheet({super.key, this.isFullPageFallback = false});
 class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
   String _selectedFilter = 'Semua';
 
-  // ID notifikasi yang sudah dibaca (disinkronkan dengan MockData)
-  Set<String> get _readIds => MockData.readNotificationIds;
+  // Notifikasi REAL dari backend (GET /notifications) + riwayat FCM.
+  List<FcmNotificationModel> _serverNotifs = [];
+  bool _notifLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchNotifications();
+  }
+
+  Future<void> _fetchNotifications() async {
+    if (!AuthSession.isLoggedIn) {
+      if (mounted) setState(() => _notifLoading = false);
+      return;
+    }
+    try {
+      final res = await ApiClient.get('/notifications');
+      if (res['success'] == true && res['data'] is Map<String, dynamic>) {
+        final data = res['data'] as Map<String, dynamic>;
+        final rows = data['notifications'];
+        if (rows is List) {
+          _serverNotifs = rows
+              .whereType<Map<String, dynamic>>()
+              .map((row) => FcmNotificationModel.fromJson({
+                    'id': row['id']?.toString(),
+                    'title': row['title']?.toString(),
+                    'body': row['message']?.toString(),
+                    'category': row['type']?.toString(),
+                    'is_read': row['is_read'] == 1 || row['is_read'] == true,
+                    'created_at': row['created_at']?.toString(),
+                  }))
+              .toList();
+        }
+      }
+    } catch (_) {
+      // Offline / sesi berakhir: tampilkan riwayat FCM lokal saja.
+    }
+    if (mounted) setState(() => _notifLoading = false);
+  }
+
+  /// Gabungan notifikasi server + riwayat FCM perangkat (dedup by id).
+  List<FcmNotificationModel> get _mergedNotifications {
+    final serverIds = _serverNotifs.map((n) => n.id).toSet();
+    final fcmOnly = FcmService.instance.notificationsHistory
+        .where((n) => !serverIds.contains(n.id))
+        .toList();
+    return [..._serverNotifs, ...fcmOnly];
+  }
+
   int get _unreadCount =>
-      {'1', '2'}.difference(_readIds).length;
+      _mergedNotifications.where((n) => !n.isRead).length;
 
   void _markAsRead(String id) {
-    setState(() {
-      MockData.markNotificationAsRead(id);
-    });
+    setState(() {});
+    // Tandai terbaca di server (fire-and-forget).
+    if (AuthSession.isLoggedIn) {
+      ApiClient.patch('/notifications/$id/read')
+          .catchError((_) => <String, dynamic>{});
+    }
   }
 
   static const Color _black = Color(0xFF000000);
@@ -237,77 +287,32 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Kartu notifikasi masuk dari FCM (Backend)
-                  for (final fcmNotif in FcmService.instance.notificationsHistory)
-                    if (_shouldShowCategory(fcmNotif.category)) ...[
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          fcmNotif.isRead = true;
-                          _openNotificationTarget(
-                            fcmNotif.id,
-                            fcmNotif.route ?? '/notifications',
-                          );
-                        },
-                        child: _buildDynamicFcmCard(fcmNotif),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                  // Kartu 1: Voucher Diskon
-                  if (_shouldShow('Transaksi & Pesanan')) ...[
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _markAsRead('1'),
-                      child: _buildVoucherCard(context),
-                    ),
-                    SizedBox(height: 12),
-                  ],
-
-                  // Kartu 2: Jadwal Workshop
-                  if (_shouldShow('Info Akun')) ...[
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        if (!_readIds.contains('2')) {
-                          _markAsRead('2');
-                        } else {
-                          _openNotificationTarget('2', '/workshop');
-                        }
-                      },
-                      child: _buildWorkshopCard(context),
-                    ),
-                    SizedBox(height: 12),
-                  ],
-
-                  // Kartu 3: Pembayaran Dikonfirmasi
-                  if (_shouldShow('Transaksi & Pesanan')) ...[
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _openNotificationTarget('3', '/profile'),
-                      child: _buildPaymentCard(),
-                    ),
-                    SizedBox(height: 12),
-                  ],
-
-                  // Kartu 4: Status Pesanan Dikemas (terlihat saat discroll)
-                  if (_shouldShow('Transaksi & Pesanan')) ...[
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _openNotificationTarget('4', '/profile'),
-                      child: _buildOrderPackedCard(),
-                    ),
-                    SizedBox(height: 12),
-                  ],
-
-                  // Kartu 5: Info Keamanan Akun (terlihat saat discroll)
-                  if (_shouldShow('Info Akun')) ...[
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _openNotificationTarget('5', '/settings'),
-                      child: _buildAccountSecurityCard(),
-                    ),
-                    SizedBox(height: 12),
+                  // Kartu notifikasi REAL: gabungan server (GET
+                  // /notifications) + riwayat FCM perangkat ini.
+                  if (_notifLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else ...[
+                    for (final notif in _mergedNotifications)
+                      if (_shouldShowCategory(notif.category)) ...[
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            notif.isRead = true;
+                            _markAsRead(notif.id);
+                            _openNotificationTarget(
+                              notif.id,
+                              notif.route ?? '/notifications',
+                            );
+                          },
+                          child: _buildDynamicFcmCard(notif),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    if (_mergedNotifications.isEmpty)
+                      _buildNotifEmpty(),
                   ],
                 ],
               ),
@@ -316,11 +321,6 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
         ],
       ),
     );
-  }
-
-  bool _shouldShow(String category) {
-    if (_selectedFilter == 'Semua') return true;
-    return _selectedFilter == category;
   }
 
   bool _shouldShowCategory(FcmNotificationCategory cat) {
@@ -338,7 +338,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
   }
 
   Widget _buildDynamicFcmCard(FcmNotificationModel item) {
-    final isUnread = !item.isRead && !_readIds.contains(item.id);
+    final isUnread = !item.isRead;
     final (iconData, categoryLabel) = switch (item.category) {
       FcmNotificationCategory.transaction => (
           Icons.local_shipping_outlined,
@@ -529,561 +529,34 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
     );
   }
 
-  // ── Kartu 1: Voucher Diskon Keramik 15% ──────────────────────────────────
-  Widget _buildVoucherCard(BuildContext context) {
-    final isUnread = !_readIds.contains('1');
-
+  Widget _buildNotifEmpty() {
     return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40),
       decoration: BoxDecoration(
-        color: isUnread ? _cardBgUnread : _cardBgRead,
+        color: _cardBgRead,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isUnread ? _cardBorderUnread : _borderRead,
-          width: 1,
-        ),
+        border: Border.all(color: _borderRead),
       ),
-      padding: const EdgeInsets.all(13),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Icon(
-              Icons.local_offer_outlined,
-              size: 20,
+          Icon(Icons.notifications_off_outlined,
+              size: 40, color: _textGray),
+          const SizedBox(height: 10),
+          Text(
+            'Belum ada notifikasi'.tr,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
               color: _textDark,
             ),
           ),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'DISKON PENGRAJIN'.tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: _textGray,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          AppText.isEnglish ? '2 hours ago' : '2 jam lalu',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: _textGray,
-                            fontSize: 12,
-                          ),
-                        ),
-                        if (isUnread) ...[
-                          SizedBox(width: 7),
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _unreadDotColor,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'Voucher Diskon Keramik 15%'.tr,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _textDark,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: AppText.isEnglish ? 'Use code ' : 'Gunakan kode ',
-                      ),
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 1.5,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.borderAlt,
-                              width: 1,
-                            ),
-                            borderRadius: BorderRadius.circular(4),
-                            color: AppColors.isDark
-                                ? const Color(0xFF2E2E2E)
-                                : AppColors.divider,
-                          ),
-                          child: Text(
-                            'DINOYOKARYA',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: _textDark,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ),
-                      ),
-                      TextSpan(
-                        text: AppText.isEnglish
-                            ? ' for discounts on pottery made by Dinoyo artisans.'
-                            : ' untuk potongan belanja produk tembikar buatan pengrajin Dinoyo.',
-                      ),
-                    ],
-                  ),
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _textDesc,
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
-                SizedBox(height: 8),
-                InkWell(
-                  onTap: () {
-                    Clipboard.setData(
-                      ClipboardData(text: 'DINOYOKARYA'),
-                    );
-                    _markAsRead('1');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppText.isEnglish
-                              ? 'Voucher code DINOYOKARYA successfully copied!'
-                              : 'Kode voucher DINOYOKARYA berhasil disalin!',
-                          style: GoogleFonts.plusJakartaSans(),
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Salin Voucher'.tr,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: _textDark,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Icon(
-                        Icons.copy_rounded,
-                        size: 13,
-                        color: _textDark,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Kartu 2: Jadwal Workshop Pembuatan Keramik ──────────────────────────
-  Widget _buildWorkshopCard(BuildContext context) {
-    final isUnread = !_readIds.contains('2');
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isUnread ? _cardBgUnread : _cardBgRead,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isUnread ? _cardBorderUnread : _borderRead,
-          width: 1,
-        ),
-      ),
-      padding: const EdgeInsets.all(13),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Icon(
-              Icons.calendar_today_outlined,
-              size: 20,
-              color: _textDark,
-            ),
-          ),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'WISATA KREATIF'.tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: _textGray,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Row(
-                      children: [
-                        Text(
-                          AppText.isEnglish ? 'Yesterday, 14:20' : 'Kemarin, 14:20',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: _textGray,
-                            fontSize: 12,
-                          ),
-                        ),
-                        if (isUnread) ...[
-                          SizedBox(width: 7),
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: _unreadDotColor,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'Jadwal Workshop Pembuatan Keramik'.tr,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _textDark,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Kelas seni putar tanah liat akhir pekan ini di Studio Dinoyo dibuka. Kuota tersisa 3 orang!'.tr,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _textDesc,
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
-                SizedBox(height: 8),
-                InkWell(
-                  onTap: () => _openNotificationTarget('2', '/workshop'),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Lihat Detail Workshop'.tr,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: _textDark,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 14,
-                        color: _textDark,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Kartu 3: Pembayaran Dikonfirmasi ────────────────────────────────────
-  Widget _buildPaymentCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _cardBgRead,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _borderRead,
-          width: 1,
-        ),
-      ),
-      padding: const EdgeInsets.all(13),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceSubtle,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: Icon(
-              Icons.check_circle_outline_rounded,
-              size: 22,
-              color: _textGray,
-            ),
-          ),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'PEMBAYARAN'.tr,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: _textGray,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      AppText.isEnglish ? '2 days ago' : '2 hari lalu',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: _textGray,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'Pembayaran Dikonfirmasi'.tr,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _textDark,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Pembayaran via GoPay untuk pesanan Cangkir Speckle sebesar Rp70.000 telah berhasil diverifikasi.'.tr,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _textDesc,
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Kartu 4: Status Pesanan Dikemas ──────────────────────────────────────
-  Widget _buildOrderPackedCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _cardBgRead,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _borderRead,
-          width: 1,
-        ),
-      ),
-      padding: const EdgeInsets.all(13),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceSubtle,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: Icon(
-              Icons.local_shipping_outlined,
-              size: 22,
-              color: _textGray,
-            ),
-          ),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'STATUS PESANAN'.tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: _textGray,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      AppText.isEnglish ? '3 days ago' : '3 hari lalu',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: _textGray,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'Pesanan Sedang Dikemas'.tr,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _textDark,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Penjual Dinoyo Ceramic Studio sedang menyiapkan pesanan #DNC-001 milikmu.'.tr,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _textDesc,
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Kartu 5: Info Keamanan Akun ──────────────────────────────────────────
-  Widget _buildAccountSecurityCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _cardBgRead,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _borderRead,
-          width: 1,
-        ),
-      ),
-      padding: const EdgeInsets.all(13),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceSubtle,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.divider),
-            ),
-            child: Icon(
-              Icons.shield_outlined,
-              size: 22,
-              color: _textGray,
-            ),
-          ),
-          SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'KEAMANAN AKUN'.tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: _textGray,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      AppText.isEnglish ? '5 days ago' : '5 hari lalu',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: _textGray,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'Masuk dari Perangkat Baru'.tr,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _textDark,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Akun @customer terdeteksi masuk dari perangkat baru pada 12 Feb 2025.'.tr,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: _textDesc,
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 4),
+          Text(
+            'Notifikasi transaksi dan info akun akan muncul di sini.'.tr,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              color: _textDesc,
             ),
           ),
         ],

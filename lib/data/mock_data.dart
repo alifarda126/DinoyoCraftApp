@@ -15,6 +15,7 @@ class Product {
     required this.image,
     this.images,
     this.hot = false,
+    this.mitraId = 0,
   });
 
   final String id;
@@ -26,6 +27,9 @@ class Product {
   final String image;
   final List<String>? images;
   final bool hot;
+
+  /// ID toko mitra pemilik produk (dari backend, untuk checkout).
+  final int mitraId;
 
   factory Product.fromJson(Map<String, dynamic> json) {
     final rawPrice = json['price'];
@@ -68,6 +72,9 @@ class Product {
       image: resolvedImage,
       images: imagesList,
       hot: json['hot'] == true,
+      mitraId: (json['mitra_id'] is num)
+          ? (json['mitra_id'] as num).toInt()
+          : int.tryParse('${json['mitra_id']}') ?? 0,
     );
   }
 
@@ -172,9 +179,30 @@ abstract final class MockData {
 
   static bool isLoadingPublicData = false;
 
-  /// Mengambil data katalog produk dan toko mitra secara nyata dari Backend API
-  static Future<void> fetchPublicData() async {
+  static bool _lastOnline = true;
+  static bool _connectivityHooked = false;
+
+  /// Pasang listener: begitu perangkat (kembali) terhubung ke jaringan,
+  /// katalog diambil ulang dari backend agar tampilan selalu data real.
+  static void hookConnectivity(ValueNotifier<bool> isOnlineNotifier) {
+    if (_connectivityHooked) return;
+    _connectivityHooked = true;
+    isOnlineNotifier.addListener(() {
+      final online = isOnlineNotifier.value;
+      final wasOnline = _lastOnline;
+      _lastOnline = online;
+      if (online && !wasOnline) {
+        // Baru saja online (perangkat terhubung) → segarkan katalog real.
+        fetchPublicData(force: true);
+      }
+    });
+  }
+
+  /// Mengambil data katalog produk dan toko mitra secara nyata dari Backend API.
+  /// [force] = ambil ulang meski data sudah ada (mis. saat reconnect).
+  static Future<void> fetchPublicData({bool force = false}) async {
     if (isLoadingPublicData) return;
+    if (!force && products.isNotEmpty) return; // data real sudah dimuat
     isLoadingPublicData = true;
     try {
       // 1. Fetch Produk Publik

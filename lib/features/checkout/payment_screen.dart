@@ -13,6 +13,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_bottom_nav.dart';
 import '../../data/mock_data.dart';
+import '../payment/data/datasources/payment_remote_datasource.dart';
+import '../payment/data/models/payment_model.dart';
 import '../profile/profile_screen.dart';
 
 /// Argumen data transaksi untuk Halaman Pembayaran.
@@ -97,6 +99,135 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String _selectedEWallet = 'GoPay';
   bool _isDetailsExpanded = false;
 
+  // ── Pembayaran REAL via backend (SociaBuzz/scbz) ─────────────────────────
+  final PaymentRemoteDatasourceImpl _paymentDs = PaymentRemoteDatasourceImpl();
+  PaymentModel? _paymentInfo;
+  bool _payLoading = false;
+  String? _payError;
+  Timer? _statusPollTimer;
+  bool _paidNotified = false;
+
+  /// Nominal yang HARUS dibayar — prioritas nilai resmi dari backend
+  /// (sudah termasuk service fee), fallback ke hitungan lokal.
+  int get _totalToPay {
+    final tp = _paymentInfo?.totalPay ?? 0;
+    if (tp > 0) return tp.round();
+    return _data.total;
+  }
+
+  /// URL gambar QR asli dari gateway bila tersedia.
+  String? get _qrImageUrl {
+    final qr = _paymentInfo?.qrString;
+    if (qr != null && (qr.startsWith('http://') || qr.startsWith('https://'))) {
+      return qr;
+    }
+    return null;
+  }
+
+  Future<void> _initRealPayment() async {
+    final orderId = int.tryParse(_data.orderId);
+    if (orderId == null || orderId <= 0) {
+      // Dibuka tanpa pesanan real (mode demo) — tetap tampil simulasi.
+      return;
+    }
+    setState(() {
+      _payLoading = true;
+      _payError = null;
+    });
+    try {
+      final info = await _paymentDs.createOrderPayment(
+        orderId: orderId,
+        paymentMethod: 'qris',
+      );
+      if (!mounted) return;
+      setState(() {
+        _paymentInfo = info;
+        _payLoading = false;
+      });
+      _startStatusPolling(orderId);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _payError = e.toString().replaceFirst('Exception: ', '');
+        _payLoading = false;
+      });
+    }
+  }
+
+  void _startStatusPolling(int orderId) {
+    _statusPollTimer?.cancel();
+    _statusPollTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      try {
+        final status = await _paymentDs.checkPaymentStatus(orderId);
+        final payStatus = status['payment_status']?.toString() ??
+            status['order_status']?.toString() ??
+            'pending';
+        if ((payStatus == 'paid' || payStatus == 'success') && !_paidNotified) {
+          _paidNotified = true;
+          timer.cancel();
+          if (mounted) _showPaidSuccess();
+        }
+      } catch (_) {
+        // Polling gagal — coba lagi di tick berikutnya.
+      }
+    });
+  }
+
+  void _showPaidSuccess() {
+    _statusPollTimer?.cancel();
+    _countdownTimer?.cancel();
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.green),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Pembayaran Berhasil!'.tr,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Pembayaran #${_data.orderId} telah terkonfirmasi lunas.\nPenjual akan segera memproses pesananmu.'
+              .tr,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            height: 1.5,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/profile');
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: AppColors.black),
+            child: Text(
+              'Lihat Pesanan'.tr,
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Hitung mundur batas waktu pembayaran (24 jam)
   static const int _initialCountdownSeconds = 24 * 3600 - 15; // ~23:59:45
   late int _remainingSeconds;
@@ -109,11 +240,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     _currentMethod = _data.paymentMethod;
     _remainingSeconds = _initialCountdownSeconds;
     _startTimer();
+    _initRealPayment();
   }
 
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _statusPollTimer?.cancel();
     super.dispose();
   }
 
@@ -411,7 +544,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     children: [
                       _buildReceiptRow(
                         'Total Dibayar'.tr,
-                        MockData.formatPrice(_data.total),
+                        MockData.formatPrice(_totalToPay),
                         isBold: true,
                         valueColor: AppColors.ink,
                       ),
@@ -686,7 +819,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    MockData.formatPrice(_data.total),
+                    MockData.formatPrice(_totalToPay),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
@@ -697,7 +830,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
               OutlinedButton.icon(
                 onPressed: () => _copyToClipboard(
-                  _data.total.toString(),
+                  _totalToPay.toString(),
                   'Nominal total pembayaran disalin!'.tr,
                 ),
                 icon: const Icon(Icons.copy_rounded, size: 14),
@@ -988,11 +1121,60 @@ class _PaymentScreenState extends State<PaymentScreen> {
             child: SizedBox(
               width: 200,
               height: 200,
-              child: CustomPaint(
-                painter: _QrisCodePainter(
-                  seed: _data.orderId.hashCode ^ _data.total,
-                ),
-              ),
+              child: _payLoading
+                  ? const Center(
+                      child: SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(strokeWidth: 2.4),
+                      ),
+                    )
+                  : _payError != null
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.wifi_off_rounded,
+                                size: 32, color: AppColors.textMuted),
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(
+                                _payError!,
+                                textAlign: TextAlign.center,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: _initRealPayment,
+                              icon: const Icon(Icons.refresh_rounded, size: 16),
+                              label: Text(
+                                'Coba Lagi'.tr,
+                                style: GoogleFonts.plusJakartaSans(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        )
+                      : (_qrImageUrl != null
+                          ? Image.network(
+                              _qrImageUrl!,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, _, _) => CustomPaint(
+                                painter: _QrisCodePainter(
+                                  seed: _data.orderId.hashCode ^ _totalToPay,
+                                ),
+                              ),
+                            )
+                          : CustomPaint(
+                              painter: _QrisCodePainter(
+                                seed: _data.orderId.hashCode ^ _totalToPay,
+                              ),
+                            )),
             ),
           ),
           const SizedBox(height: 14),
