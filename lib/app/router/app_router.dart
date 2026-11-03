@@ -28,7 +28,12 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/login',
-      builder: (context, state) => LoginScreen(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return LoginScreen(
+          initialEmail: extra?['initialEmail'] as String?,
+        );
+      },
     ),
     GoRoute(
       path: '/register',

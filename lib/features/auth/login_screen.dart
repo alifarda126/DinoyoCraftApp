@@ -16,7 +16,9 @@ import '../../core/widgets/app_back_scope.dart';
 
 /// Halaman Login — disesuaikan 1:1 dengan desain Login.png.
 class LoginScreen extends StatefulWidget {
-const   LoginScreen({super.key});
+  const LoginScreen({super.key, this.initialEmail});
+
+  final String? initialEmail;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -28,6 +30,14 @@ class _LoginScreenState extends State<LoginScreen> {
   final _password = TextEditingController();
   bool _obscure = true;
   bool _isGoogleLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialEmail != null && widget.initialEmail!.isNotEmpty) {
+      _email.text = widget.initialEmail!;
+    }
+  }
 
   Future<void> _handleGoogleSignIn() async {
     if (_isGoogleLoading) return;

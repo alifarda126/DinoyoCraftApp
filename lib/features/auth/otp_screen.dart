@@ -9,8 +9,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_settings.dart';
 import '../../core/app_text.dart';
 import '../../core/network/api_client.dart';
-import '../../core/services/fcm_service.dart';
-import '../../core/storage/local_storage.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
@@ -237,22 +235,17 @@ class _OtpScreenState extends State<OtpScreen> {
         final response = await ApiClient.post('/auth/verify-register-otp', payload);
 
         if (response['success'] == true) {
-          final data = response['data'] as Map<String, dynamic>?;
-          final token = data?['token'] as String? ?? '';
-          if (token.isNotEmpty) {
-            await LocalStorage.saveAuth(token: token, user: data);
-            ApiClient.authToken = token;
-            unawaited(FcmService.instance.syncTokenWithBackend());
-          }
-
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(response['message']?.toString() ?? 'Pendaftaran berhasil terverifikasi!'.tr),
+                content: Text(
+                  response['message']?.toString() ?? 'Pendaftaran berhasil! Silakan masuk dengan akun baru Anda.'.tr,
+                ),
                 backgroundColor: AppColors.ink,
+                duration: const Duration(seconds: 3),
               ),
             );
-            context.go('/home');
+            context.go('/login', extra: {'initialEmail': targetEmail});
           }
         } else {
           if (mounted) {
