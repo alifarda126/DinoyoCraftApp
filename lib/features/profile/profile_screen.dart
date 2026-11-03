@@ -58,6 +58,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _orderTab = 'Dikemas';
 
   // --- Riwayat pesanan REAL dari backend (GET /orders) ---
+  // MySQL DECIMAL bisa tiba sebagai string ("59444.00") - parse defensif.
+  static int _asInt(dynamic v) =>
+      v is num ? v.toInt() : (int.tryParse('${v ?? ''}') ?? 0);
+
   List<Map<String, dynamic>> _orders = [];
   bool _ordersLoading = true;
 
@@ -532,14 +536,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final firstProduct =
         first == null ? MockData.fallbackProduct : _orderItemProduct(first);
     final firstQty =
-        first == null ? 1 : ((first['quantity'] as num?)?.toInt() ?? 1);
+        first == null ? 1 : (_asInt(first['quantity']) == 0 ? 1 : _asInt(first['quantity']));
     final firstPrice =
-        first == null ? 0 : ((first['unit_price'] as num?)?.toInt() ?? 0);
+        first == null ? 0 : _asInt(first['unit_price']);
     final firstVariant =
         first == null ? '' : (first['variant']?.toString() ?? '');
     final totalQty = items.fold<int>(
-        0, (sum, it) => sum + ((it['quantity'] as num?)?.toInt() ?? 0));
-    final totalAmount = ((order['total_amount'] as num?)?.toInt() ?? 0);
+        0, (sum, it) => sum + _asInt(it['quantity']));
+    final totalAmount = _asInt(order['total_amount']);
     final store = (order['store_name'] ?? '-').toString();
     final orderId = '#DNC-${order['id']}';
     final tracking = order['tracking_number']?.toString();
@@ -699,7 +703,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fg: AppColors.white,
         bold: true,
         height: 40,
-        onTap: () => showOrderTrackingSheet(context, (order['id'] as num).toInt()),
+        onTap: () => showOrderTrackingSheet(context, _asInt(order['id'])),
       ));
       actions.add(_actionButton(
         label: 'Hubungi Penjual'.tr,
@@ -720,7 +724,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fg: AppColors.white,
         bold: true,
         height: 40,
-        onTap: () => showOrderTrackingSheet(context, (order['id'] as num).toInt()),
+        onTap: () => showOrderTrackingSheet(context, _asInt(order['id'])),
       ));
       actions.add(_actionButton(
         label: 'Hubungi Penjual'.tr,
