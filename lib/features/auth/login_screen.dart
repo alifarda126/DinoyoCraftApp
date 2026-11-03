@@ -9,6 +9,7 @@ import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/fcm_service.dart';
+import '../../core/services/google_auth_service.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
@@ -26,6 +27,40 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _obscure = true;
+  bool _isGoogleLoading = false;
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_isGoogleLoading) return;
+    setState(() => _isGoogleLoading = true);
+
+    try {
+      final res = await GoogleAuthService.signIn(role: 'pengunjung');
+      if (!mounted) return;
+      if (res != null) {
+        unawaited(FcmService.instance.syncTokenWithBackend());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login dengan Google berhasil!'.tr),
+            backgroundColor: AppColors.ink,
+          ),
+        );
+        context.go('/home');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal login dengan Google: $msg'.tr),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleLoading = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -403,36 +438,45 @@ class _LoginScreenState extends State<LoginScreen> {
                       SizedBox(
                         height: 48,
                         child: OutlinedButton(
-                          onPressed: () => context.go('/home'),
+                          onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
                           style: OutlinedButton.styleFrom(
                             backgroundColor: AppColors.surface,
                             side: BorderSide(color: AppColors.border),
-                            shape: StadiumBorder(),
+                            shape: const StadiumBorder(),
                             foregroundColor: AppColors.ink,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SvgPicture.asset(
-                                AppAssets.iconGoogle,
-                                width: 18,
-                                height: 18,
-                              ),
-                              SizedBox(width: 10),
-                              Flexible(
-                                child: Text(
-                                  'Masuk dengan Google'.tr,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
+                          child: _isGoogleLoading
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
                                     color: AppColors.ink,
                                   ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SvgPicture.asset(
+                                      AppAssets.iconGoogle,
+                                      width: 18,
+                                      height: 18,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Flexible(
+                                      child: Text(
+                                        'Masuk dengan Google'.tr,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: AppColors.ink,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
 
