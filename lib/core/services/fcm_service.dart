@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 import '../models/fcm_notification_model.dart';
 import '../network/api_client.dart';
 import '../storage/local_storage.dart';
@@ -30,6 +32,12 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 /// Terintegrasi dengan Backend DinoyoCraft untuk pengiriman notifikasi pesanan & obrolan.
 class FcmService {
   FcmService._internal();
+
+  /// Plugin notifikasi TRAY asli — dipakai saat app di FOREGROUND
+  /// (FCM tidak otomatis menampilkan notifikasi sistem pada mode ini).
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+  bool _localNotifInitialized = false;
   static final FcmService instance = FcmService._internal();
 
   bool _isInitialized = false;
@@ -119,6 +127,10 @@ class FcmService {
           '[FCM Foreground] Pesan: ${message.notification?.title} - ${message.notification?.body}',
         );
         final model = FcmNotificationModel.fromRemoteMessage(message);
+
+        // Tampilkan juga di TRAY sistem (seperti app production) —
+        // bukan hanya banner in-app.
+        unawaited(_showTrayNotification(model));
         _notificationsHistory.insert(0, model);
         _notificationModelController.add(model);
         _foregroundMessageController.add(message);
@@ -234,6 +246,57 @@ class FcmService {
   }
 
   /// Mengambil FCM Device Token terkini.
+  /// Inisialisasi plugin notifikasi lokal + channel Android.
+  Future<void> _ensureLocalNotifications() async {
+    if (_localNotifInitialized) return;
+    try {
+      const androidInit = AndroidInitializationSettings('@mipmap/launcher_icon');
+      const initSettings = InitializationSettings(android: androidInit);
+      await _localNotifications.initialize(settings: initSettings);
+
+      const channel = AndroidNotificationChannel(
+        'dinoyocraft_channel',
+        'Notifikasi DinoyoCraft',
+        description: 'Update pesanan, pembayaran, dan promo DinoyoCraft',
+        importance: Importance.high,
+      );
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(channel);
+
+      _localNotifInitialized = true;
+    } catch (e) {
+      debugPrint('[FCM] Gagal inisialisasi notifikasi lokal: $e');
+    }
+  }
+
+  /// Tampilkan notifikasi di TRAY sistem (terlihat walau app terbuka).
+  Future<void> _showTrayNotification(FcmNotificationModel model) async {
+    await _ensureLocalNotifications();
+    if (!_localNotifInitialized) return;
+    try {
+      await _localNotifications.show(
+        id: model.id.hashCode & 0x7fffffff,
+        title: model.title,
+        body: model.body,
+        notificationDetails: NotificationDetails(
+          android: AndroidNotificationDetails(
+            'dinoyocraft_channel',
+            'Notifikasi DinoyoCraft',
+            channelDescription: 'Update pesanan, pembayaran, dan promo',
+            importance: Importance.high,
+            priority: Priority.high,
+            styleInformation: BigTextStyleInformation(model.body),
+          ),
+        ),
+        payload: model.route ?? '/profile',
+      );
+    } catch (e) {
+      debugPrint('[FCM] Gagal menampilkan notifikasi tray: $e');
+    }
+  }
+
   Future<String?> getDeviceToken() async {
     if (_deviceToken != null) return _deviceToken;
     try {
