@@ -779,29 +779,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         helperColor: _usernameError != null
                             ? Colors.red
                             : (_isUsernameAvailable == true
-                                ? const Color(0xFF16A34A)
+                                ? AppColors.ink
                                 : AppColors.textSecondary),
                         suffix: Padding(
                           padding: const EdgeInsets.only(right: 14),
                           child: _isCheckingUsername
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.ink),
                                   ),
                                 )
                               : (_isUsernameAvailable == true
-                                  ? const Icon(
+                                  ? Icon(
                                       Icons.check_circle_rounded,
-                                      color: Color(0xFF16A34A),
+                                      color: AppColors.ink,
                                       size: 22,
                                     )
                                   : (_isUsernameAvailable == false
-                                      ? const Icon(
+                                      ? Icon(
                                           Icons.cancel_rounded,
-                                          color: Colors.red,
+                                          color: AppColors.ink,
                                           size: 22,
                                         )
                                       : null)),
