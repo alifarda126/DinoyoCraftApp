@@ -641,7 +641,7 @@ class _OrderTrackingSheetState extends State<OrderTrackingSheet> {
                 ),
               ),
               Text(
-                'Rp ${(_order?['total_amount'] ?? 0).toString().replaceAllMapped(
+                'Rp ${((_order?['total_due'] ?? _order?['total_amount']) ?? 0).toString().replaceAllMapped(
                       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
                       (m) => '${m[1]}.',
                     )}',

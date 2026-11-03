@@ -544,7 +544,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         first == null ? '' : (first['variant']?.toString() ?? '');
     final totalQty = items.fold<int>(
         0, (sum, it) => sum + _asInt(it['quantity']));
-    final totalAmount = _asInt(order['total_amount']);
+    final totalDue = _asInt(order['total_due'] ?? order['total_amount']);
     final store = (order['store_name'] ?? '-').toString();
     final orderId = '#DNC-${order['id']}';
     final tracking = order['tracking_number']?.toString();
@@ -638,8 +638,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         const SizedBox(height: 10),
-        _totalRow('Total ($totalQty Produk):'.tr,
-            MockData.formatPrice(totalAmount), _lineGray),
+        _totalRow(
+            status == 'pending'
+                ? 'Total Tagihan:'.tr
+                : 'Total ($totalQty Produk):'.tr,
+            MockData.formatPrice(totalDue),
+            _lineGray),
         const SizedBox(height: 12),
         _orderActions(context, order, status, store),
       ],
