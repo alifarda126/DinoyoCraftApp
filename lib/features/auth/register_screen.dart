@@ -10,13 +10,29 @@ import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/fcm_service.dart';
+import '../../core/services/google_auth_service.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 
 /// Halaman Daftar — disesuaikan 1:1 dengan desain Daftar.png.
 class RegisterScreen extends StatefulWidget {
-const   RegisterScreen({super.key});
+  const RegisterScreen({
+    super.key,
+    this.initialEmail,
+    this.initialName,
+    this.initialGoogleId,
+    this.initialAvatarUrl,
+    this.initialIdToken,
+    this.isGoogleAuth = false,
+  });
+
+  final String? initialEmail;
+  final String? initialName;
+  final String? initialGoogleId;
+  final String? initialAvatarUrl;
+  final String? initialIdToken;
+  final bool isGoogleAuth;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -40,6 +56,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
   DateTime? _birthDate;
   bool _isGoogleAuth = false;
   bool _isLoading = false;
+  String? _googleId;
+  String? _avatarUrl;
+  String? _idToken;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isGoogleAuth || (widget.initialEmail != null && widget.initialEmail!.isNotEmpty)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _applyGoogleAccount(
+          name: widget.initialName ?? 'Pengguna Google',
+          email: widget.initialEmail ?? '',
+          googleId: widget.initialGoogleId,
+          avatarUrl: widget.initialAvatarUrl,
+          idToken: widget.initialIdToken,
+        );
+      });
+    }
+  }
 
   late final TapGestureRecognizer _termsLinkTap = TapGestureRecognizer()
     ..onTap = _showTermsDialog;
@@ -102,12 +137,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final Map<String, dynamic> response;
       if (_isGoogleAuth) {
-        response = await ApiClient.post('/auth/google', {
-          'userInfo': {
-            'name': name.isNotEmpty ? name : 'Pengguna Google',
-            'email': email,
-          },
-          'role': 'pengunjung',
+        response = await ApiClient.post('/auth/register-customer', {
+          'name': name.isNotEmpty ? name : 'Pengguna Google',
+          'email': email,
+          'phone': phone,
+          'isGoogleAuth': true,
+          if (_googleId != null) 'google_id': _googleId,
+          if (_avatarUrl != null) 'avatar_url': _avatarUrl,
+          if (_idToken != null) 'credential': _idToken,
         });
       } else {
         response = await ApiClient.post('/auth/register-customer', {
@@ -156,183 +193,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _onGoogleRegisterTap() {
-    _showGoogleAccountPicker();
-  }
-
-  void _showGoogleAccountPicker() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return Material(
-          color: AppColors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-            child: SafeArea(
-              top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      SvgPicture.asset(
-                        AppAssets.iconGoogle,
-                        width: 24,
-                        height: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Pilih Akun Google'.tr,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.ink,
-                              ),
-                            ),
-                            Text(
-                              'Lanjutkan pendaftaran ke DinoyoCraft'.tr,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.of(sheetContext).pop(),
-                        icon: Icon(Icons.close_rounded,
-                            color: AppColors.textSecondary),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Divider(height: 1, color: AppColors.border),
-                  const SizedBox(height: 8),
-                  _googleAccountTile(
-                    name: 'Alif Farda',
-                    email: 'aliffarda@gmail.com',
-                    initial: 'A',
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      _applyGoogleAccount(
-                        name: 'Alif Farda',
-                        email: 'aliffarda@gmail.com',
-                      );
-                    },
-                  ),
-                  _googleAccountTile(
-                    name: 'Dinoyo Craft User',
-                    email: 'dinoyocraft.user@gmail.com',
-                    initial: 'D',
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      _applyGoogleAccount(
-                        name: 'Dinoyo Craft User',
-                        email: 'dinoyocraft.user@gmail.com',
-                      );
-                    },
-                  ),
-                  ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    leading: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.surfaceSubtle,
-                      child: Icon(Icons.person_add_alt_1_rounded,
-                          size: 18, color: AppColors.ink),
-                    ),
-                    title: Text(
-                      'Gunakan akun lain',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      _applyGoogleAccount(
-                        name: 'Pengguna Google Baru',
-                        email: 'user.google@gmail.com',
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
+  Future<void> _onGoogleRegisterTap() async {
+    try {
+      final googleData = await GoogleAuthService.getGoogleAccountForRegistration();
+      if (googleData != null) {
+        _applyGoogleAccount(
+          name: googleData['name'] as String? ?? 'Pengguna Google',
+          email: googleData['email'] as String? ?? '',
+          googleId: googleData['googleId'] as String?,
+          avatarUrl: googleData['avatarUrl'] as String?,
+          idToken: googleData['idToken'] as String?,
         );
-      },
-    );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text('Gagal memilih akun Google: $msg'.tr),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  Widget _googleAccountTile({
+  void _applyGoogleAccount({
     required String name,
     required String email,
-    required String initial,
-    required VoidCallback onTap,
+    String? googleId,
+    String? avatarUrl,
+    String? idToken,
   }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      onTap: onTap,
-      leading: CircleAvatar(
-        radius: 18,
-        backgroundColor: AppColors.black,
-        child: Text(
-          initial,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
-      ),
-      title: Text(
-        name,
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: AppColors.ink,
-        ),
-      ),
-      subtitle: Text(
-        email,
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 12,
-          color: AppColors.textSecondary,
-        ),
-      ),
-      trailing: Icon(Icons.chevron_right_rounded,
-          size: 20, color: AppColors.textMuted),
-    );
-  }
-
-  void _applyGoogleAccount({required String name, required String email}) {
     if (!mounted) return;
     setState(() {
       _isGoogleAuth = true;
+      _googleId = googleId;
+      _avatarUrl = avatarUrl;
+      _idToken = idToken;
       _name.text = name;
       final rawUser =
           email.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '');

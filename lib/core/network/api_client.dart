@@ -162,6 +162,36 @@ class ApiClient {
     final message = decoded is Map<String, dynamic>
         ? (decoded['message'] ?? decoded['error'] ?? 'Terjadi kesalahan')
         : 'HTTP Error ${response.statusCode}';
-    throw Exception(message);
+    final data = decoded is Map<String, dynamic> ? decoded['data'] : null;
+    throw ApiException(
+      statusCode: response.statusCode,
+      message: message.toString(),
+      data: data,
+      rawResponse: decoded is Map<String, dynamic> ? decoded : null,
+    );
   }
+}
+
+/// Exception terstruktur dari REST API DinoyoCraft
+class ApiException implements Exception {
+  final int statusCode;
+  final String message;
+  final dynamic data;
+  final Map<String, dynamic>? rawResponse;
+
+  ApiException({
+    required this.statusCode,
+    required this.message,
+    this.data,
+    this.rawResponse,
+  });
+
+  /// Mengecek apakah error disebabkan akun Google belum terdaftar
+  bool get isNotRegistered =>
+      statusCode == 404 &&
+      (rawResponse?['is_registered'] == false ||
+          message.toLowerCase().contains('belum terdaftar'));
+
+  @override
+  String toString() => message;
 }

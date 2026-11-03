@@ -32,7 +32,17 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/register',
-      builder: (context, state) => RegisterScreen(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return RegisterScreen(
+          initialEmail: extra?['googleEmail'] as String?,
+          initialName: extra?['googleName'] as String?,
+          initialGoogleId: extra?['googleId'] as String?,
+          initialAvatarUrl: extra?['avatarUrl'] as String?,
+          initialIdToken: extra?['idToken'] as String?,
+          isGoogleAuth: extra?['isGoogleAuth'] as bool? ?? false,
+        );
+      },
     ),
     GoRoute(
       path: '/forgot-password',

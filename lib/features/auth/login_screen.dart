@@ -46,6 +46,26 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         context.go('/home');
       }
+    } on GoogleAccountNotRegisteredException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Akun Google belum terdaftar. Mengalihkan ke pendaftaran...'.tr),
+          backgroundColor: AppColors.ink,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      context.push(
+        '/register',
+        extra: {
+          'googleEmail': e.email,
+          'googleName': e.name,
+          'googleId': e.googleId,
+          'avatarUrl': e.avatarUrl,
+          'idToken': e.idToken,
+          'isGoogleAuth': true,
+        },
+      );
     } catch (e) {
       if (!mounted) return;
       final msg = e.toString().replaceFirst('Exception: ', '');
