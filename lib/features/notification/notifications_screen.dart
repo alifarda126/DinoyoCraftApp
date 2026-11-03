@@ -281,7 +281,12 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
 
           // ── Daftar Kartu Notifikasi (Expanded + Scrollable) ───────────
           Expanded(
-            child: SingleChildScrollView(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await _fetchNotifications();
+              },
+              color: _black,
+              child: SingleChildScrollView(
               physics: BouncingScrollPhysics(),
               padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + bottomPad),
               child: Column(
@@ -316,6 +321,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                   ],
                 ],
               ),
+            ),
             ),
           ),
         ],

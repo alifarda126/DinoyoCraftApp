@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../models/fcm_notification_model.dart';
 import '../network/api_client.dart';
+import '../storage/local_storage.dart';
 
 /// Handler tingkat atas untuk notifikasi FCM saat aplikasi berada di
 /// latar belakang (background) atau ditutup (terminated).
@@ -105,6 +106,12 @@ class FcmService {
         _deviceToken = await FirebaseMessaging.instance.getToken();
       } catch (_) {}
       debugPrint('[FCM] Device Token: $_deviceToken');
+
+      // Cold-start: pastikan token terdaftar di backend bila sesi aktif
+      // (token FCM bisa berotasi saat aplikasi tidak berjalan).
+      if (LocalStorage.isLoggedIn) {
+        unawaited(syncTokenWithBackend(_deviceToken));
+      }
 
       // 5. Tangani notifikasi saat aplikasi berada di latar depan (foreground)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
