@@ -16,6 +16,7 @@ import '../../core/widgets/dc_app_header.dart';
 import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 import 'tracking_sheet.dart';
+import '../checkout/payment_screen.dart';
 import '../../core/storage/local_storage.dart';
 import '../../data/mock_data.dart';
 
@@ -693,7 +694,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fg: AppColors.white,
         bold: true,
         height: 40,
-        onTap: () => context.push('/checkout/payment'),
+        onTap: () => _payOrderFromHistory(context, order),
       ));
     } else if (status == 'paid' || status == 'packed') {
       actions.add(_actionButton(
@@ -770,6 +771,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ],
     );
+  }
+
+  /// Bayar Sekarang dari riwayat: buka layar pembayaran untuk pesanan
+  /// ASLI ini (order id nyata -> QR & nominal yang sama dari backend).
+  Future<void> _payOrderFromHistory(
+      BuildContext context, Map<String, dynamic> order) async {
+    // Penerima dari alamat default milik pembeli.
+    String rName = AuthSession.user?['name']?.toString() ?? 'Customer';
+    String rPhone = '';
+    String rAddr = '';
+    try {
+      final res = await ApiClient.get('/addresses');
+      final list = (res['data'] as List?)
+              ?.whereType<Map<String, dynamic>>()
+              .toList() ??
+          [];
+      if (list.isNotEmpty) {
+        final def = list.firstWhere(
+          (a) => a['is_default'] == 1 || a['is_default'] == true,
+          orElse: () => list.first,
+        );
+        rName = def['recipient_name']?.toString() ?? rName;
+        rPhone = def['phone']?.toString() ?? '';
+        rAddr = def['full_address']?.toString() ?? '';
+      }
+    } catch (_) {}
+
+    final items = (order['items'] as List? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+
+    final args = PaymentArgs(
+      orderId: '${order['id']}',
+      items: [
+        for (final it in items)
+          CartItem(
+            product: Product.fromJson({
+              'id': it['product_id']?.toString() ?? '0',
+              'name': it['product_name']?.toString() ?? 'Produk',
+              'price': it['unit_price'],
+              'image': _itemFirstImage(it),
+            }),
+            qty: _asInt(it['quantity']),
+            variant: it['variant']?.toString(),
+          ),
+      ],
+      qtys: [for (final it in items) _asInt(it['quantity'])],
+      subtotal: items.fold<int>(
+          0, (s, it) => s + _asInt(it['unit_price']) * _asInt(it['quantity'])),
+      shippingFee: _asInt(order['shipping_cost']),
+      serviceFee: 0,
+      total: _asInt(order['total_amount']),
+      paymentMethod: 'QRIS',
+      shippingMethod: order['shipping_method']?.toString() ?? 'Reguler',
+      recipientName: rName,
+      recipientPhone: rPhone,
+      recipientAddress: rAddr,
+    );
+
+    if (!context.mounted) return;
+    context.push('/checkout/payment', extra: args);
   }
 
   Future<void> _cancelOrderNow(Map<String, dynamic> order) async {
