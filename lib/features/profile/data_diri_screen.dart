@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/auth_session.dart';
 import '../../core/services/photo_picker_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/mock_data.dart';
@@ -19,23 +21,146 @@ const   DataDiriScreen({super.key});
 }
 
 class _DataDiriScreenState extends State<DataDiriScreen> {
-  late final TextEditingController _nameController = TextEditingController(
-    text: 'Customer',
-  );
-  late final TextEditingController _usernameController = TextEditingController(
-    text: 'customer',
-  );
-  late final TextEditingController _emailController = TextEditingController(
-    text: 'customer@gmail.com',
-  );
-  late final TextEditingController _phoneController = TextEditingController(
-    text: '+62 859-777-588-138',
-  );
-  late final TextEditingController _birthController = TextEditingController(
-    text: '14 Agustus 1998',
-  );
+  // Diisi dari akun asli (AuthSession + GET /auth/profile) di initState.
+  late final TextEditingController _nameController = TextEditingController();
+  late final TextEditingController _usernameController = TextEditingController();
+  late final TextEditingController _emailController = TextEditingController();
+  late final TextEditingController _phoneController = TextEditingController();
+  late final TextEditingController _birthController = TextEditingController();
 
   bool _isMale = true;
+  bool _saving = false;
+
+  String? _birthDateIso; // yyyy-MM-dd untuk dikirim ke backend
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAccountData();
+  }
+
+  /// Isi form dari data akun: cache sesi dulu (instan), lalu segarkan dari
+  /// server (GET /auth/profile). Telepon fallback ke alamat default.
+  Future<void> _loadAccountData() async {
+    final user = AuthSession.user;
+    if (user != null) _applyProfile(user, fallbackAddress: true);
+
+    try {
+      final res = await ApiClient.get('/auth/profile');
+      if (res['success'] == true && res['data'] is Map<String, dynamic>) {
+        if (!mounted) return;
+        _applyProfile(res['data'] as Map<String, dynamic>);
+        await AuthSession.updateUser({
+          ...?AuthSession.user,
+          ...res['data'] as Map<String, dynamic>,
+        });
+      }
+    } catch (_) {
+      // Offline — data cache sesi sudah terpasang di atas.
+    }
+  }
+
+  void _applyProfile(Map<String, dynamic> u, {bool fallbackAddress = false}) {
+    if (!mounted) return;
+    _nameController.text = (u['name'] ?? '').toString();
+    _usernameController.text = (u['username'] ?? '').toString();
+    _emailController.text = (u['email'] ?? '').toString();
+    _phoneController.text = (u['phone'] ?? '').toString();
+    final gender = (u['gender'] ?? '').toString();
+    if (gender.isNotEmpty) _isMale = gender == 'L';
+
+    final bd = (u['birth_date'] ?? '').toString();
+    if (bd.isNotEmpty) {
+      _birthDateIso = bd;
+      final d = DateTime.tryParse(bd);
+      if (d != null) {
+        _birthController.text =
+            '${d.day} ${_monthName(d.month)} ${d.year}';
+      }
+    }
+
+    if (fallbackAddress &&
+        _phoneController.text.isEmpty &&
+        _usernameController.text.isEmpty) {
+      // Telepon dari registrasi tersimpan di alamat default.
+      _fillPhoneFromAddress();
+    }
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _fillPhoneFromAddress() async {
+    try {
+      final res = await ApiClient.get('/addresses');
+      final list = (res['data'] as List?)?.whereType<Map<String, dynamic>>().toList() ?? [];
+      if (list.isEmpty) return;
+      final def = list.firstWhere(
+        (a) => a['is_default'] == 1 || a['is_default'] == true,
+        orElse: () => list.first,
+      );
+      if (!mounted) return;
+      setState(() {
+        _phoneController.text = (def['phone'] ?? '').toString();
+      });
+    } catch (_) {}
+  }
+
+  static String _monthName(int m) => const [
+        'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+        'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+      ][m - 1];
+
+  /// Simpan ke backend (PUT /auth/profile) lalu perbarui sesi lokal.
+  Future<void> _saveProfile() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final res = await ApiClient.put('/auth/profile', {
+        if (_nameController.text.trim().isNotEmpty)
+          'ownerName': _nameController.text.trim(),
+        if (_phoneController.text.trim().isNotEmpty)
+          'phone': _phoneController.text.trim(),
+        if (_birthDateIso != null) 'birthDate': _birthDateIso,
+        'gender': _isMale ? 'L' : 'P',
+      });
+      if (!mounted) return;
+      if (res['success'] == true) {
+        final data = res['data'];
+        if (data is Map<String, dynamic>) {
+          await AuthSession.updateUser({...?AuthSession.user, ...data});
+        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.black,
+            content: Text(
+              'Perubahan data diri disimpan.'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13, color: Colors.white),
+            ),
+          ),
+        );
+        context.pop();
+      } else {
+        throw Exception(res['message']?.toString() ?? 'Gagal menyimpan');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.redAccent,
+          content: Text(
+            'Gagal menyimpan: $msg'.tr,
+            style: GoogleFonts.plusJakartaSans(
+                fontSize: 13, color: Colors.white),
+          ),
+        ),
+      );
+      setState(() => _saving = false);
+    }
+  }
 
   final FocusNode _emailFocus = FocusNode();
   final FocusNode _phoneFocus = FocusNode();
@@ -92,6 +217,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                     controller: _usernameController,
                     icon: Icons.alternate_email_rounded,
                     prefixText: '@',
+                    readOnly: true,
                   ),
                   const SizedBox(height: 6),
                   _buildHelper(
@@ -102,10 +228,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                   _buildField(
                     controller: _emailController,
                     icon: Icons.mail_outline_rounded,
-                    focusNode: _emailFocus,
-                    suffix: _buildVerifiedSuffix(
-                      onEdit: () => _emailFocus.requestFocus(),
-                    ),
+                    readOnly: true,
                   ),
                   const SizedBox(height: 14),
                   _buildLabelRow('Nomor WhatsApp / Seluler'.tr),
@@ -211,6 +334,8 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
       setState(() {
         _birthController.text =
             '${picked.day} ${months[picked.month - 1]} ${picked.year}';
+        _birthDateIso =
+            '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
       });
     }
   }
@@ -737,22 +862,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                 boxShadow: AppColors.darkButtonShadow,
               ),
               child: FilledButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: AppColors.black,
-                      content: Text(
-                        'Perubahan data diri disimpan.'.tr,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          color: AppColors.white,
-                        ),
-                      ),
-                    ),
-                  );
-                  context.pop();
-                },
+                onPressed: _saveProfile,
                 icon: SvgPicture.asset(
                   AppAssets.iconSave,
                   width: 16,
