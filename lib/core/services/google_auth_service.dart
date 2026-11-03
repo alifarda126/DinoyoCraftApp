@@ -8,7 +8,7 @@ import '../storage/local_storage.dart';
 class GoogleAuthService {
   /// Web Client ID (digunakan sebagai serverClientId agar Google menerbitkan idToken)
   static const String webClientId =
-      '379734738528-dc5htqtqu1k8qn5khubul347aghuka6r.apps.googleusercontent.com';
+      '195383861521-pqcjfqlvm37khngn41umpotvu3msd2u6.apps.googleusercontent.com';
 
   static bool _initialized = false;
 
@@ -17,6 +17,7 @@ class GoogleAuthService {
     if (_initialized) return;
     try {
       await GoogleSignIn.instance.initialize(
+        clientId: kIsWeb ? webClientId : null,
         serverClientId: webClientId,
       );
       _initialized = true;
