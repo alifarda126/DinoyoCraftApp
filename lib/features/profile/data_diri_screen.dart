@@ -225,19 +225,30 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                   ),
                   const SizedBox(height: 14),
                   _buildLabelRow('Alamat Email'.tr),
-                  _buildField(
-                    controller: _emailController,
-                    icon: Icons.mail_outline_rounded,
-                    readOnly: true,
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _emailController,
+                    builder: (context, value, _) => _buildField(
+                      controller: _emailController,
+                      icon: Icons.mail_outline_rounded,
+                      readOnly: true,
+                      suffix: value.text.isEmpty
+                          ? null
+                          : _buildVerifiedSuffix(),
+                    ),
                   ),
                   const SizedBox(height: 14),
                   _buildLabelRow('Nomor WhatsApp / Seluler'.tr),
-                  _buildField(
-                    controller: _phoneController,
-                    icon: Icons.phone_outlined,
-                    focusNode: _phoneFocus,
-                    suffix: _buildVerifiedSuffix(
-                      onEdit: () => _phoneFocus.requestFocus(),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _phoneController,
+                    builder: (context, value, _) => _buildField(
+                      controller: _phoneController,
+                      icon: Icons.phone_outlined,
+                      focusNode: _phoneFocus,
+                      suffix: value.text.isEmpty
+                          ? null
+                          : _buildVerifiedSuffix(
+                              onEdit: () => _phoneFocus.requestFocus(),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -520,45 +531,36 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
     String label, {
     String? hint,
     String? badge,
-    bool verified = false,
-    VoidCallback? onEdit,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          // Expanded: saat layar sempit label menyusut dengan ellipsis,
-          // bukan meluap ke kanan bersama badge/hint di sebelahnya.
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
             ),
           ),
-          if (hint != null) ...[
-            SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                hint,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.right,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary,
-                ),
+          const Spacer(),
+          if (hint != null)
+            Text(
+              hint,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
               ),
             ),
-          ],
           if (badge != null) ...[
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
@@ -569,16 +571,12 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               child: Text(
                 badge,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
+                  fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textSecondary,
                 ),
               ),
             ),
-          ],
-          if (verified) ...[
-            SizedBox(width: 8),
-            _buildVerifiedSuffix(onEdit: onEdit),
           ],
         ],
       ),
@@ -617,18 +615,20 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onEdit,
-            child: Text(
-              'Ubah'.tr,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
+          if (onEdit != null) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: onEdit,
+              child: Text(
+                'Ubah'.tr,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.ink,
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
