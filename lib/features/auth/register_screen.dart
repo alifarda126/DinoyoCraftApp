@@ -60,6 +60,74 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _avatarUrl;
   String? _idToken;
 
+  Timer? _usernameDebounce;
+  bool _isCheckingUsername = false;
+  bool? _isUsernameAvailable;
+  String? _usernameError;
+
+  void _onUsernameChanged(String value) {
+    _usernameDebounce?.cancel();
+    final trimmed = value.trim().toLowerCase();
+
+    if (trimmed.isEmpty) {
+      setState(() {
+        _isCheckingUsername = false;
+        _isUsernameAvailable = null;
+        _usernameError = null;
+      });
+      return;
+    }
+
+    if (trimmed.length < 3) {
+      setState(() {
+        _isCheckingUsername = false;
+        _isUsernameAvailable = false;
+        _usernameError = 'Minimal 3 karakter'.tr;
+      });
+      return;
+    }
+
+    final validRegex = RegExp(r'^[a-zA-Z0-9_]+$');
+    if (!validRegex.hasMatch(trimmed)) {
+      setState(() {
+        _isCheckingUsername = false;
+        _isUsernameAvailable = false;
+        _usernameError = 'Hanya boleh huruf, angka, dan underscore (_)'.tr;
+      });
+      return;
+    }
+
+    setState(() {
+      _isCheckingUsername = true;
+      _isUsernameAvailable = null;
+      _usernameError = null;
+    });
+
+    _usernameDebounce = Timer(const Duration(milliseconds: 400), () async {
+      try {
+        final res = await ApiClient.get(
+          '/auth/check-username?username=${Uri.encodeComponent(trimmed)}',
+        );
+        if (!mounted || _username.text.trim().toLowerCase() != trimmed) return;
+        final available = res['available'] == true;
+        setState(() {
+          _isCheckingUsername = false;
+          _isUsernameAvailable = available;
+          _usernameError = available
+              ? null
+              : (res['message']?.toString() ?? 'Username sudah digunakan'.tr);
+        });
+      } catch (e) {
+        if (!mounted || _username.text.trim().toLowerCase() != trimmed) return;
+        setState(() {
+          _isCheckingUsername = false;
+          _isUsernameAvailable = null;
+          _usernameError = null;
+        });
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -83,6 +151,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
+    _usernameDebounce?.cancel();
     _termsLinkTap.dispose();
     _privacyLinkTap.dispose();
     _name.dispose();
@@ -128,6 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     ScaffoldMessenger.maybeOf(context)?.hideCurrentSnackBar();
 
     final name = _name.text.trim();
+    final username = _username.text.trim();
     final email = _email.text.trim();
     final password = _password.text;
     final phone = _wa.text.trim();
@@ -139,6 +209,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (_isGoogleAuth) {
         response = await ApiClient.post('/auth/register-customer', {
           'name': name.isNotEmpty ? name : 'Pengguna Google',
+          'username': username,
           'email': email,
           'phone': phone,
           'isGoogleAuth': true,
@@ -149,6 +220,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } else {
         response = await ApiClient.post('/auth/register-customer', {
           'name': name,
+          'username': username,
           'email': email,
           'password': password,
           'phone': phone,
@@ -176,6 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               'expectedCode': response['data']?['otp']?.toString(),
               'registrationData': {
                 'name': name,
+                'username': username,
                 'email': email,
                 'password': password,
                 'phone': phone,
@@ -263,6 +336,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final rawUser =
           email.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '');
       _username.text = rawUser.isNotEmpty ? rawUser : 'user';
+      _onUsernameChanged(_username.text);
       _email.text = email;
       _password.clear();
       _confirm.clear();
@@ -436,7 +510,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     Widget? suffix,
     Color? hintColor,
     String? helper,
+    Color? helperColor,
     Color? fillColor,
+    void Function(String)? onChanged,
   }) {
     OutlineInputBorder border(Color c) => OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -460,6 +536,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           obscureText: obscureText,
           readOnly: readOnly,
           onTap: onTap,
+          onChanged: onChanged,
           keyboardType: keyboardType,
           textInputAction: textInputAction,
           validator: validator,
@@ -499,7 +576,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             helper,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
-              color: AppColors.textSecondary,
+              color: helperColor ?? AppColors.textSecondary,
+              fontWeight: helperColor != null ? FontWeight.w500 : FontWeight.normal,
             ),
           ),
         ],
@@ -692,11 +770,57 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         hint: 'Buat username kamu'.tr,
                         controller: _username,
                         icon: Icons.alternate_email_rounded,
-                        helper:
-                            'Username digunakan untuk identitas profil kamu.'.tr,
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Username wajib diisi'.tr
-                            : null,
+                        onChanged: _onUsernameChanged,
+                        helper: _usernameError != null
+                            ? _usernameError!
+                            : (_isUsernameAvailable == true
+                                ? '✓ Username tersedia'.tr
+                                : 'Username digunakan untuk identitas profil kamu.'.tr),
+                        helperColor: _usernameError != null
+                            ? Colors.red
+                            : (_isUsernameAvailable == true
+                                ? const Color(0xFF16A34A)
+                                : AppColors.textSecondary),
+                        suffix: Padding(
+                          padding: const EdgeInsets.only(right: 14),
+                          child: _isCheckingUsername
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                                  ),
+                                )
+                              : (_isUsernameAvailable == true
+                                  ? const Icon(
+                                      Icons.check_circle_rounded,
+                                      color: Color(0xFF16A34A),
+                                      size: 22,
+                                    )
+                                  : (_isUsernameAvailable == false
+                                      ? const Icon(
+                                          Icons.cancel_rounded,
+                                          color: Colors.red,
+                                          size: 22,
+                                        )
+                                      : null)),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Username wajib diisi'.tr;
+                          }
+                          if (v.trim().length < 3) {
+                            return 'Username minimal 3 karakter'.tr;
+                          }
+                          if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(v.trim())) {
+                            return 'Username hanya boleh huruf, angka, dan underscore (_)'.tr;
+                          }
+                          if (_isUsernameAvailable == false) {
+                            return 'Username sudah digunakan'.tr;
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
                       _field(
