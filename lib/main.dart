@@ -14,6 +14,7 @@ import 'core/services/pusher_service.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/fcm_notification_banner.dart';
+import 'core/widgets/connection_gate.dart';
 import 'core/widgets/keyboard_dismiss_wrapper.dart';
 import 'data/mock_data.dart';
 
@@ -127,8 +128,10 @@ class _DinoyoCraftAppState extends State<DinoyoCraftApp> {
               child: KeyedSubtree(
                 key: ValueKey((isDark, settings.locale)),
                 child: OfflineBannerWrapper(
-                  child: FcmNotificationHost(
-                    child: child ?? const SizedBox.shrink(),
+                  child: ConnectionGate(
+                    child: FcmNotificationHost(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),

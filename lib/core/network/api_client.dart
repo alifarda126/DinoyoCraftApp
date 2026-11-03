@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../storage/local_storage.dart';
+import 'server_status.dart';
 
 class ApiClient {
   static final List<String> candidateHosts = [
@@ -65,6 +66,7 @@ class ApiClient {
       try {
         final response = await requestFn(host).timeout(timeout);
         _activeHostIndex = index;
+        ServerStatus.markUp(); // respons diterima = server terjangkau
         return response;
       } on SocketException catch (e) {
         lastError = e;
@@ -81,6 +83,7 @@ class ApiClient {
       }
     }
 
+    ServerStatus.markDown(); // semua host gagal
     throw Exception(
       'Tidak dapat terhubung ke server backend (${lastError ?? "koneksi gagal"}). Pastikan backend berjalan dan HP terhubung via kabel (adb reverse) atau satu jaringan Wi-Fi.',
     );
