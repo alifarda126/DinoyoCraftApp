@@ -50,15 +50,15 @@ abstract final class AppCacheManager {
     int totalBytes = 0;
     final visited = <String>{};
 
-    void sumDirectory(Directory dir) {
+    Future<void> sumDirectory(Directory dir) async {
       if (!visited.add(dir.path)) return;
       try {
-        if (dir.existsSync()) {
-          for (final entity
-              in dir.listSync(recursive: true, followLinks: false)) {
+        if (await dir.exists()) {
+          await for (final entity
+              in dir.list(recursive: true, followLinks: false)) {
             if (entity is File) {
               try {
-                totalBytes += entity.lengthSync();
+                totalBytes += await entity.length();
               } catch (_) {}
             }
           }
@@ -68,19 +68,19 @@ abstract final class AppCacheManager {
 
     try {
       final cacheDir = await getAppCacheDir();
-      sumDirectory(cacheDir);
+      await sumDirectory(cacheDir);
 
       if (testCacheDirectoryOverride == null && Platform.isAndroid) {
         try {
           final codeCache = Directory('${cacheDir.parent.path}/code_cache');
-          sumDirectory(codeCache);
+          await sumDirectory(codeCache);
         } catch (_) {}
 
         try {
           final extDirs = await getExternalCacheDirectories();
           if (extDirs != null) {
             for (final dir in extDirs) {
-              sumDirectory(dir);
+              await sumDirectory(dir);
             }
           }
         } catch (_) {}

@@ -30,8 +30,17 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
   @override
   void initState() {
     super.initState();
-    _settings.syncCacheSize();
-    _settings.syncCurrentDevice();
+    // Beri jeda agar animasi transisi navigasi halaman selesai dengan mulus (60/120fps)
+    // sebelum melakukan sinkronisasi ukuran cache dan perangkat di background.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted) {
+          _settings.syncCacheSize();
+          _settings.syncCurrentDevice();
+        }
+      });
+    });
   }
 
   /// Sumber kebenaran tema/bahasa/2FA/perangkat/cache ada di AppSettings

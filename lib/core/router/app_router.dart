@@ -57,9 +57,14 @@ class _LiveScreenState extends State<_LiveScreen>
     value: 1,
   );
 
+  AppThemeMode? _lastThemeMode;
+  String? _lastLocale;
+
   @override
   void initState() {
     super.initState();
+    _lastThemeMode = AppSettings.instance.themeMode;
+    _lastLocale = AppSettings.instance.locale;
     AppSettings.instance.addListener(_onSettingsChanged);
   }
 
@@ -71,9 +76,19 @@ class _LiveScreenState extends State<_LiveScreen>
   }
 
   void _onSettingsChanged() {
-    setState(() {});
-    // Fade-in dari 25% agar teks tidak menghilang total saat transisi.
-    _fade.forward(from: 0.25);
+    final currentTheme = AppSettings.instance.themeMode;
+    final currentLocale = AppSettings.instance.locale;
+    // Hanya picu animasi re-render fade jika tema atau bahasa benar-benar berubah.
+    // Hal ini mencegah visual glitch/flicker saat background task (seperti sinkronisasi cache/device) berjalan.
+    if (_lastThemeMode != currentTheme || _lastLocale != currentLocale) {
+      _lastThemeMode = currentTheme;
+      _lastLocale = currentLocale;
+      if (mounted) {
+        setState(() {});
+        // Fade-in dari 25% agar teks tidak menghilang total saat transisi.
+        _fade.forward(from: 0.25);
+      }
+    }
   }
 
   @override
