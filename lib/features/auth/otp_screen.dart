@@ -7,6 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/app_text.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/fcm_service.dart';
+import '../../core/storage/local_storage.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
@@ -20,15 +24,13 @@ class OtpScreen extends StatefulWidget {
     this.from = 'register',
     this.email,
     this.expectedCode,
+    this.registrationData,
   });
 
   final String from;
-
-  /// Email tujuan kode. Jika null, ditampilkan contoh "m●●●●●@email.com".
   final String? email;
-
-  /// Kode OTP yang diharapkan (jika ada).
   final String? expectedCode;
+  final Map<String, dynamic>? registrationData;
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -44,6 +46,7 @@ class _OtpScreenState extends State<OtpScreen> {
   Timer? _timer;
   int _seconds = _resendDelay;
   late String _expectedOtp;
+  bool _isLoading = false;
 
   bool get _isEnable2fa => widget.from == 'enable_2fa';
   bool get _isDisable2fa => widget.from == 'disable_2fa';
@@ -154,10 +157,10 @@ class _OtpScreenState extends State<OtpScreen> {
 
   bool get _complete => _controllers.every((c) => c.text.trim().isNotEmpty);
 
-  void _continue() {
+  Future<void> _continue() async {
     if (!_complete) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lengkapi 6 digit kode verifikasi')),
+        SnackBar(content: Text('Lengkapi 6 digit kode verifikasi'.tr)),
       );
       return;
     }
@@ -213,35 +216,122 @@ class _OtpScreenState extends State<OtpScreen> {
     }
 
     if (widget.from == 'login') {
-      // Verifikasi 2FA berhasil — login berikutnya tidak minta OTP lagi.
       AppSettings.instance.consumeOtpRequirement();
       context.go('/home');
     } else if (widget.from == 'forgot') {
-      context.go('/login');
+      context.go('/new-password', extra: {'email': widget.email, 'otp': enteredCode});
     } else {
-      // Verifikasi pendaftaran berhasil — arahkan ke Login untuk masuk,
-      // bukan langsung ke dalam aplikasi.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pendaftaran berhasil! Silakan masuk.')),
-      );
-      context.go('/login');
+      // Verifikasi pendaftaran manual pengunjung ke server backend
+      setState(() => _isLoading = true);
+      try {
+        final targetEmail = (widget.email?.trim().isNotEmpty ?? false)
+            ? widget.email!.trim()
+            : widget.registrationData?['email']?.toString() ?? '';
+
+        final payload = <String, dynamic>{
+          'email': targetEmail,
+          'otp': enteredCode,
+          if (widget.registrationData != null) ...widget.registrationData!,
+        };
+
+        final response = await ApiClient.post('/auth/verify-register-otp', payload);
+
+        if (response['success'] == true) {
+          final data = response['data'] as Map<String, dynamic>?;
+          final token = data?['token'] as String? ?? '';
+          if (token.isNotEmpty) {
+            await LocalStorage.saveAuth(token: token, user: data);
+            ApiClient.authToken = token;
+            unawaited(FcmService.instance.syncTokenWithBackend());
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(response['message']?.toString() ?? 'Pendaftaran berhasil terverifikasi!'.tr),
+                backgroundColor: AppColors.ink,
+              ),
+            );
+            context.go('/home');
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(response['message']?.toString() ?? 'Kode OTP salah'.tr),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal verifikasi OTP: $msg'.tr),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
-  void _resend() {
+  Future<void> _resend() async {
     _startTimer();
-    _expectedOtp = _generateOtp();
     for (final c in _controllers) {
       c.clear();
     }
     if (_focus.isNotEmpty) {
       _focus[0].requestFocus();
     }
+
     if (_is2fa) {
+      _expectedOtp = _generateOtp();
       _showSimulationOtpSnackBar();
+    } else if (widget.from == 'register') {
+      try {
+        final targetEmail = (widget.email?.trim().isNotEmpty ?? false)
+            ? widget.email!.trim()
+            : widget.registrationData?['email']?.toString() ?? '';
+
+        final response = await ApiClient.post('/auth/resend-register-otp', {
+          'email': targetEmail,
+          'name': widget.registrationData?['name'] ?? 'Pengguna',
+        });
+
+        if (response['data']?['otp'] != null) {
+          _expectedOtp = response['data']['otp'].toString();
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response['message']?.toString() ?? 'Kode OTP baru telah dikirim ke email kamu'.tr),
+              backgroundColor: AppColors.ink,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal mengirim ulang OTP: $msg'.tr),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     } else {
+      _expectedOtp = _generateOtp();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kode baru telah dikirim (mock)')),
+        SnackBar(content: Text('Kode baru telah dikirim'.tr)),
       );
     }
   }
@@ -521,7 +611,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       boxShadow: AppColors.darkButtonShadow,
                     ),
                     child: FilledButton(
-                      onPressed: _continue,
+                      onPressed: _isLoading ? null : _continue,
                       style: FilledButton.styleFrom(
                         backgroundColor: _isDisable2fa
                             ? AppColors.danger
@@ -530,18 +620,27 @@ class _OtpScreenState extends State<OtpScreen> {
                         shape: AppColors.stadiumButtonShape,
                         elevation: 0,
                       ),
-                      child: Text(
-                        _isEnable2fa
-                            ? 'Verifikasi & Aktifkan'
-                            : _isDisable2fa
-                                ? 'Konfirmasi Nonaktifkan'
-                                : 'Konfirmasi',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.white,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              _isEnable2fa
+                                  ? 'Verifikasi & Aktifkan'.tr
+                                  : _isDisable2fa
+                                      ? 'Konfirmasi Nonaktifkan'.tr
+                                      : 'Konfirmasi'.tr,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ),

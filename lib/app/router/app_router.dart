@@ -54,7 +54,13 @@ final GoRouter appRouter = GoRouter(
         final from = state.uri.queryParameters['from'] ?? 'register';
         final email = state.uri.queryParameters['email'];
         final code = state.uri.queryParameters['code'];
-        return OtpScreen(from: from, email: email, expectedCode: code);
+        final extra = state.extra as Map<String, dynamic>?;
+        return OtpScreen(
+          from: from,
+          email: email ?? extra?['email'] as String?,
+          expectedCode: code ?? extra?['expectedCode'] as String?,
+          registrationData: extra?['registrationData'] as Map<String, dynamic>?,
+        );
       },
     ),
     StatefulShellRoute.indexedStack(

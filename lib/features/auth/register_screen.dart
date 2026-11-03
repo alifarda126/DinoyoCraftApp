@@ -156,6 +156,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
 
       if (response['success'] == true) {
+        if (!_isGoogleAuth && (response['requires_otp'] == true || response['data']?['requires_otp'] == true)) {
+          // Pendaftaran manual: Arahkan ke halaman Verifikasi OTP
+          if (mounted) {
+            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+              SnackBar(
+                content: Text(response['message']?.toString() ?? 'Kode OTP telah dikirim ke email kamu'.tr),
+                backgroundColor: AppColors.ink,
+              ),
+            );
+          }
+          AppSettings.instance.lastAuthEmail = email;
+          if (!mounted) return;
+          context.push(
+            '/verify-otp',
+            extra: {
+              'from': 'register',
+              'email': email,
+              'expectedCode': response['data']?['otp']?.toString(),
+              'registrationData': {
+                'name': name,
+                'email': email,
+                'password': password,
+                'phone': phone,
+              },
+            },
+          );
+          return;
+        }
+
         final data = response['data'] as Map<String, dynamic>?;
         final token = data?['token'] as String? ?? '';
         if (token.isNotEmpty) {

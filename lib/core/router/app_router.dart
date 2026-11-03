@@ -127,8 +127,14 @@ final GoRouter appRouter = GoRouter(
         final from = state.uri.queryParameters['from'] ?? 'register';
         final email = state.uri.queryParameters['email'];
         final code = state.uri.queryParameters['code'];
+        final extra = state.extra as Map<String, dynamic>?;
         return _live(
-          () => OtpScreen(from: from, email: email, expectedCode: code),
+          () => OtpScreen(
+            from: from,
+            email: email ?? extra?['email'] as String?,
+            expectedCode: code ?? extra?['expectedCode'] as String?,
+            registrationData: extra?['registrationData'] as Map<String, dynamic>?,
+          ),
         );
       },
     ),
