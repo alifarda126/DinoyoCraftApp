@@ -549,102 +549,25 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 ],
                               ),
                             ),
-                            SizedBox(width: 8),
-                            OutlinedButton(
-                              onPressed: () {
-                                showDialog<void>(
-                                  context: context,
-                                  builder: (dlgCtx) => AlertDialog(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                    title: Text(
-                                      'Keluar dari Perangkat Ini?',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.ink,
-                                      ),
-                                    ),
-                                    content: Text(
-                                      'Sesi akun pada perangkat ini akan dihapus dan Anda akan otomatis keluar ke halaman masuk.',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13,
-                                        height: 1.5,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(dlgCtx),
-                                        child: Text(
-                                          'Batal',
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.pop(dlgCtx);
-                                          Navigator.pop(sheetContext);
-                                          _settings.logoutCurrentDevice();
-                                          context.go('/login');
-                                          _showFeedback(
-                                            'Perangkat ini telah dihapus. Anda telah otomatis keluar dari akun.',
-                                          );
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.danger,
-                                          foregroundColor: AppColors.white,
-                                          shape: StadiumBorder(),
-                                          elevation: 0,
-                                        ),
-                                        child: Text(
-                                          'Keluar',
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.danger,
-                                side: BorderSide(color: AppColors.danger),
-                                shape: StadiumBorder(),
-                                minimumSize: Size(0, 32),
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
-                              ),
-                              child: Text(
-                                'Keluar',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ),
 
                       SizedBox(height: 20),
 
-                      // Section: Perangkat Lain
-                      Text(
-                        'PERANGKAT LAIN YANG TERHUBUNG',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: AppColors.textSecondary,
+                      // Section: Perangkat Lain — hanya bila ada sesi lain
+                      if (otherList.isNotEmpty) ...[
+                        Text(
+                          'PERANGKAT LAIN YANG TERHUBUNG',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 8),
+                        SizedBox(height: 8),
+                      ],
 
                       if (otherList.isNotEmpty) ...[
                         for (int i = 0; i < otherList.length; i++) ...[

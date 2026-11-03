@@ -70,25 +70,10 @@ class AppSettings extends ChangeNotifier {
     isCurrent: true,
   );
 
-  /// Perangkat lain yang sedang terhubung (selain perangkat ini).
-  final List<DeviceSession> otherDevices = [
-    DeviceSession(
-      id: 'session_win_chrome',
-      name: 'Chrome di Windows 11',
-      location: 'Surabaya, Indonesia',
-      lastActive: 'Aktif 2 jam lalu',
-      details: 'Chrome Browser v122',
-      icon: Icons.laptop_chromebook_rounded,
-    ),
-    DeviceSession(
-      id: 'session_ios_safari',
-      name: 'Safari di iPhone 14 Pro',
-      location: 'Malang, Indonesia',
-      lastActive: 'Terakhir aktif 3 hari lalu',
-      details: 'Safari Mobile • iOS 17',
-      icon: Icons.phone_iphone_rounded,
-    ),
-  ];
+  /// Perangkat lain yang terhubung. Server belum menyimpan sesi
+  /// per-perangkat, jadi daftar ini KOSONG (tanpa data mock) — hanya
+  /// perangkat saat ini yang ditampilkan.
+  final List<DeviceSession> otherDevices = [];
 
   bool get hasOtherDevices => otherDevices.isNotEmpty;
 
