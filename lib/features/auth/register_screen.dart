@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -505,6 +506,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required TextEditingController controller,
     required IconData icon,
     required String? Function(String?) validator,
+    List<TextInputFormatter>? inputFormatters,
     TextInputType? keyboardType,
     TextInputAction textInputAction = TextInputAction.next,
     bool obscureText = false,
@@ -540,6 +542,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           readOnly: readOnly,
           onTap: onTap,
           onChanged: onChanged,
+          inputFormatters: inputFormatters,
           keyboardType: keyboardType,
           textInputAction: textInputAction,
           validator: validator,
@@ -770,10 +773,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 16),
                       _field(
                         label: 'Username'.tr,
-                        hint: 'Buat username kamu'.tr,
+                        hint: 'huruf kecil, angka, underscore'.tr,
                         controller: _username,
                         icon: Icons.alternate_email_rounded,
                         onChanged: _onUsernameChanged,
+                        inputFormatters: [
+                          // Wajib huruf kecil: kapital otomatis diubah,
+                          // karakter lain selain [a-z0-9_] ditolak.
+                          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9_]')),
+                          TextInputFormatter.withFunction(
+                            (oldValue, newValue) =>
+                                newValue.copyWith(text: newValue.text.toLowerCase()),
+                          ),
+                        ],
                         helper: _usernameError != null
                             ? _usernameError!
                             : (_isUsernameAvailable == true
