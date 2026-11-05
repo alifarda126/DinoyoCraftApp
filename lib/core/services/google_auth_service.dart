@@ -126,6 +126,17 @@ class GoogleAuthService {
         }
         rethrow;
       }
+    } on GoogleSignInException catch (gse) {
+      debugPrint('[GoogleAuthService] Sign-in failed: $gse');
+      final str = gse.toString().toLowerCase();
+      if (str.contains('reauth failed') || str.contains('[16]') || str.contains('code 16')) {
+        throw const GoogleAuthReauthFailedException();
+      }
+      if (gse.code == GoogleSignInExceptionCode.canceled) {
+        // Pembatalan murni oleh pengguna (klik di luar atau tekan back)
+        return null;
+      }
+      rethrow;
     } catch (e) {
       debugPrint('[GoogleAuthService] Sign-in failed: $e');
       rethrow;
@@ -181,6 +192,17 @@ class GoogleAuthService {
         'googleId': userInfo['id'],
         'avatarUrl': userInfo['picture'],
       };
+    } on GoogleSignInException catch (gse) {
+      debugPrint('[GoogleAuthService] getGoogleAccountForRegistration error: $gse');
+      final str = gse.toString().toLowerCase();
+      if (str.contains('reauth failed') || str.contains('[16]') || str.contains('code 16')) {
+        throw const GoogleAuthReauthFailedException();
+      }
+      if (gse.code == GoogleSignInExceptionCode.canceled) {
+        // Pembatalan murni oleh pengguna
+        return null;
+      }
+      rethrow;
     } catch (e) {
       debugPrint('[GoogleAuthService] getGoogleAccountForRegistration error: $e');
       rethrow;
@@ -216,6 +238,19 @@ class GoogleAccountNotRegisteredException implements Exception {
     this.idToken,
     this.message = 'Akun Google belum terdaftar. Silakan lakukan pendaftaran terlebih dahulu.',
   });
+
+  @override
+  String toString() => message;
+}
+
+/// Dilempar saat Google Play Services menolak otentikasi (error 16 / reauth failed)
+/// biasanya karena akun belum didaftarkan di Test Users Google Cloud Console atau SHA-1 tidak cocok.
+class GoogleAuthReauthFailedException implements Exception {
+  final String message;
+  const GoogleAuthReauthFailedException([
+    this.message =
+        'Otentikasi Google ditolak. Pastikan email akun Google telah terdaftar di daftar Test Users Google Cloud Console atau cek sesi akun Google di perangkat Anda.',
+  ]);
 
   @override
   String toString() => message;
