@@ -7,6 +7,7 @@ import '../../../core/app_text.dart';
 import '../../../core/assets.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/cart_fly_animation.dart';
+import '../../../core/widgets/dc_cached_image.dart';
 import '../../../core/widgets/image_preview_dialog.dart';
 import '../../../data/mock_data.dart';
 
@@ -486,8 +487,8 @@ class _ProductInfoRow extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(13),
-              child: Image.asset(
-                product.image,
+              child: DcCachedImage(
+                assetPath: product.image,
                 width: 72,
                 height: 72,
                 fit: BoxFit.cover,

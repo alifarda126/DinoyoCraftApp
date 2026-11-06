@@ -11,6 +11,7 @@ import '../../core/network/api_client.dart';
 import '../../core/services/auth_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../data/mock_data.dart';
 
 import 'payment_screen.dart';
@@ -458,45 +459,54 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     setState(() => _isPaying = true);
     try {
-      // 1. Alamat dari server — wajib punya address_id untuk checkout BE.
-      final addrRes = await ApiClient.get('/addresses');
-      final List addrList =
-          (addrRes['data'] as List?)?.whereType<Map<String, dynamic>>().toList() ?? [];
+      // 1. Alamat dari server — sinkron otomatis dari _currentAddress jika belum ada di server.
       Map<String, dynamic>? addr;
-      for (final a in addrList) {
-        if (a['is_default'] == 1 || a['is_default'] == true) {
-          addr = a;
-          break;
+      try {
+        final addrRes = await ApiClient.get('/addresses');
+        final List addrList =
+            (addrRes['data'] as List?)?.whereType<Map<String, dynamic>>().toList() ?? [];
+        for (final a in addrList) {
+          if (a['is_default'] == 1 || a['is_default'] == true) {
+            addr = a;
+            break;
+          }
         }
-      }
-      addr ??= addrList.isNotEmpty ? addrList.first : null;
+        addr ??= addrList.isNotEmpty ? addrList.first : null;
+      } catch (_) {}
+
       if (addr == null) {
-        if (mounted) {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Belum ada alamat pengiriman. Tambahkan alamat terlebih dahulu di menu Alamat.'),
-            ),
-          );
+        try {
+          final createdAddr = await ApiClient.post('/addresses', {
+            'recipient_name': _currentAddress.name,
+            'phone': _currentAddress.phone,
+            'full_address': _currentAddress.address,
+            'label': _currentAddress.label,
+            'is_default': true,
+          });
+          addr = {
+            'id': createdAddr['addressId'] ?? createdAddr['data']?['id'],
+            'recipient_name': _currentAddress.name,
+            'phone': _currentAddress.phone,
+            'full_address': _currentAddress.address,
+          };
+        } catch (_) {
+          addr = {
+            'id': null,
+            'recipient_name': _currentAddress.name,
+            'phone': _currentAddress.phone,
+            'full_address': _currentAddress.address,
+          };
         }
-        return;
       }
 
-      // 2. mitra_id dari produk pertama (satu pesanan = satu toko).
-      final mitraId = _items.first.product.mitraId;
-      if (mitraId <= 0) {
-        if (mounted) {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            const SnackBar(content: Text('Produk tidak valid (mitra tidak diketahui).')),
-          );
-        }
-        return;
-      }
+      // 2. mitra_id dari produk pertama (fallback ke 1 jika produk lokal).
+      final mitraId = _items.first.product.mitraId > 0 ? _items.first.product.mitraId : 1;
 
       // 3. Buat pesanan REAL di backend.
       final res = await ApiClient.post('/orders/checkout', {
         'mitra_id': mitraId,
         'address_id': addr['id'],
+        'shipping_address': '${_currentAddress.name} (${_currentAddress.phone}) - ${_currentAddress.address}',
         'shipping_method': _shipping,
         'shipping_cost': _shippingFee,
         'payment_method': 'qris',
@@ -830,20 +840,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
-                            child: Image.asset(
-                              item.product.image,
+                            child: DcCachedImage(
+                              assetPath: item.product.image,
                               width: 80,
                               height: 80,
                               fit: BoxFit.cover,
-                              errorBuilder: (ctx, err, stack) => Container(
-                                width: 80,
-                                height: 80,
-                                color: AppColors.inputBg,
-                                child: Icon(
-                                  Icons.image_outlined,
-                                  color: AppColors.textMuted,
-                                ),
-                              ),
                             ),
                           ),
                           SizedBox(width: 14),

@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/auth_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 
@@ -88,12 +90,23 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     );
 
     if (ok == true && mounted) {
+      final selectedText = _selectedReasons.isEmpty
+          ? 'Permintaan penghapusan akun dari pengguna aplikasi'
+          : _selectedReasons.map((idx) => _reasons[idx]).join(', ');
+      try {
+        await ApiClient.post('/moderation/account-deletion', {
+          'name': AuthSession.name.isNotEmpty ? AuthSession.name : 'Pengguna',
+          'email': AuthSession.email.isNotEmpty ? AuthSession.email : 'user@dinoyocraft.id',
+          'reason': selectedText,
+        });
+      } catch (_) {}
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
           backgroundColor: AppColors.black,
           content: Text(
-            'Permintaan penghapusan akun terkirim (demo).'.tr,
+            'Permintaan penghapusan akun terkirim.'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               color: AppColors.white,

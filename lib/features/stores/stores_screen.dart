@@ -7,6 +7,7 @@ import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../data/mock_data.dart';
 
 class StoresScreen extends StatefulWidget {
@@ -143,9 +144,10 @@ class _StoresScreenState extends State<StoresScreen> {
                     children: [
                       // Gambar: Expanded → mengisi sisa tinggi cell
                       Expanded(
-                        child: Image.asset(
-                          store.image,
+                        child: DcCachedImage(
+                          assetPath: store.image,
                           width: double.infinity,
+                          height: double.infinity,
                           fit: BoxFit.cover,
                         ),
                       ),

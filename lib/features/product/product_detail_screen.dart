@@ -8,6 +8,7 @@ import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 import '../../core/network/api_client.dart';
 import '../../data/mock_data.dart';
@@ -41,7 +42,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<void> _loadProduct() async {
     try {
-      final res = await ApiClient.get('/products//public');
+      final res = await ApiClient.get('/products/${widget.productId}/public');
       if (res['success'] == true && res['data'] is Map<String, dynamic>) {
         final p = Product.fromJson(res['data'] as Map<String, dynamic>);
         final idx = MockData.products.indexWhere((item) => item.id == p.id);
@@ -175,18 +176,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   assetPath: imagePath,
                                 );
                               },
-                              child: Image.asset(
-                                imagePath,
+                              child: DcCachedImage(
+                                assetPath: imagePath,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(
-                                  color: AppColors.inputBg,
-                                  child: Icon(
-                                    Icons.broken_image_rounded,
-                                    size: 40,
-                                    color: AppColors.textMuted,
-                                  ),
-                                ),
+                                width: double.infinity,
+                                height: double.infinity,
                               ),
                             );
                           },

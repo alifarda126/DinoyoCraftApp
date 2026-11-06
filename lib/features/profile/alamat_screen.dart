@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 
 class Alamat {
-const   Alamat({
+  const Alamat({
+    this.id,
     required this.label,
     required this.recipient,
     required this.phone,
@@ -17,6 +19,7 @@ const   Alamat({
     this.verifiedPin = false,
   });
 
+  final int? id;
   final String label;
   final String recipient;
   final String phone;
@@ -26,6 +29,7 @@ const   Alamat({
   final bool verifiedPin;
 
   Alamat copyWith({
+    int? id,
     String? label,
     String? recipient,
     String? phone,
@@ -35,6 +39,7 @@ const   Alamat({
     bool? verifiedPin,
   }) {
     return Alamat(
+      id: id ?? this.id,
       label: label ?? this.label,
       recipient: recipient ?? this.recipient,
       phone: phone ?? this.phone,
@@ -82,6 +87,38 @@ class _AlamatScreenState extends State<AlamatScreen> {
     ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadAddressesFromBackend();
+  }
+
+  Future<void> _loadAddressesFromBackend() async {
+    try {
+      final res = await ApiClient.get('/addresses');
+      final list = res['data'] as List?;
+      if (list != null && list.isNotEmpty && mounted) {
+        setState(() {
+          _addresses
+            ..clear()
+            ..addAll(list.map((raw) {
+              final m = raw as Map<String, dynamic>;
+              return Alamat(
+                id: int.tryParse(m['id']?.toString() ?? ''),
+                label: (m['label'] ?? 'Rumah').toString(),
+                recipient: (m['recipient_name'] ?? 'Customer').toString(),
+                phone: (m['phone_number'] ?? '+62 812-3456-7890').toString(),
+                address: (m['full_address'] ?? '').toString(),
+                isPrimary: m['is_default'] == true || m['is_default'] == 1,
+                courierNote: m['courier_note']?.toString(),
+                verifiedPin: true,
+              );
+            }));
+        });
+      }
+    } catch (_) {}
+  }
+
   void _showFeedback(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -107,6 +144,9 @@ class _AlamatScreenState extends State<AlamatScreen> {
   void _makePrimary(int index) {
     if (index >= _addresses.length) return;
     final selected = _addresses[index];
+    if (selected.id != null) {
+      ApiClient.patch('/addresses/${selected.id}/default', {}).catchError((_) => <String, dynamic>{});
+    }
     setState(() {
       final addr = _addresses.removeAt(index);
       _addresses.insert(0, addr.copyWith(isPrimary: true));
@@ -157,6 +197,9 @@ class _AlamatScreenState extends State<AlamatScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogCtx);
+              if (addr.id != null) {
+                ApiClient.delete('/addresses/${addr.id}').catchError((_) => <String, dynamic>{});
+              }
               setState(() {
                 final wasPrimary = addr.isPrimary;
                 _addresses.removeAt(index);
@@ -738,6 +781,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                 }
 
                                 final newAddress = Alamat(
+                                  id: existing?.id,
                                   label: selectedLabel,
                                   recipient: r,
                                   phone: p,
@@ -748,6 +792,24 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                       : null,
                                   verifiedPin: verifiedPin,
                                 );
+
+                                if (isEditing && existing.id != null) {
+                                  ApiClient.put('/addresses/${existing.id}', {
+                                    'label': selectedLabel,
+                                    'recipient_name': r,
+                                    'phone_number': p,
+                                    'full_address': a,
+                                    'is_default': isPrimary,
+                                  }).catchError((_) => <String, dynamic>{});
+                                } else {
+                                  ApiClient.post('/addresses', {
+                                    'label': selectedLabel,
+                                    'recipient_name': r,
+                                    'phone_number': p,
+                                    'full_address': a,
+                                    'is_default': isPrimary,
+                                  }).then((_) => _loadAddressesFromBackend()).catchError((_) => null);
+                                }
 
                                 setState(() {
                                   if (isEditing) {

@@ -294,8 +294,18 @@ class _ImagePreviewDialogState extends State<ImagePreviewDialog> {
       );
     }
     if (widget.assetPath != null) {
+      final path = widget.assetPath!;
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        return Image.network(
+          path,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => _errorWidget(),
+        );
+      }
       return Image.asset(
-        widget.assetPath!,
+        path,
         width: width,
         height: height,
         fit: fit,

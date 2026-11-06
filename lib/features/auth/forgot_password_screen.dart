@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_settings.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_text_field.dart';
@@ -36,10 +37,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       final email = _email.text.trim();
       AppSettings.instance.lastAuthEmail = email;
+      try {
+        await ApiClient.post('/auth/forgot-password', {'email': email});
+      } catch (_) {}
+      if (!mounted) return;
       final uri = Uri(
         path: '/verify-otp',
         queryParameters: {

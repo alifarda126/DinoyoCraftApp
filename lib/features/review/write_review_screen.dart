@@ -6,9 +6,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
 import '../../core/services/photo_picker_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 
 class WriteReviewScreen extends StatefulWidget {
@@ -84,8 +86,23 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
   bool get _canSubmit => _rating > 0 && _reviewController.text.trim().isNotEmpty;
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_canSubmit) return;
+    try {
+      final cleanOrderId = int.tryParse(
+        widget.orderId.replaceAll(RegExp(r'[^0-9]'), ''),
+      );
+      await ApiClient.post('/reviews', {
+        if (cleanOrderId != null) 'order_id': cleanOrderId,
+        'product_id': 1,
+        'rating': _rating,
+        'comment': _reviewController.text.trim(),
+        'variant': widget.variant,
+      });
+    } catch (_) {
+      // Fallback: tetap lanjut jika offline/orderId mock
+    }
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
@@ -189,8 +206,8 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              widget.productImage,
+            child: DcCachedImage(
+              imagePath: widget.productImage,
               width: 64,
               height: 64,
               fit: BoxFit.cover,

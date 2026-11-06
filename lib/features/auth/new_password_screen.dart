@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_settings.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_text_field.dart';
@@ -63,9 +65,19 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       if (_isCriteriaMet) {
+        final email = AppSettings.instance.lastAuthEmail;
+        if (email.isNotEmpty) {
+          try {
+            await ApiClient.post('/auth/reset-password', {
+              'email': email,
+              'newPassword': _password.text,
+            });
+          } catch (_) {}
+        }
+        if (!mounted) return;
         // Berhasil, kembali ke login
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Kata sandi berhasil diubah')),

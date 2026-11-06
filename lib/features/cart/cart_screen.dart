@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../data/mock_data.dart';
 
 /// Tampilkan keranjang sebagai bottom sheet — dipanggil dari ikon keranjang
@@ -323,8 +324,8 @@ class _CartItem extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(9),
-            child: Image.asset(
-              item.product.image,
+            child: DcCachedImage(
+              assetPath: item.product.image,
               width: 76,
               height: 76,
               fit: BoxFit.cover,

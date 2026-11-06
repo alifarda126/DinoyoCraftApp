@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
 import 'presentation/modal_laporkan_toko.dart';
@@ -291,9 +292,10 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                     children: [
                       AspectRatio(
                         aspectRatio: 2.9,
-                        child: Image.asset(
-                          store.image,
+                        child: DcCachedImage(
+                          assetPath: store.image,
                           width: double.infinity,
+                          height: double.infinity,
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -317,7 +319,12 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(11),
-                            child: Image.asset(store.image, fit: BoxFit.cover),
+                            child: DcCachedImage(
+                              assetPath: store.image,
+                              width: 72,
+                              height: 72,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),

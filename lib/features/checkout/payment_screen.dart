@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_bottom_nav.dart';
@@ -449,7 +450,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
     );
 
-    await Future<void>.delayed(const Duration(milliseconds: 1400));
+    final orderId = int.tryParse(_data.orderId);
+    if (orderId != null && orderId > 0) {
+      try {
+        await ApiClient.post('/payments/confirm/$orderId', {});
+      } catch (_) {}
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).pop(); // Tutup loading
 
