@@ -302,8 +302,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         _StoreCard(
                           studio: product.studio,
                           onTap: () {
-                            final storeIndex = MockData.stores
-                                .indexWhere((s) => s.name == product.studio);
+                            final storeIndex = MockData.stores.indexWhere(
+                              (s) => (product.mitraId > 0 && s.id == product.mitraId) ||
+                                     s.name.trim().toLowerCase() == product.studio.trim().toLowerCase(),
+                            );
                             context.push(
                               '/store/${storeIndex < 0 ? 0 : storeIndex}',
                             );

@@ -11,6 +11,7 @@ import '../../core/assets.dart';
 import '../../core/services/pusher_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/gallery_picker_sheet.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 import '../../core/widgets/sticker_picker_sheet.dart';
@@ -703,29 +704,71 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             },
             icon: Icon(Icons.arrow_back_ios_new_rounded, size: 19),
           ),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              CircleAvatar(
-                radius: 19,
-                backgroundImage: AssetImage(_storeImage),
-              ),
-              Positioned(
-                right: -1,
-                bottom: -1,
-                child: Container(
-                  width: 11,
-                  height: 11,
-                  decoration: BoxDecoration(
-                    color: _isSellerConnected
-                        ? _onlineGreen
-                        : const Color(0xFF3B82F6),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.white, width: 2),
+          Builder(
+            builder: (context) {
+              final matchingStore = MockData.stores.cast<Store?>().firstWhere(
+                (s) => s?.name.trim().toLowerCase() == widget.storeName.trim().toLowerCase(),
+                orElse: () => null,
+              );
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 1.5,
+                      ),
+                      gradient: (matchingStore == null || !matchingStore.hasCustomAvatar)
+                          ? const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF000000), Color(0xFFC0673D)],
+                            )
+                          : null,
+                    ),
+                    child: ClipOval(
+                      child: matchingStore != null && matchingStore.hasCustomAvatar
+                          ? DcCachedImage(
+                              imageUrl: matchingStore.avatar ?? matchingStore.image,
+                              fit: BoxFit.cover,
+                            )
+                          : Center(
+                              child: Text(
+                                matchingStore?.initials ??
+                                    (widget.storeName.trim().isNotEmpty
+                                        ? widget.storeName.trim()[0].toUpperCase()
+                                        : 'DC'),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  Positioned(
+                    right: -1,
+                    bottom: -1,
+                    child: Container(
+                      width: 11,
+                      height: 11,
+                      decoration: BoxDecoration(
+                        color: _isSellerConnected
+                            ? _onlineGreen
+                            : const Color(0xFF3B82F6),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.white, width: 2),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(width: 10),
           Expanded(

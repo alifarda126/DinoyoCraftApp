@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_settings.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_text_field.dart';
 
 /// Halaman Buat Kata Sandi Baru
 class NewPasswordScreen extends StatefulWidget {
-const   NewPasswordScreen({super.key});
+  const NewPasswordScreen({super.key, this.email, this.otp});
+
+  final String? email;
+  final String? otp;
 
   @override
   State<NewPasswordScreen> createState() => _NewPasswordScreenState();
@@ -25,6 +30,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   bool _isMinLength = false;
   bool _hasUpperAndNumber = false;
   bool _isMatch = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -63,21 +69,50 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       if (_isCriteriaMet) {
-        // Berhasil, kembali ke login
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Kata sandi berhasil diubah')),
-        );
-        if (context.canPop()) {
-          context.pop(true);
-        } else {
-          context.go('/login');
+        setState(() => _isLoading = true);
+        try {
+          final targetEmail = (widget.email?.trim().isNotEmpty ?? false)
+              ? widget.email!.trim()
+              : AppSettings.instance.lastAuthEmail ?? '';
+
+          final response = await ApiClient.post('/auth/reset-password', {
+            'email': targetEmail,
+            'otp': widget.otp ?? '',
+            'newPassword': _password.text,
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  response['message']?.toString() ?? 'Kata sandi berhasil diubah. Silakan masuk kembali.',
+                ),
+                backgroundColor: AppColors.ink,
+              ),
+            );
+            context.go('/login');
+          }
+        } catch (e) {
+          if (mounted) {
+            final msg = e.toString().replaceFirst('Exception: ', '');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Gagal mengubah kata sandi: $msg'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        } finally {
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Harap penuhi kriteria kata sandi')),
+          const SnackBar(content: Text('Harap penuhi kriteria kata sandi')),
         );
       }
     }
@@ -292,21 +327,30 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                               boxShadow: AppColors.darkButtonShadow,
                             ),
                             child: FilledButton(
-                              onPressed: _submit,
+                              onPressed: (_isCriteriaMet && !_isLoading) ? _submit : null,
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.black,
                                 foregroundColor: AppColors.white,
                                 shape: AppColors.stadiumButtonShape,
                                 elevation: 0,
                               ),
-                              child: Text(
-                                'Simpan Kata Sandi Baru',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.white,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Simpan Kata Sandi Baru',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.white,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),

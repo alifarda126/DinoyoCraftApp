@@ -176,7 +176,12 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/new-password',
-      builder: (context, state) => _live(NewPasswordScreen.new),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        final email = state.uri.queryParameters['email'] ?? extra?['email'] as String?;
+        final otp = state.uri.queryParameters['otp'] ?? extra?['otp'] as String?;
+        return _live(() => NewPasswordScreen(email: email, otp: otp));
+      },
     ),
     GoRoute(
       path: '/verify-otp',

@@ -93,36 +93,90 @@ class Product {
 
 class Store {
   const Store({
+    this.id = 0,
     required this.name,
     required this.location,
     required this.description,
     required this.rating,
     required this.image,
+    this.banner,
+    this.avatar,
   });
 
+  static const String defaultBanner =
+      'https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=1200&auto=format&fit=crop';
+
+  final int id;
   final String name;
   final String location;
   final String description;
   final double rating;
   final String image;
+  final String? banner;
+  final String? avatar;
+
+  /// Memeriksa apakah toko memiliki foto profil khusus (bukan default Google avatar dan bukan fallback banner)
+  bool get hasCustomAvatar {
+    final a = avatar;
+    if (a == null || a.trim().isEmpty || a.trim() == 'null') return false;
+    if (a.contains('googleusercontent.com') || a.contains('google.com')) {
+      return false;
+    }
+    if (a == defaultBanner) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Inisial nama toko (sama persis dengan formula FE: 1 huruf jika 1 kata, 2 huruf jika >= 2 kata)
+  String get initials {
+    final words = name.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    if (words.isEmpty) return 'D';
+    if (words.length == 1) {
+      return words[0][0].toUpperCase();
+    }
+    final first = words[0][0];
+    final second = words[1][0];
+    return (first + second).toUpperCase();
+  }
 
   factory Store.fromJson(Map<String, dynamic> json) {
-    final imagePath = json['image']?.toString() ??
-        json['avatar_url']?.toString() ??
-        json['banner_url']?.toString();
-    final resolvedImage = ApiClient.resolveImageUrl(imagePath);
+    final bannerPath = json['banner_url']?.toString();
+    final avatarPath = json['avatar_url']?.toString() ?? json['image']?.toString();
+
+    // Banner default sama persis dengan frontend (Unsplash pottery banner)
+    final resolvedBanner = (bannerPath != null &&
+            bannerPath.trim().isNotEmpty &&
+            bannerPath.trim() != 'null')
+        ? ApiClient.resolveImageUrl(bannerPath.trim())
+        : defaultBanner;
+
+    final resolvedAvatar = (avatarPath != null &&
+            avatarPath.trim().isNotEmpty &&
+            avatarPath.trim() != 'null')
+        ? ApiClient.resolveImageUrl(avatarPath.trim())
+        : null;
+
+    final desc = json['description']?.toString();
+    final resolvedDesc = (desc != null && desc.trim().isNotEmpty && desc.trim() != 'null')
+        ? desc.trim()
+        : 'Studio keramik pengrajin Dinoyo.';
 
     return Store(
+      id: (json['id'] is num)
+          ? (json['id'] as num).toInt()
+          : int.tryParse('${json['id']}') ?? 0,
       name: json['store_name']?.toString() ?? json['name']?.toString() ?? 'Studio Dinoyo',
       location: json['location']?.toString() ??
           json['workshop_address']?.toString() ??
           'Dinoyo, Malang',
-      description: json['description']?.toString() ??
-          'Studio keramik pengrajin Dinoyo.',
+      description: resolvedDesc,
       rating: (json['rating'] is num)
           ? (json['rating'] as num).toDouble()
           : 4.8,
-      image: resolvedImage,
+      image: resolvedBanner,
+      banner: resolvedBanner,
+      avatar: resolvedAvatar,
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
 import 'presentation/modal_laporkan_toko.dart';
@@ -37,11 +38,13 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
     final store = MockData.stores.isNotEmpty
         ? MockData.stores[widget.storeIndex.clamp(0, MockData.stores.length - 1)]
         : MockData.fallbackStore;
-    final products = MockData.products
-        .where((product) => product.studio == store.name)
-        .toList();
-    final allProducts =
-        products.isEmpty ? MockData.products.take(4).toList() : products;
+    final products = MockData.products.where((product) {
+      if (store.id > 0 && product.mitraId > 0) {
+        return product.mitraId == store.id;
+      }
+      return product.studio.trim().toLowerCase() == store.name.trim().toLowerCase();
+    }).toList();
+    final allProducts = products;
     final shownProducts = allProducts
         .where((p) => p.name.toLowerCase().contains(_query.toLowerCase()))
         .toList();
@@ -282,17 +285,27 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
               ),
 
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.only(bottom: 32),
-                children: [
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await MockData.fetchPublicData();
+                  if (mounted) setState(() {});
+                },
+                color: AppColors.ink,
+                backgroundColor: AppColors.surfaceElevated,
+                child: ListView(
+                  padding: const EdgeInsets.only(bottom: 32),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
                   // ── Banner full-width + avatar yang menimpa banner ──
                   Stack(
                     clipBehavior: Clip.none,
                     children: [
                       AspectRatio(
                         aspectRatio: 2.9,
-                        child: Image.asset(
-                          store.image,
+                        child: DcCachedImage(
+                          imageUrl: (store.banner != null && store.banner!.isNotEmpty)
+                              ? store.banner!
+                              : Store.defaultBanner,
                           width: double.infinity,
                           fit: BoxFit.cover,
                         ),
@@ -301,23 +314,44 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                         left: _padH,
                         bottom: -24,
                         child: Container(
-                          width: 72,
-                          height: 72,
+                          width: 76,
+                          height: 76,
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.surface, width: 3),
-                            boxShadow: [
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark ? AppColors.surface : Colors.white,
+                              width: 3,
+                            ),
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF000000), Color(0xFFC0673D)],
+                            ),
+                            boxShadow: const [
                               BoxShadow(
-                                color: Color(0x26000000),
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
+                                color: Color(0x33000000),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
                               ),
                             ],
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(11),
-                            child: Image.asset(store.image, fit: BoxFit.cover),
+                          child: ClipOval(
+                            child: store.hasCustomAvatar
+                                ? DcCachedImage(
+                                    imageUrl: store.avatar ?? store.image,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Center(
+                                    child: Text(
+                                      store.initials,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                       ),
@@ -403,7 +437,9 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             border: Border.all(color: _borderColor),
                           ),
                           child: Text(
-                            store.description,
+                            store.description.trim().isNotEmpty
+                                ? store.description
+                                : 'Studio keramik pengrajin Dinoyo.',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               height: 1.5,
@@ -554,11 +590,12 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     ),
-    );
+  ),
+);
   }
 }
 
