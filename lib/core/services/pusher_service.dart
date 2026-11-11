@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pusher_channels_flutter/pusher_channels_flutter.dart';
 
 import '../network/api_client.dart';
+import 'auth_session.dart';
 
 /// Konfigurasi koneksi Pusher Channels.
 class PusherConfig {
@@ -23,7 +24,7 @@ class PusherConfig {
   /// Endpoint autentikasi untuk private / presence channels.
   static String authEndpoint = const String.fromEnvironment(
     'PUSHER_AUTH_ENDPOINT',
-    defaultValue: 'b0fa050e0050acfb222a',
+    defaultValue: '',
   );
 
   /// Gunakan enkripsi TLS/WSS.
@@ -117,8 +118,11 @@ class PusherService {
       StreamController<PusherConnectionState>.broadcast();
   final StreamController<Map<String, dynamic>> _typingStreamController =
       StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<Map<String, dynamic>> _orderEventStreamController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   final Map<String, List<void Function(PusherChatMessage)>> _chatListeners = {};
+  final Set<String> _subscribedChannels = {};
 
   /// Stream pesan chat baru dari channel manapun.
   Stream<PusherChatMessage> get messageStream => _messageStreamController.stream;
@@ -130,6 +134,10 @@ class PusherService {
   /// Stream indikator sedang mengetik (typing).
   Stream<Map<String, dynamic>> get typingStream =>
       _typingStreamController.stream;
+
+  /// Stream event status pembayaran & pesanan realtime (`order-paid`, `order-status-changed`).
+  Stream<Map<String, dynamic>> get orderEventStream =>
+      _orderEventStreamController.stream;
 
   /// Status koneksi realtime saat ini.
   PusherConnectionState get connectionState => _connectionState;
@@ -155,13 +163,16 @@ class PusherService {
 
     try {
       _pusher = PusherChannelsFlutter.getInstance();
+      final candidateAuth = PusherConfig.authEndpoint.trim();
+      final resolvedAuth = (candidateAuth.isNotEmpty &&
+              (Uri.tryParse(candidateAuth)?.hasScheme ?? false))
+          ? candidateAuth
+          : '${ApiClient.baseUrl}/broadcasting/auth';
       await _pusher!.init(
         apiKey: PusherConfig.apiKey,
         cluster: PusherConfig.cluster,
         useTLS: PusherConfig.useTLS,
-        authEndpoint: PusherConfig.authEndpoint.isNotEmpty
-            ? PusherConfig.authEndpoint
-            : '${ApiClient.baseUrl}/broadcasting/auth',
+        authEndpoint: resolvedAuth,
         onConnectionStateChange: _onConnectionStateChange,
         onError: _onError,
         onSubscriptionSucceeded: _onSubscriptionSucceeded,
@@ -172,6 +183,11 @@ class PusherService {
 
       _isInitialized = true;
       await connect();
+
+      final uid = AuthSession.user?['id']?.toString();
+      if (AuthSession.isLoggedIn && uid != null && uid.isNotEmpty) {
+        await subscribeToUserOrders(uid);
+      }
     } catch (e) {
       debugPrint('[PusherService] Inisialisasi Pusher gagal (safe fallback): $e');
       _setConnectionState(PusherConnectionState.error);
@@ -195,6 +211,7 @@ class PusherService {
     if (!_isInitialized || _pusher == null) return;
     try {
       await _pusher!.disconnect();
+      _subscribedChannels.clear();
       _setConnectionState(PusherConnectionState.disconnected);
     } catch (e) {
       debugPrint('[PusherService] Gagal disconnect: $e');
@@ -217,6 +234,10 @@ class PusherService {
       return;
     }
 
+    if (_subscribedChannels.contains(channelName)) {
+      return;
+    }
+
     try {
       await _pusher!.subscribe(
         channelName: channelName,
@@ -226,6 +247,7 @@ class PusherService {
           }
         },
       );
+      _subscribedChannels.add(channelName);
       debugPrint('[PusherService] Berhasil subscribe ke channel: $channelName');
     } catch (e) {
       debugPrint('[PusherService] Gagal subscribe ke $channelName: $e');
@@ -235,6 +257,7 @@ class PusherService {
   /// Unsubscribe dari channel obrolan saat meninggalkan ruang obrolan.
   Future<void> unsubscribe(String channelName) async {
     _chatListeners.remove(channelName);
+    _subscribedChannels.remove(channelName);
     if (!_isInitialized || _pusher == null) return;
 
     try {
@@ -357,7 +380,15 @@ class PusherService {
     if (eventName == 'new-message' ||
         eventName == 'client-message' ||
         eventName == 'message.created') {
-      final msg = PusherChatMessage.fromJson(dataMap);
+      final enriched = <String, dynamic>{
+        if (event.channelName.isNotEmpty) 'channel': event.channelName,
+        ...dataMap,
+      };
+      final currentUserId = AuthSession.user?['id']?.toString();
+      final msg = PusherChatMessage.fromJson(
+        enriched,
+        currentUserId: currentUserId,
+      );
       _messageStreamController.add(msg);
 
       final listeners = _chatListeners[event.channelName];
@@ -372,6 +403,34 @@ class PusherService {
         'userId': dataMap['userId'],
         'isTyping': dataMap['isTyping'] ?? true,
       });
+    } else if (eventName == 'order-paid' ||
+        eventName == 'order-status-changed') {
+      _orderEventStreamController.add({
+        'event': eventName,
+        'channel': event.channelName,
+        ...dataMap,
+      });
+    }
+  }
+
+  /// Subscribe ke channel notifikasi order & pembayaran milik user (`user-{userId}`).
+  Future<void> subscribeToUserOrders(String userId) async {
+    if (userId.isEmpty || !_isInitialized || _pusher == null) return;
+    final channelName = 'user-$userId';
+    if (_subscribedChannels.contains(channelName)) return;
+    try {
+      await _pusher!.subscribe(
+        channelName: channelName,
+        onEvent: (event) {
+          if (event is PusherEvent) {
+            _handleIncomingPusherEvent(event);
+          }
+        },
+      );
+      _subscribedChannels.add(channelName);
+      debugPrint('[PusherService] Berhasil subscribe ke channel: $channelName');
+    } catch (e) {
+      debugPrint('[PusherService] Gagal subscribe ke $channelName: $e');
     }
   }
 

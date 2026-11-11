@@ -8,6 +8,7 @@ import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 import '../../core/network/api_client.dart';
 import '../../data/mock_data.dart';
@@ -29,28 +30,27 @@ const   ProductDetailScreen({super.key, required this.productId});
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _currentImageIndex = 0;
   late final PageController _imagePageController;
+  Product? _liveProduct;
 
   @override
   void initState() {
     super.initState();
     _imagePageController = PageController();
-    if (!MockData.products.any((p) => p.id == widget.productId)) {
-      _loadProduct();
-    }
+    _loadProduct();
   }
 
   Future<void> _loadProduct() async {
+    if (widget.productId.trim().isEmpty) return;
     try {
-      final res = await ApiClient.get('/products//public');
+      final res = await ApiClient.get('/products/${widget.productId}/public');
       if (res['success'] == true && res['data'] is Map<String, dynamic>) {
         final p = Product.fromJson(res['data'] as Map<String, dynamic>);
-        final idx = MockData.products.indexWhere((item) => item.id == p.id);
-        if (idx >= 0) {
-          MockData.products[idx] = p;
-        } else {
-          MockData.products.add(p);
+        MockData.upsertProduct(p);
+        if (mounted) {
+          setState(() {
+            _liveProduct = p;
+          });
         }
-        if (mounted) setState(() {});
       }
     } catch (_) {}
   }
@@ -67,13 +67,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final product = MockData.products.firstWhere(
-      (item) => item.id == widget.productId,
-      orElse: () => MockData.products.isNotEmpty ? MockData.products.first : MockData.fallbackProduct,
-    );
-
-    // Harga coret (mock) — sekitar 30% di atas harga jual.
-    final originalPrice = ((product.price * 1.3) / 1000).round() * 1000;
+    final product = _liveProduct ??
+        MockData.products.firstWhere(
+          (item) => item.id == widget.productId,
+          orElse: () => MockData.products.isNotEmpty
+              ? MockData.products.first
+              : MockData.fallbackProduct,
+        );
+    final totalStock = product.effectiveStock;
+    final matchedStore = MockData.stores.where((s) {
+      if (product.mitraId > 0 && s.id > 0) return s.id == product.mitraId;
+      return s.name.trim().toLowerCase() == product.studio.trim().toLowerCase();
+    }).firstOrNull;
 
     return AppBackScope(
       fallbackRoute: '/products',
@@ -143,9 +148,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 },
               ),
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
+              child: RefreshIndicator(
+                onRefresh: _loadProduct,
+                color: AppColors.ink,
+                backgroundColor: AppColors.surfaceElevated,
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
                   // ── Gambar produk Carousel (PageView) + indikator N / Total + Fullscreen Preview ──
                   AspectRatio(
                     aspectRatio: 1,
@@ -175,11 +185,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   assetPath: imagePath,
                                 );
                               },
-                              child: Image.asset(
-                                imagePath,
+                              child: DcCachedImage(
+                                imageUrl: imagePath,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(
+                                errorWidget: Container(
                                   color: AppColors.inputBg,
                                   child: Icon(
                                     Icons.broken_image_rounded,
@@ -268,113 +277,226 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
 
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(product.name, style: _titleStyle),
-                        SizedBox(height: 8),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              MockData.formatPrice(product.price),
-                              style: _priceStyle,
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              MockData.formatPrice(originalPrice),
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textMuted,
-                                decoration: TextDecoration.lineThrough,
-                                decorationColor: AppColors.textMuted,
+                      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(product.name, style: _titleStyle),
+                          const SizedBox(height: 8),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                MockData.formatPrice(product.price),
+                                style: _priceStyle,
                               ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: totalStock > 0
+                                      ? AppColors.surfaceSubtle
+                                      : AppColors.danger.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: totalStock > 0
+                                        ? AppColors.border
+                                        : AppColors.danger.withValues(alpha: 0.35),
+                                  ),
+                                ),
+                                child: Text(
+                                  totalStock > 0
+                                      ? '${AppText.isEnglish ? 'Stock' : 'Stok'}: $totalStock ${AppText.isEnglish ? 'items' : 'buah'}'
+                                      : (AppText.isEnglish ? 'Out of stock' : 'Stok Habis'),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: totalStock > 0
+                                        ? AppColors.ink
+                                        : AppColors.danger,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _MetaRow(
+                            rating: product.rating,
+                            totalReviews: product.totalReviews,
+                            soldCount: product.soldCount,
+                            store: product.studio,
+                          ),
+                          if (product.variants.isNotEmpty) ...[
+                            const SizedBox(height: 18),
+                            Text(
+                              '${AppText.isEnglish ? 'Color / Glaze Variants' : 'Pilihan Warna / Glaze'} (${product.variants.length})',
+                              style: _sectionStyle,
+                            ),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: product.variants.map((v) {
+                                return GestureDetector(
+                                  onTap: () => showModalPilihVariasi(
+                                    context,
+                                    product: product,
+                                    mode: ModalVariasiMode.keduanya,
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 7,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: AppColors.border),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 14,
+                                          height: 14,
+                                          decoration: BoxDecoration(
+                                            color: v.colorValue,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: AppColors.border,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${v.name} (${v.stock})',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: v.stock > 0
+                                                ? AppColors.ink
+                                                : AppColors.textMuted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
                             ),
                           ],
-                        ),
-                        SizedBox(height: 10),
-                        _MetaRow(rating: product.rating, store: product.studio),
-                        SizedBox(height: 22),
+                          const SizedBox(height: 22),
 
-                        _StoreCard(
-                          studio: product.studio,
-                          onTap: () {
-                            final storeIndex = MockData.stores.indexWhere(
-                              (s) => (product.mitraId > 0 && s.id == product.mitraId) ||
-                                     s.name.trim().toLowerCase() == product.studio.trim().toLowerCase(),
-                            );
-                            context.push(
-                              '/store/${storeIndex < 0 ? 0 : storeIndex}',
-                            );
-                          },
-                        ),
-                        SizedBox(height: 22),
-
-                        Text('Deskripsi Produk'.tr, style: _sectionStyle),
-                        SizedBox(height: 8),
-                        Text(
-                          'Vas keramik stoneware buatan tangan pengrajin lokal '
-                          'Dinoyo. Dibakar pada suhu tinggi 1.250°C '
-                          'menghasilkan material yang padat, tahan air, dan '
-                          'awet. Tekstur matte halus dengan sentuhan hangat '
-                          'alami, cocok untuk dekorasi meja, bunga kering, '
-                          'maupun interior minimalis.',
-                          style: _bodyStyle,
-                        ),
-                        SizedBox(height: 18),
-
-                        const _SpecCard(),
-                        SizedBox(height: 14),
-                        const _GuaranteeCard(),
-                        SizedBox(height: 14),
-                        const _RatingSummary(rating: 4.9),
-                        SizedBox(height: 16),
-
-                        _ReviewCard(
-                          review: _Review(
-                            name: 'Customer',
-                            date: '12 Feb 2025',
-                            variantLabel: 'Sand White Glossy',
-                            variantProduct: product.name,
-                            text:
-                                'Glasirnya sangat halus dan rapi, warna aslinya '
-                                'lebih estetik daripada di foto. Pengemasan kayu '
-                                'sangat kokoh dan aman sampai rumah tanpa retak '
-                                'sedikitpun. Sangat bangga dengan karya pengrajin '
-                                'Dinoyo Malang!',
-                            helpfulCount: 14,
-                            photo: product.image,
-                            replyAuthor: 'Dinoyo Ceramic Studio',
-                            replyDate: '13 Feb 2025',
-                            reply:
-                                '"Terima kasih banyak Kak Customer atas apresiasinya! '
-                                'Semoga vas keramiknya mempercantik ruangan rumah."',
+                          _StoreCard(
+                            studio: product.studio,
+                            location: matchedStore?.location.isNotEmpty == true
+                                ? matchedStore!.location
+                                : (product.workshopAddress.isNotEmpty
+                                      ? product.workshopAddress
+                                      : 'Kampung Keramik Dinoyo'),
+                            avatarUrl: matchedStore?.hasCustomAvatar == true
+                                ? (matchedStore!.avatar ?? matchedStore.image)
+                                : null,
+                            initials: matchedStore?.initials,
+                            onTap: () {
+                              final storeIndex = MockData.stores.indexWhere(
+                                (s) =>
+                                    (product.mitraId > 0 && s.id == product.mitraId) ||
+                                    s.name.trim().toLowerCase() ==
+                                        product.studio.trim().toLowerCase(),
+                              );
+                              context.push(
+                                '/store/${storeIndex < 0 ? 0 : storeIndex}',
+                              );
+                            },
                           ),
-                        ),
-                        SizedBox(height: 14),
-                        const _ReviewCard(
-                          review: _Review(
-                            name: 'Rian Hidayat',
-                            initials: 'RH',
-                            date: '8 Feb 2025',
-                            variantLabel: 'Earth Terracotta',
-                            variantProduct: 'Mangkuk Saji Wabi-Sabi',
-                            text:
-                                'Barang sampai dengan selamat di Surabaya. '
-                                'Packing bubble wrap tebal lapis tiga. Bentuk '
-                                'mangkuknya unik bergaya wabi-sabi natural. Pasti '
-                                'bakal order lagi buat koleksi dapur.',
-                            helpfulCount: 5,
-                            footerOnly: true,
+                          const SizedBox(height: 22),
+
+                          Text('Deskripsi Produk'.tr, style: _sectionStyle),
+                          const SizedBox(height: 8),
+                          Text(
+                            product.description.trim().isNotEmpty
+                                ? product.description.trim()
+                                : (AppText.isEnglish
+                                      ? 'No product description provided by the artisan.'
+                                      : 'Belum ada deskripsi produk dari pengrajin.'),
+                            style: _bodyStyle,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 18),
+
+                          _SpecCard(product: product),
+                          const SizedBox(height: 14),
+                          const _GuaranteeCard(),
+                          const SizedBox(height: 14),
+                          _RatingSummary(
+                            rating: product.rating,
+                            totalReviews: product.totalReviews,
+                            reviews: product.reviews,
+                          ),
+                          const SizedBox(height: 16),
+
+                          if (product.reviews.isEmpty)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: AppColors.border,
+                                  width: 1.2,
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  AppText.isEnglish
+                                      ? 'No customer reviews for this product yet.'
+                                      : 'Belum ada ulasan pembeli untuk produk ini.',
+                                  style: _smallGrey,
+                                ),
+                              ),
+                            )
+                          else ...[
+                            for (var rIdx = 0;
+                                rIdx < product.reviews.length;
+                                rIdx++) ...[
+                              if (rIdx > 0) const SizedBox(height: 14),
+                              Builder(
+                                builder: (_) {
+                                  final rev = product.reviews[rIdx];
+                                  return _ReviewCard(
+                                    review: _Review(
+                                      name: rev.userName,
+                                      initials: _reviewerInitials(rev.userName),
+                                      date: (rev.createdAt ?? '').length >= 10
+                                          ? rev.createdAt!.substring(0, 10)
+                                          : 'Baru saja',
+                                      variantLabel: rev.variant.isNotEmpty
+                                          ? rev.variant
+                                          : 'Standar',
+                                      variantProduct: product.name,
+                                      text: rev.comment,
+                                      helpfulCount: rev.helpfulCount,
+                                      photo: rev.photoUrls.isNotEmpty
+                                          ? rev.photoUrls.first
+                                          : null,
+                                      replyAuthor: rev.sellerReply != null
+                                          ? product.studio
+                                          : null,
+                                      reply: rev.sellerReply,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
@@ -390,7 +512,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   BoxShadow(
                     color: Colors.black.withValues(alpha: .06),
                     blurRadius: 12,
-                    offset: Offset(0, -3),
+                    offset: const Offset(0, -3),
                   ),
                 ],
               ),
@@ -405,29 +527,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       style: OutlinedButton.styleFrom(
                         padding: EdgeInsets.zero,
-                        shape: CircleBorder(),
+                        shape: const CircleBorder(),
                         foregroundColor: AppColors.ink,
                         side: BorderSide(color: AppColors.ink, width: 1.5),
                       ),
-                      child: Icon(Icons.chat_bubble_outline_rounded, size: 20),
+                      child: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: SizedBox(
                       height: 44,
                       child: OutlinedButton.icon(
-                        onPressed: () => showModalPilihVariasi(
-                          context,
-                          product: product,
-                          mode: ModalVariasiMode.keranjang,
-                        ),
+                        onPressed: totalStock > 0
+                            ? () => showModalPilihVariasi(
+                                context,
+                                product: product,
+                                mode: ModalVariasiMode.keranjang,
+                              )
+                            : null,
                         icon: SvgPicture.asset(
                           AppAssets.iconCartPlus,
                           width: 19,
                           height: 19,
                           colorFilter: ColorFilter.mode(
-                            AppColors.ink,
+                            totalStock > 0 ? AppColors.ink : AppColors.textMuted,
                             BlendMode.srcIn,
                           ),
                         ),
@@ -445,42 +569,56 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 6),
-                          foregroundColor: AppColors.ink,
-                          shape: StadiumBorder(),
+                          foregroundColor: totalStock > 0
+                              ? AppColors.ink
+                              : AppColors.textMuted,
+                          shape: const StadiumBorder(),
                           side: BorderSide(
-                            color: AppColors.ink,
+                            color: totalStock > 0
+                                ? AppColors.ink
+                                : AppColors.border,
                             width: 1.5,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: SizedBox(
                       height: 44,
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(999),
-                          boxShadow: AppColors.darkButtonShadow,
+                          boxShadow: totalStock > 0
+                              ? AppColors.darkButtonShadow
+                              : const [],
                         ),
                         child: FilledButton(
-                          onPressed: () => showModalPilihVariasi(
-                            context,
-                            product: product,
-                            mode: ModalVariasiMode.beliLangsung,
-                          ),
+                          onPressed: totalStock > 0
+                              ? () => showModalPilihVariasi(
+                                  context,
+                                  product: product,
+                                  mode: ModalVariasiMode.beliLangsung,
+                                )
+                              : null,
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 6),
                             backgroundColor: AppColors.black,
+                            disabledBackgroundColor: AppColors.border,
                             foregroundColor: AppColors.white,
+                            disabledForegroundColor: AppColors.textMuted,
                             elevation: 0,
                             shape: AppColors.stadiumButtonShape,
                           ),
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              'Beli Langsung'.tr,
+                              totalStock > 0
+                                  ? 'Beli Langsung'.tr
+                                  : (AppText.isEnglish
+                                        ? 'Out of Stock'
+                                        : 'Stok Habis'),
                               maxLines: 1,
                               softWrap: false,
                               style: GoogleFonts.plusJakartaSans(
@@ -711,10 +849,18 @@ class _MenuDividerState extends State<_MenuDivider> {
   }
 }
 
-// ═══ ★ 4.9 • 128 Ulasan • Terjual 340+ ══════════════════════════════════════
+// ═══ ★ Rating • N Ulasan • Terjual M ═══════════════════════════════════════════
 class _MetaRow extends StatelessWidget {
-  const _MetaRow({required this.rating, required this.store});
+  const _MetaRow({
+    required this.rating,
+    required this.totalReviews,
+    required this.soldCount,
+    required this.store,
+  });
+
   final double rating;
+  final int totalReviews;
+  final int soldCount;
   final String store;
 
   Widget _dot() => Padding(
@@ -735,13 +881,19 @@ class _MetaRow extends StatelessWidget {
       fontSize: 13,
       color: AppColors.textSecondary,
     );
+    final ratingLabel = totalReviews > 0 && rating > 0
+        ? rating.toStringAsFixed(1)
+        : (AppText.isEnglish ? 'New' : 'Baru');
+    final reviewsLabel = '$totalReviews ${AppText.isEnglish ? 'Reviews' : 'Ulasan'}';
+    final soldLabel = '${AppText.isEnglish ? 'Sold' : 'Terjual'} $soldCount';
+
     return Row(
       children: [
         Icon(Icons.star_rounded, size: 18, color: AppColors.ink),
-        SizedBox(width: 3),
+        const SizedBox(width: 3),
         Flexible(
           child: Text(
-            rating.toStringAsFixed(1),
+            ratingLabel,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.plusJakartaSans(
@@ -757,7 +909,7 @@ class _MetaRow extends StatelessWidget {
             onTap: () =>
                 context.push('/reviews?store=${Uri.encodeComponent(store)}'),
             child: Text(
-              '128 Ulasan'.tr,
+              reviewsLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: style.copyWith(
@@ -769,10 +921,12 @@ class _MetaRow extends StatelessWidget {
         ),
         _dot(),
         Flexible(
-          child: Text('Terjual 340+'.tr,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: style),
+          child: Text(
+            soldLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          ),
         ),
       ],
     );
@@ -781,8 +935,18 @@ class _MetaRow extends StatelessWidget {
 
 // ═══ Kartu toko ═════════════════════════════════════════════════════════════
 class _StoreCard extends StatelessWidget {
-  const _StoreCard({required this.studio, required this.onTap});
+  const _StoreCard({
+    required this.studio,
+    required this.location,
+    this.avatarUrl,
+    this.initials,
+    required this.onTap,
+  });
+
   final String studio;
+  final String location;
+  final String? avatarUrl;
+  final String? initials;
   final VoidCallback onTap;
 
   @override
@@ -801,13 +965,32 @@ class _StoreCard extends StatelessWidget {
             border: Border.all(color: AppColors.ink, width: 1.5),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            Icons.storefront_outlined,
-            size: 24,
-            color: AppColors.ink,
-          ),
+          clipBehavior: Clip.antiAlias,
+          child: avatarUrl != null && avatarUrl!.isNotEmpty
+              ? DcCachedImage(
+                  imageUrl: avatarUrl!,
+                  width: 46,
+                  height: 46,
+                  fit: BoxFit.cover,
+                )
+              : Center(
+                  child: (initials != null && initials!.isNotEmpty)
+                      ? Text(
+                          initials!,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.ink,
+                          ),
+                        )
+                      : Icon(
+                          Icons.storefront_outlined,
+                          size: 24,
+                          color: AppColors.ink,
+                        ),
+                ),
         ),
-        SizedBox(width: 12),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -822,7 +1005,7 @@ class _StoreCard extends StatelessWidget {
                   color: AppColors.ink,
                 ),
               ),
-              SizedBox(height: 3),
+              const SizedBox(height: 3),
               Row(
                 children: [
                   Icon(
@@ -830,10 +1013,10 @@ class _StoreCard extends StatelessWidget {
                     size: 13,
                     color: AppColors.ink,
                   ),
-                  SizedBox(width: 3),
+                  const SizedBox(width: 3),
                   Expanded(
                     child: Text(
-                      'Kampung Keramik Dinoyo',
+                      location,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
@@ -847,15 +1030,15 @@ class _StoreCard extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         OutlinedButton(
           onPressed: onTap,
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.ink,
-            minimumSize: Size(0, 32),
+            minimumSize: const Size(0, 32),
             padding: const EdgeInsets.symmetric(horizontal: 12),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape: StadiumBorder(),
+            shape: const StadiumBorder(),
             side: BorderSide(color: AppColors.ink, width: 1.2),
           ),
           child: Text(
@@ -873,14 +1056,16 @@ class _StoreCard extends StatelessWidget {
 
 // ═══ Spesifikasi detail (grid 2 kolom) ══════════════════════════════════════
 class _SpecCard extends StatelessWidget {
-  const _SpecCard();
+  const _SpecCard({required this.product});
+
+  final Product product;
 
   Widget _cell(String label, String value) => Expanded(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: _smallGrey),
-        SizedBox(height: 3),
+        const SizedBox(height: 3),
         Text(
           value,
           style: GoogleFonts.plusJakartaSans(
@@ -895,38 +1080,47 @@ class _SpecCard extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-    decoration: BoxDecoration(
-      border: Border.all(color: AppColors.ink, width: 1.5),
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Spesifikasi Detail'.tr, style: _sectionStyle),
-        SizedBox(height: 14),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _cell('Bahan Utama'.tr, 'Tanah Liat Dinoyo (Stoneware)'.tr),
-            SizedBox(width: 12),
-            _cell('Finishing'.tr, 'Matte Glaze Alami'.tr),
-          ],
-        ),
-        SizedBox(height: 14),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _cell('Dimensi Produk'.tr, 'T 18cm × D 9cm'),
-            SizedBox(width: 12),
-            _cell('Berat Bersih'.tr, '600 gram'),
-          ],
-        ),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final stockText = product.effectiveStock <= 0
+        ? (AppText.isEnglish ? 'Out of stock' : 'Habis')
+        : '${product.effectiveStock} ${AppText.isEnglish ? 'units' : 'unit'}';
+    final variantText = product.variants.isEmpty
+        ? (AppText.isEnglish ? 'Standard' : 'Standar')
+        : '${product.variants.length} ${AppText.isEnglish ? 'variants' : 'varian'}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.ink, width: 1.5),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Spesifikasi Detail'.tr, style: _sectionStyle),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _cell('Kategori'.tr, product.category),
+              const SizedBox(width: 12),
+              _cell(AppText.isEnglish ? 'Available Stock' : 'Total Stok', stockText),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _cell(AppText.isEnglish ? 'Color Variants' : 'Varian Warna', variantText),
+              const SizedBox(width: 12),
+              _cell('Berat Bersih'.tr, '${product.weightGram} gram'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ═══ Garansi kemasan ════════════════════════════════════════════════════════
@@ -983,16 +1177,15 @@ class _GuaranteeCard extends StatelessWidget {
 
 // ═══ Ringkasan rating ═══════════════════════════════════════════════════════
 class _RatingSummary extends StatelessWidget {
-  const _RatingSummary({required this.rating});
-  final double rating;
+  const _RatingSummary({
+    required this.rating,
+    required this.totalReviews,
+    required this.reviews,
+  });
 
-  static const _bars = [
-    (5, 0.92, '92%'),
-    (4, 0.06, '6%'),
-    (3, 0.02, '2%'),
-    (2, 0.0, '0%'),
-    (1, 0.0, '0%'),
-  ];
+  final double rating;
+  final int totalReviews;
+  final List<ProductReview> reviews;
 
   Widget _barRow(int star, double value, String pct) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 3.5),
@@ -1035,94 +1228,151 @@ class _RatingSummary extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      border: Border.all(color: AppColors.border, width: 1.2),
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Column(
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              flex: 4,
-              child: Column(
-                children: [
-                  Text(
-                    rating.toStringAsFixed(1),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 38,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  const _Stars(size: 20),
-                  SizedBox(height: 4),
-                  Text('128 ulasan', style: _smallGrey),
-                ],
-              ),
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              flex: 6,
-              child: Column(
-                children: [
-                  for (final b in _bars) _barRow(b.$1, b.$2, b.$3),
-                ],
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 14),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-          decoration: BoxDecoration(
-            color: AppColors.inputBg,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
+  Widget build(BuildContext context) {
+    final counts = <int, int>{5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+    for (final rev in reviews) {
+      final rounded = rev.rating.round().clamp(1, 5);
+      counts[rounded] = (counts[rounded] ?? 0) + 1;
+    }
+    final denom = reviews.isNotEmpty ? reviews.length : 1;
+    final recCount = reviews.where((r) => r.rating >= 4.0).length;
+    final recPct = reviews.isNotEmpty
+        ? ((recCount / reviews.length) * 100).round()
+        : 0;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border, width: 1.2),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(Icons.thumb_up_alt_outlined,
-                  size: 17, color: AppColors.ink),
-              SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  '98% pembeli merekomendasikan produk ini'.tr,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
-                  ),
+              Expanded(
+                flex: 4,
+                child: Column(
+                  children: [
+                    Text(
+                      totalReviews > 0 && rating > 0
+                          ? rating.toStringAsFixed(1)
+                          : '0.0',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 38,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    _Stars(
+                      size: 20,
+                      rating: totalReviews > 0 ? rating : 0,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$totalReviews ${AppText.isEnglish ? 'reviews' : 'ulasan'}',
+                      style: _smallGrey,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 6,
+                child: Column(
+                  children: [
+                    for (final star in [5, 4, 3, 2, 1])
+                      Builder(
+                        builder: (_) {
+                          final frac = reviews.isNotEmpty
+                              ? (counts[star] ?? 0) / denom
+                              : 0.0;
+                          final pct = '${(frac * 100).round()}%';
+                          return _barRow(star, frac, pct);
+                        },
+                      ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-      ],
-    ),
-  );
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: AppColors.inputBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.thumb_up_alt_outlined,
+                    size: 17, color: AppColors.ink),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    reviews.isNotEmpty
+                        ? (AppText.isEnglish
+                              ? '$recPct% of buyers recommend this product'
+                              : '$recPct% pembeli merekomendasikan produk ini')
+                        : (AppText.isEnglish
+                              ? 'Be the first to review this ceramic piece'
+                              : 'Jadilah pembeli pertama yang mengulas produk ini'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Stars extends StatelessWidget {
-  const _Stars({this.size = 15});
+  const _Stars({this.size = 15, this.rating = 5.0});
   final double size;
+  final double rating;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: List.generate(
-      5,
-      (_) => Icon(Icons.star_rounded, color: _starColor, size: size),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final filledCount = rating.round().clamp(0, 5);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(
+        5,
+        (i) => Icon(
+          i < filledCount ? Icons.star_rounded : Icons.star_outline_rounded,
+          color: i < filledCount ? _starColor : AppColors.textMuted,
+          size: size,
+        ),
+      ),
+    );
+  }
 }
 
 // ═══ Ulasan ═════════════════════════════════════════════════════════════════
+String? _reviewerInitials(String name) {
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((p) => p.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return null;
+  if (parts.length == 1) {
+    return parts.first[0].toUpperCase();
+  }
+  return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+}
+
 class _Review {
   const _Review({
     required this.name,
@@ -1135,8 +1385,6 @@ class _Review {
     this.photo,
     this.reply,
     this.replyAuthor,
-    this.replyDate,
-    this.footerOnly = false,
   });
 
   final String name;
@@ -1149,10 +1397,6 @@ class _Review {
   final String? photo;
   final String? reply;
   final String? replyAuthor;
-  final String? replyDate;
-
-  /// true → footer sederhana "Membantu N orang" (tanpa teks "Apakah ulasan...").
-  final bool footerOnly;
 }
 
 class _ReviewCard extends StatefulWidget {
@@ -1434,46 +1678,24 @@ class _ReviewCardState extends State<_ReviewCard> {
           SizedBox(height: 12),
 
           // ── Footer: Membantu ──
-          if (review.footerOnly) ...[
-            Divider(height: 1, thickness: 1, color: AppColors.border),
-            SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _helpfulPill(),
-                Flexible(
-                  child: Text(
-                    'Membantu ${review.helpfulCount} orang',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _helpfulPill(),
+              Flexible(
+                child: Text(
+                  'Apakah ulasan ini bermanfaat?'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
                   ),
                 ),
-              ],
-            ),
-          ] else
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _helpfulPill(),
-                Flexible(
-                  child: Text(
-                    'Apakah ulasan ini bermanfaat?'.tr,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
+          ),
 
           // ── Foto ulasan ──
           if (hasPhoto) ...[
@@ -1492,8 +1714,8 @@ class _ReviewCardState extends State<_ReviewCard> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      review.photo!,
+                    child: DcCachedImage(
+                      imageUrl: review.photo!,
                       width: 142,
                       height: 142,
                       fit: BoxFit.cover,
@@ -1549,14 +1771,6 @@ class _ReviewCardState extends State<_ReviewCard> {
                             fontWeight: FontWeight.w700,
                             color: AppColors.ink,
                           ),
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        '• ${review.replyDate ?? ''}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],

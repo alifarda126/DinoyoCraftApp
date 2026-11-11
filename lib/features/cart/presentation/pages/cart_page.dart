@@ -1,9 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/constants/asset_constants.dart';
+import '../../../../core/widgets/dc_cached_image.dart';
 
 // ─── Cart Item Model (placeholder — ganti dengan entity domain layer) ─────────
 class CartItem {
@@ -272,12 +273,12 @@ class _CartItemTile extends StatelessWidget {
           // Product Image
           ClipRRect(
             borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-            child: Image.asset(
-              item.imagePath,
+            child: DcCachedImage(
+              imageUrl: item.imagePath,
               width: 72,
               height: 72,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => ColoredBox(
+              errorWidget: ColoredBox(
                 color: AppColors.inputBg,
                 child: SizedBox(width: 72, height: 72),
               ),

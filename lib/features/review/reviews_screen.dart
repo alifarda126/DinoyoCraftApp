@@ -7,6 +7,7 @@ import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 import 'presentation/modal_laporkan_ulasan.dart';
 
@@ -701,8 +702,8 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.asset(
-                            photo,
+                          child: DcCachedImage(
+                            imageUrl: photo,
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,

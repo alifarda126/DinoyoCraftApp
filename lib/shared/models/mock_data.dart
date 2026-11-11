@@ -209,7 +209,7 @@ abstract final class MockData {
     FaqItem(
       question: 'Metode pembayaran apa saja yang tersedia?',
       answer:
-          'MVP mendukung QRIS, Virtual Account, dan E-Wallet. Pembayaran di demo ini bersifat simulasi.',
+          'DinoyoCraft mendukung pembayaran via Midtrans Sandbox: QRIS, Virtual Account (BCA, Mandiri, BRI, BNI, Permata), serta E-Wallet (GoPay & ShopeePay).',
     ),
   ];
 

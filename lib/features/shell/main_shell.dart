@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_bottom_nav.dart';
 import '../../features/chatbot/chatbot_screen.dart';
+import '../../features/profile/profile_screen.dart';
 
 class MainShell extends StatefulWidget {
 const   MainShell({super.key, required this.navigationShell});
@@ -94,10 +95,15 @@ class _MainShellState extends State<MainShell> {
         ),
         bottomNavigationBar: DcBottomNav(
           currentIndex: index,
-          onTap: (i) => widget.navigationShell.goBranch(
-            i,
-            initialLocation: i == widget.navigationShell.currentIndex,
-          ),
+          onTap: (i) {
+            if (i == 4) {
+              ProfileScreen.refreshNotifier.value++;
+            }
+            widget.navigationShell.goBranch(
+              i,
+              initialLocation: i == widget.navigationShell.currentIndex,
+            );
+          },
         ),
       ),
     );

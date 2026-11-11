@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/auth_session.dart';
+import '../../core/services/pusher_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../data/mock_data.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -18,8 +24,139 @@ class ChatListScreen extends StatefulWidget {
 }
 
 class _ChatListScreenState extends State<ChatListScreen> {
+  List<_ChatData> _serverChats = [];
+  bool _loading = false;
+  StreamSubscription? _msgSub;
+
+  @override
+  void initState() {
+    super.initState();
+    if (AuthSession.isLoggedIn) {
+      _loading = true;
+      _fetchContacts();
+    }
+    _msgSub = PusherService.instance.messageStream.listen((_) {
+      if (AuthSession.isLoggedIn && mounted) {
+        _fetchContacts();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _msgSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchContacts() async {
+    if (!AuthSession.isLoggedIn) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    try {
+      final res = await ApiClient.get('/chat/contacts');
+      final rows = res['data'];
+      if (rows is List) {
+        final maps = rows
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+
+        // Normalisasi display name agar sinkron dengan MockData.syncUnreadChatFromContacts
+        final normalizedForSync = <Map<String, dynamic>>[];
+        final parsed = <_ChatData>[];
+
+        for (final c in maps) {
+          final rawStore = (c['store_name'] ?? '').toString().trim();
+          final rawName = (c['name'] ?? '').toString().trim();
+          final role = (c['role'] ?? '').toString().trim().toLowerCase();
+          final lastMsg = (c['last_message'] ?? '').toString().trim();
+          final displayName = rawStore.isNotEmpty
+              ? rawStore
+              : (rawName.isNotEmpty ? rawName : 'Pengrajin Dinoyo');
+
+          normalizedForSync.add({
+            'store_name': displayName,
+            'unread_count': c['unread_count'] ?? 0,
+          });
+
+          if (role != 'mitra' && rawStore.isEmpty && lastMsg.isEmpty) {
+            continue;
+          }
+
+          final rawUnread = c['unread_count'] ?? 0;
+          final unreadCount = rawUnread is num
+              ? rawUnread.toInt()
+              : int.tryParse('$rawUnread') ?? 0;
+          final rawAvatar = c['avatar_url']?.toString().trim();
+          final avatarUrl = (rawAvatar != null &&
+                  rawAvatar.isNotEmpty &&
+                  rawAvatar != 'null')
+              ? ApiClient.resolveImageUrl(rawAvatar)
+              : null;
+
+          parsed.add(
+            _ChatData(
+              userId: c['id']?.toString(),
+              store: displayName,
+              time: _formatChatTime(c['last_message_time']?.toString()),
+              preview: lastMsg.isNotEmpty
+                  ? lastMsg
+                  : 'Mulai obrolan dengan $displayName',
+              image: AppAssets.storeDinoyo,
+              avatarUrl: avatarUrl,
+              unread: unreadCount > 0,
+              unreadCount: unreadCount,
+              online: role == 'mitra',
+              contextLabel: role == 'mitra' ? 'Pengrajin DinoyoCraft' : 'Pesan',
+            ),
+          );
+        }
+
+        MockData.syncUnreadChatFromContacts(normalizedForSync);
+        if (mounted) {
+          setState(() {
+            _serverChats = parsed;
+            _loading = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {
+      // Fallback ke daftar lokal bila jaringan offline.
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  String _formatChatTime(String? iso) {
+    if (iso == null || iso.trim().isEmpty || iso.trim() == 'null') return '';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final targetDay = DateTime(dt.year, dt.month, dt.day);
+      final diffDays = today.difference(targetDay).inDays;
+      String two(int v) => v.toString().padLeft(2, '0');
+      if (diffDays == 0) {
+        return '${two(dt.hour)}:${two(dt.minute)}';
+      }
+      if (diffDays == 1) {
+        return 'Kemarin';
+      }
+      const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+        'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+      ];
+      return '${dt.day} ${months[dt.month - 1]}';
+    } catch (_) {
+      return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final items = AuthSession.isLoggedIn ? _serverChats : _chats;
+
     return AppBackScope(
       fallbackRoute: '/home',
       child: Scaffold(
@@ -67,22 +204,48 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     ),
                   ),
                   Expanded(
-                    child: ValueListenableBuilder<int>(
-                      valueListenable: MockData.unreadChatNotifier,
-                      builder: (context, unreadCount, child) {
-                        return ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(20, 6, 20, 30),
-                          itemCount: _chats.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 12),
-                          itemBuilder: (context, i) => _ChatCard(
-                            chat: _chats[i],
-                            onTap: () {
-                              if (mounted) setState(() {});
+                    child: _loading && items.isEmpty
+                        ? const Center(child: CircularProgressIndicator())
+                        : ValueListenableBuilder<int>(
+                            valueListenable: MockData.unreadChatNotifier,
+                            builder: (context, unreadCount, child) {
+                              if (items.isEmpty) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Text(
+                                      'Belum ada percakapan dengan toko.'.tr,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                              return RefreshIndicator(
+                                onRefresh: _fetchContacts,
+                                color: AppColors.ink,
+                                child: ListView.separated(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(20, 6, 20, 30),
+                                  itemCount: items.length,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (context, i) => _ChatCard(
+                                    chat: items[i],
+                                    onTap: () {
+                                      if (AuthSession.isLoggedIn) {
+                                        _fetchContacts();
+                                      } else if (mounted) {
+                                        setState(() {});
+                                      }
+                                    },
+                                  ),
+                                ),
+                              );
                             },
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ],
               );
@@ -100,18 +263,24 @@ class _ChatData {
     required this.time,
     required this.preview,
     required this.image,
+    this.userId,
+    this.avatarUrl,
     this.unread = false,
+    this.unreadCount = 0,
     this.online = false,
     this.productChip,
     this.productImage,
     this.contextLabel,
   });
 
+  final String? userId;
   final String store;
   final String time;
   final String preview;
   final String image;
+  final String? avatarUrl;
   final bool unread;
+  final int unreadCount;
   final bool online;
   final String? productChip;
   final String? productImage;
@@ -198,12 +367,23 @@ class _ChatCard extends StatelessWidget {
       boxShadow = null;
     }
 
+    final badgeUnreadCount =
+        MockData.unreadChatCountByStore[chat.store.trim().toLowerCase()] ??
+            (isUnread ? (chat.unreadCount > 0 ? chat.unreadCount : 1) : 0);
+
     return InkWell(
       onTap: () async {
         MockData.markChatAsRead(chat.store);
         onTap?.call();
-        await context
-            .push('/chat-room?store=${Uri.encodeComponent(chat.store)}');
+        final uri = Uri(
+          path: '/chat-room',
+          queryParameters: {
+            'store': chat.store,
+            if (chat.userId != null && chat.userId!.isNotEmpty)
+              'userId': chat.userId!,
+          },
+        );
+        await context.push(uri.toString());
         if (context.mounted) {
           onTap?.call();
         }
@@ -227,10 +407,20 @@ class _ChatCard extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundImage: AssetImage(chat.image),
-                ),
+                if (chat.avatarUrl != null && chat.avatarUrl!.startsWith('http'))
+                  ClipOval(
+                    child: DcCachedImage(
+                      imageUrl: chat.avatarUrl!,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                else
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundImage: AssetImage(chat.image),
+                  ),
                 if (chat.online)
                   Positioned(
                     right: -1,
@@ -289,10 +479,10 @@ class _ChatCard extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: isDark ? Colors.white : AppColors.black,
-                            shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
-                            '1',
+                            badgeUnreadCount > 99 ? '99+' : '$badgeUnreadCount',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -389,7 +579,8 @@ class _ChatCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ] else
+                      ] else if (chat.contextLabel != null &&
+                          chat.contextLabel!.isNotEmpty)
                         Flexible(
                           child: Text(
                             chat.contextLabel!,

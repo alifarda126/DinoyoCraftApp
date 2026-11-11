@@ -31,7 +31,7 @@ class _StoresScreenState extends State<StoresScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    await MockData.fetchPublicData();
+    await MockData.fetchPublicData(force: true);
     if (mounted) setState(() {});
   }
 
@@ -238,7 +238,9 @@ class _StoresScreenState extends State<StoresScreen> {
                                 ),
                                 SizedBox(width: 4),
                                 Text(
-                                  store.rating.toStringAsFixed(1),
+                                  store.rating > 0
+                                      ? store.rating.toStringAsFixed(1)
+                                      : (AppText.isEnglish ? 'New' : 'Baru'),
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,

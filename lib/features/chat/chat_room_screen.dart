@@ -8,6 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/auth_session.dart';
 import '../../core/services/pusher_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
@@ -23,10 +25,12 @@ class ChatRoomScreen extends StatefulWidget {
     super.key,
     this.storeName = 'Dinoyo Ceramic Studio',
     this.productId,
+    this.targetUserId,
   });
 
   final String storeName;
   final String? productId;
+  final String? targetUserId;
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -73,17 +77,64 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   Product? _productPreview;
   bool _isSellerConnected = false;
   bool _isConnectingSeller = false;
+  bool _loadingHistory = false;
+  String? _resolvedTargetUserId;
+  final Set<String> _seenMessageIds = {};
+  StreamSubscription<PusherChatMessage>? _incomingMsgSub;
   Timer? _botTimer;
   Timer? _sellerTimer;
 
   late final String _channelName =
       'chat.store.${widget.storeName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
 
+  bool get _useBackendChat =>
+      AuthSession.isLoggedIn &&
+      _resolvedTargetUserId != null &&
+      _resolvedTargetUserId!.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
+    MockData.activeChatStoreName = widget.storeName;
+    MockData.activeChatUserId = widget.targetUserId;
     MockData.markChatAsRead(widget.storeName);
     _subscribePusher();
+
+    if (AuthSession.isLoggedIn) {
+      _messages.clear();
+      _loadingHistory = true;
+      _initRealChat();
+    }
+
+    _incomingMsgSub = PusherService.instance.messageStream.listen((msg) {
+      if (!mounted || msg.isMine) return;
+      final targetId = _resolvedTargetUserId?.trim();
+      final matchesTarget = targetId != null &&
+          targetId.isNotEmpty &&
+          msg.senderId.trim() == targetId;
+      if (!matchesTarget) return;
+      if (msg.id.isNotEmpty && _seenMessageIds.contains(msg.id)) return;
+      if (msg.id.isNotEmpty) _seenMessageIds.add(msg.id);
+
+      setState(() {
+        _messages.add(
+          _ChatMessage(
+            isMine: false,
+            time: _formatMessageTime(msg.time),
+            text: msg.text,
+            senderType: _SenderType.seller,
+          ),
+        );
+      });
+      _scrollToBottom();
+      MockData.markChatAsRead(widget.storeName);
+      if (AuthSession.isLoggedIn && targetId.isNotEmpty) {
+        ApiClient.patch('/chat/messages/$targetId/read')
+            .then((_) => MockData.refreshUnreadCounts())
+            .catchError((_) {});
+      }
+    });
+
     if (widget.productId != null) {
       try {
         _productPreview = MockData.products.firstWhere(
@@ -92,6 +143,109 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       } catch (_) {
         _productPreview = null;
       }
+    }
+  }
+
+  Future<void> _initRealChat() async {
+    String? targetId = widget.targetUserId?.trim();
+    if (targetId != null && (targetId.isEmpty || targetId == 'null')) {
+      targetId = null;
+    }
+
+    if (targetId == null) {
+      final localMatch = MockData.stores.cast<Store?>().firstWhere(
+            (s) =>
+                s?.name.trim().toLowerCase() ==
+                widget.storeName.trim().toLowerCase(),
+            orElse: () => null,
+          );
+      if (localMatch?.userId != null) {
+        targetId = localMatch!.userId.toString();
+      }
+    }
+
+    if (targetId == null) {
+      try {
+        final contactsRes = await ApiClient.get('/chat/contacts');
+        final rows = contactsRes['data'];
+        if (rows is List) {
+          final targetLower = widget.storeName.trim().toLowerCase();
+          for (final item in rows.whereType<Map>()) {
+            final sName = (item['store_name'] ?? '').toString().trim().toLowerCase();
+            final uName = (item['name'] ?? '').toString().trim().toLowerCase();
+            if (sName == targetLower || uName == targetLower) {
+              targetId = item['id']?.toString();
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
+    _resolvedTargetUserId = targetId;
+    MockData.activeChatUserId = targetId;
+
+    if (targetId == null || targetId.isEmpty) {
+      setState(() => _loadingHistory = false);
+      return;
+    }
+
+    try {
+      final res = await ApiClient.get('/chat/messages/$targetId');
+      final rawList = res['data'];
+      final currentId = (res['current_user_id'] ??
+              AuthSession.user?['id'])
+          ?.toString();
+      final loaded = <_ChatMessage>[];
+      if (rawList is List) {
+        for (final row in rawList.whereType<Map>()) {
+          final idStr = row['id']?.toString() ?? '';
+          if (idStr.isNotEmpty) _seenMessageIds.add(idStr);
+          final isMine =
+              currentId != null && row['sender_id']?.toString() == currentId;
+          loaded.add(
+            _ChatMessage(
+              isMine: isMine,
+              time: _formatMessageTime(row['created_at']?.toString() ?? ''),
+              text: row['message']?.toString() ?? '',
+              senderType: isMine ? _SenderType.user : _SenderType.seller,
+            ),
+          );
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _isSellerConnected = true;
+        _loadingHistory = false;
+        _messages
+          ..clear()
+          ..addAll(loaded);
+      });
+      _scrollToBottom();
+      MockData.markChatAsRead(widget.storeName);
+      unawaited(MockData.refreshUnreadCounts());
+      return;
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isSellerConnected = true;
+          _loadingHistory = false;
+        });
+      }
+    }
+  }
+
+  String _formatMessageTime(String raw) {
+    if (raw.trim().isEmpty) return _nowLabel();
+    if (RegExp(r'^\d{2}:\d{2}$').hasMatch(raw.trim())) return raw.trim();
+    try {
+      final dt = DateTime.parse(raw).toLocal();
+      String two(int v) => v.toString().padLeft(2, '0');
+      return '${two(dt.hour)}:${two(dt.minute)}';
+    } catch (_) {
+      return _nowLabel();
     }
   }
 
@@ -211,6 +365,23 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       }
     });
     _scrollToBottom();
+
+    if (_useBackendChat) {
+      if (text.isNotEmpty) {
+        unawaited(
+          ApiClient.post('/chat/send/${_resolvedTargetUserId!}', {
+            'message': text,
+          }).catchError((_) => <String, dynamic>{}),
+        );
+      } else if (sentProduct != null) {
+        unawaited(
+          ApiClient.post('/chat/send/${_resolvedTargetUserId!}', {
+            'message': 'Menanyakan produk: ${sentProduct.name}',
+          }).catchError((_) => <String, dynamic>{}),
+        );
+      }
+      return;
+    }
 
     if (!_isSellerConnected && !_isConnectingSeller) {
       _triggerStoreBotResponse(text, sentProduct);
@@ -519,8 +690,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   void dispose() {
+    MockData.activeChatStoreName = null;
+    MockData.activeChatUserId = null;
     _botTimer?.cancel();
     _sellerTimer?.cancel();
+    _incomingMsgSub?.cancel();
     PusherService.instance.unsubscribe(_channelName);
     _inputController.dispose();
     _scrollController.dispose();
@@ -545,15 +719,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   _buildHeader(),
                   Divider(height: 1, color: AppColors.divider),
                   Expanded(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                      itemCount: _messages.length + 1,
-                      itemBuilder: (context, i) {
-                        if (i == 0) return _buildDateDivider();
-                        return _buildBubble(_messages[i - 1]);
-                      },
-                    ),
+                    child: _loadingHistory
+                        ? const Center(child: CircularProgressIndicator())
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                            itemCount: _messages.length + 1,
+                            itemBuilder: (context, i) {
+                              if (i == 0) return _buildDateDivider();
+                              return _buildBubble(_messages[i - 1]);
+                            },
+                          ),
                   ),
                   if (_productPreview != null)
                     _buildBottomProductPreview(_productPreview!),
@@ -874,8 +1050,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             onTap: () => context.push('/product/${product.id}'),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                product.image,
+              child: DcCachedImage(
+                imageUrl: product.image,
                 width: 58,
                 height: 58,
                 fit: BoxFit.cover,
@@ -998,8 +1174,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  product.image,
+                child: DcCachedImage(
+                  imageUrl: product.image,
                   width: 68,
                   height: 68,
                   fit: BoxFit.cover,
@@ -1042,7 +1218,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         ),
                         const SizedBox(width: 2),
                         Text(
-                          '${product.rating}',
+                          product.rating > 0
+                              ? product.rating.toStringAsFixed(1)
+                              : (AppText.isEnglish ? 'New' : 'Baru'),
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -1052,7 +1230,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         const SizedBox(width: 3),
                         Expanded(
                           child: Text(
-                            '• Terjual 340+'.tr,
+                            '• ${AppText.isEnglish ? 'Sold' : 'Terjual'} ${product.soldCount}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.plusJakartaSans(

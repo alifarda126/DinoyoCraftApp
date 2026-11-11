@@ -287,7 +287,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
-                  await MockData.fetchPublicData();
+                  await MockData.fetchPublicData(force: true);
                   if (mounted) setState(() {});
                 },
                 color: AppColors.ink,
@@ -390,15 +390,16 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                                 ),
                                 SizedBox(width: 3),
                                 Text(
-                                  store.rating.toStringAsFixed(1),
+                                  store.rating > 0
+                                      ? store.rating.toStringAsFixed(1)
+                                      : (AppText.isEnglish ? 'New' : 'Baru'),
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
-                                // TODO: ganti dengan jumlah ulasan asli jika ada di model
                                 Text(
-                                  ' (128 Ulasan)',
+                                  ' (${store.totalReviews} ${AppText.isEnglish ? 'Reviews' : 'Ulasan'})',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 10,
                                     color: AppColors.textSecondary,

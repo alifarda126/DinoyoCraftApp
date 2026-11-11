@@ -9,6 +9,7 @@ import '../../core/assets.dart';
 import '../../core/services/photo_picker_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 
 class WriteReviewScreen extends StatefulWidget {
@@ -189,8 +190,8 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              widget.productImage,
+            child: DcCachedImage(
+              imageUrl: widget.productImage,
               width: 64,
               height: 64,
               fit: BoxFit.cover,

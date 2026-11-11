@@ -5,6 +5,7 @@ import '../../../../core/app_text.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/dc_cached_image.dart';
 import '../../../../core/widgets/image_preview_dialog.dart';
 import '../modal_laporkan_produk.dart';
 
@@ -303,12 +304,12 @@ class _ProductHeroImage extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(
-              imagePath,
+            DcCachedImage(
+              imageUrl: imagePath,
               width: double.infinity,
               height: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Center(
+              errorWidget: Center(
                 child: Icon(
                   Icons.image_not_supported_outlined,
                   size: 48,

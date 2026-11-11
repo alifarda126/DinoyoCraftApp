@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../app_text.dart';
+import 'dc_cached_image.dart';
 
 /// Dialog penampil foto / gambar full-screen dengan dukungan zoom & pan interaktif (InteractiveViewer).
 ///
@@ -294,12 +295,12 @@ class _ImagePreviewDialogState extends State<ImagePreviewDialog> {
       );
     }
     if (widget.assetPath != null) {
-      return Image.asset(
-        widget.assetPath!,
+      return DcCachedImage(
+        imageUrl: widget.assetPath!,
         width: width,
         height: height,
         fit: fit,
-        errorBuilder: (context, error, stackTrace) => _errorWidget(),
+        errorWidget: _errorWidget(),
       );
     }
     return _errorWidget();

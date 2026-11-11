@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import 'dc_cached_image.dart';
+
 /// Utilitas untuk menjalankan animasi parabola "terlempar ke keranjang"
 /// saat produk ditambahkan ke keranjang belanja.
 class CartFlyAnimation {
@@ -220,10 +222,10 @@ class _FlyingProductWidgetState extends State<_FlyingProductWidget>
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(13.5),
-                      child: Image.asset(
-                        widget.imagePath,
+                      child: DcCachedImage(
+                        imageUrl: widget.imagePath,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
+                        errorWidget: Container(
                           color: const Color(0xFFE0E0E0),
                           child: const Icon(
                             Icons.shopping_bag_outlined,
