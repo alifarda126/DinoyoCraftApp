@@ -10,6 +10,7 @@ import 'server_status.dart';
 class ApiClient {
   static final List<String> candidateHosts = [
     'http://127.0.0.1:5000',
+    'http://10.35.96.163:5000',
     'http://192.168.1.2:5000',
     'http://192.168.110.161:5000',
     'http://10.0.2.2:5000',
@@ -31,6 +32,14 @@ class ApiClient {
   static String resolveImageUrl(String? path) {
     if (path == null || path.isEmpty) {
       return 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=400&q=80';
+    }
+    for (final localOrigin in const [
+      'http://localhost:5000',
+      'http://127.0.0.1:5000',
+    ]) {
+      if (path.startsWith('$localOrigin/')) {
+        return '$baseHost${path.substring(localOrigin.length)}';
+      }
     }
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
