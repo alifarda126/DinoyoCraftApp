@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/models/fcm_notification_model.dart';
 import '../../core/services/fcm_service.dart';
+import '../../data/mock_data.dart';
 
 /// Menampilkan modal notifikasi sesuai desain Figma (Notif.dart)
 /// Menggunakan useRootNavigator: true agar berada di atas navbar dan FAB
@@ -108,7 +109,12 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
     } catch (_) {
       // Offline / sesi berakhir: tampilkan riwayat FCM lokal saja.
     }
-    if (mounted) setState(() => _notifLoading = false);
+    if (mounted) {
+      setState(() => _notifLoading = false);
+      if (AuthSession.isLoggedIn) {
+        MockData.syncUnreadNotificationsCount(_unreadCount);
+      }
+    }
   }
 
   /// Gabungan notifikasi server + riwayat FCM perangkat (dedup by id).
@@ -124,10 +130,41 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
       _mergedNotifications.where((n) => !n.isRead).length;
 
   void _markAsRead(String id) {
+    var changed = false;
+    for (final n in _serverNotifs) {
+      if (n.id == id && !n.isRead) {
+        n.isRead = true;
+        changed = true;
+      }
+    }
+    for (final n in FcmService.instance.notificationsHistory) {
+      if (n.id == id && !n.isRead) {
+        n.isRead = true;
+        changed = true;
+      }
+    }
+    if (changed) {
+      MockData.syncUnreadNotificationsCount(_unreadCount);
+    }
     setState(() {});
     // Tandai terbaca di server (fire-and-forget).
-    if (AuthSession.isLoggedIn) {
+    if (AuthSession.isLoggedIn && !id.startsWith('rt_')) {
       ApiClient.patch('/notifications/$id/read')
+          .catchError((_) => <String, dynamic>{});
+    }
+  }
+
+  void _markAllAsRead() {
+    for (final n in _serverNotifs) {
+      n.isRead = true;
+    }
+    for (final n in FcmService.instance.notificationsHistory) {
+      n.isRead = true;
+    }
+    MockData.syncUnreadNotificationsCount(0);
+    setState(() {});
+    if (AuthSession.isLoggedIn) {
+      ApiClient.patch('/notifications/read-all')
           .catchError((_) => <String, dynamic>{});
     }
   }
@@ -234,27 +271,59 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                     ],
                   ],
                 ),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.surfaceSubtle,
-                      border: Border.all(
-                        color: AppColors.border,
-                        width: 0.8,
+                Row(
+                  children: [
+                    if (_unreadCount > 0) ...[
+                      Tooltip(
+                        message: 'Tandai semua dibaca',
+                        child: GestureDetector(
+                          onTap: _markAllAsRead,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.surfaceSubtle,
+                              border: Border.all(
+                                color: AppColors.border,
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.done_all_rounded,
+                                size: 16,
+                                color: _textDark,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.surfaceSubtle,
+                          border: Border.all(
+                            color: AppColors.border,
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: _textDark,
+                          ),
+                        ),
                       ),
                     ),
-                    child: Center(
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 16,
-                        color: _textDark,
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -305,11 +374,9 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
-                            notif.isRead = true;
                             _markAsRead(notif.id);
                             _openNotificationTarget(
-                              notif.id,
-                              notif.route ?? '/notifications',
+                              notif.route ?? '/profile',
                             );
                           },
                           child: _buildDynamicFcmCard(notif),
@@ -468,13 +535,13 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
     );
   }
 
-  /// Tandai kartu sudah dibaca, tutup modal, lalu buka halaman terkait.
-  void _openNotificationTarget(String readId, String route) {
+  /// Tutup modal lalu buka halaman terkait (status baca sudah ditandai sebelumnya).
+  void _openNotificationTarget(String route) {
     final router = GoRouter.of(context);
-    _markAsRead(readId);
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     }
+    if (route.trim().isEmpty || route.trim() == '/notifications') return;
 
     // Rute shell branch harus memakai .go() agar StatefulNavigationShell
     // berpindah branch dan navbar ikut beralih ke tab yang sesuai (mis. Profil).

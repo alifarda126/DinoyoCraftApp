@@ -85,11 +85,24 @@ class FcmNotificationModel {
     final category = FcmNotificationCategory.fromString(type);
 
     String? route = rawData['route']?.toString();
-    if (route == null || route.isEmpty) {
+    if (route == null || route.isEmpty || route == '/chat') {
       if (category == FcmNotificationCategory.transaction) {
         route = '/profile';
       } else if (category == FcmNotificationCategory.chat) {
-        route = '/chat';
+        final storeName = rawData['store_name']?.toString().trim() ??
+            rawData['sender_name']?.toString().trim();
+        final senderId = rawData['sender_id']?.toString().trim();
+        if (storeName != null && storeName.isNotEmpty) {
+          route = Uri(
+            path: '/chat-room',
+            queryParameters: {
+              'store': storeName,
+              if (senderId != null && senderId.isNotEmpty) 'userId': senderId,
+            },
+          ).toString();
+        } else {
+          route = '/messages';
+        }
       } else if (category == FcmNotificationCategory.promo) {
         route = '/products';
       }

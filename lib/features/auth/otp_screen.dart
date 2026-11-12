@@ -219,7 +219,48 @@ class _OtpScreenState extends State<OtpScreen> {
       AppSettings.instance.consumeOtpRequirement();
       context.go('/home');
     } else if (widget.from == 'forgot') {
-      context.go('/new-password', extra: {'email': widget.email, 'otp': enteredCode});
+      setState(() => _isLoading = true);
+      try {
+        final targetEmail = (widget.email?.trim().isNotEmpty ?? false)
+            ? widget.email!.trim()
+            : AppSettings.instance.lastAuthEmail ?? '';
+        final response = await ApiClient.post('/auth/verify-otp', {
+          'email': targetEmail,
+          'otp': enteredCode,
+        });
+
+        if (response['success'] == true) {
+          if (mounted) {
+            context.go(
+              '/new-password',
+              extra: {'email': targetEmail, 'otp': enteredCode},
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(response['message']?.toString() ?? 'Kode OTP salah'.tr),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal verifikasi OTP: $msg'.tr),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     } else {
       // Verifikasi pendaftaran manual pengunjung ke server backend
       setState(() => _isLoading = true);
@@ -314,6 +355,37 @@ class _OtpScreenState extends State<OtpScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(response['message']?.toString() ?? 'Kode OTP baru telah dikirim ke email kamu'.tr),
+              backgroundColor: AppColors.ink,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal mengirim ulang OTP: $msg'.tr),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } else if (widget.from == 'forgot') {
+      try {
+        final targetEmail = (widget.email?.trim().isNotEmpty ?? false)
+            ? widget.email!.trim()
+            : AppSettings.instance.lastAuthEmail ?? '';
+
+        final response = await ApiClient.post('/auth/forgot-password', {
+          'email': targetEmail,
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                response['message']?.toString() ?? 'Kode OTP baru telah dikirim ke email kamu'.tr,
+              ),
               backgroundColor: AppColors.ink,
             ),
           );

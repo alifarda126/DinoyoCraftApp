@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_text.dart';
-import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Helper untuk menampilkan modal bottom sheet pelaporan toko.
@@ -81,15 +80,6 @@ class _ModalLaporkanTokoState extends State<ModalLaporkanToko> {
       _customReasonFocus.requestFocus();
       return;
     }
-
-    final finalReason = _selectedReason == 'Lainnya'
-        ? _customReasonController.text.trim()
-        : _selectedReason!;
-    ApiClient.post('/moderation/report', {
-      'type': 'toko',
-      'target_name': widget.storeName,
-      'reason': finalReason,
-    }).catchError((_) => <String, dynamic>{});
 
     // Berhasil divalidasi, tutup modal dan kirim sinyal sukses
     Navigator.of(context).pop(true);

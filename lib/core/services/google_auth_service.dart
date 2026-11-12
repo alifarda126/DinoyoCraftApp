@@ -9,7 +9,7 @@ import 'auth_session.dart';
 class GoogleAuthService {
   /// Web Client ID (digunakan sebagai serverClientId agar Google menerbitkan idToken)
   static const String webClientId =
-      '195383861521-pqcjfqlvm37khngn41umpotvu3msd2u6.apps.googleusercontent.com';
+      '978012424956-6rmqvl11hgrbjluhfs0k8druc99qbmp3.apps.googleusercontent.com';
 
   static bool _initialized = false;
 

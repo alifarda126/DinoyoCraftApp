@@ -162,14 +162,21 @@ class _CartScreenState extends State<CartScreen> {
                   ] else ...[
                     ...List.generate(
                       _items.length,
-                      (index) => _CartItem(
-                        item: _items[index],
-                        quantity: _quantities[index],
-                        onMinus: _quantities[index] > 1
-                            ? () => setState(() => _quantities[index]--)
-                            : () => _confirmRemoveItem(index),
-                        onPlus: () => setState(() => _quantities[index]++),
-                      ),
+                      (index) {
+                        final item = _items[index];
+                        final maxStock = item.product.availableStockForVariant(item.variant);
+                        final canIncrement = maxStock <= 0 ? false : _quantities[index] < maxStock;
+                        return _CartItem(
+                          item: item,
+                          quantity: _quantities[index],
+                          onMinus: _quantities[index] > 1
+                              ? () => setState(() => _quantities[index]--)
+                              : () => _confirmRemoveItem(index),
+                          onPlus: canIncrement
+                              ? () => setState(() => _quantities[index]++)
+                              : null,
+                        );
+                      },
                     ),
                     SizedBox(height: 12),
                     Container(
@@ -310,7 +317,7 @@ class _CartItem extends StatelessWidget {
   final CartItem item;
   final int quantity;
   final VoidCallback? onMinus;
-  final VoidCallback onPlus;
+  final VoidCallback? onPlus;
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
@@ -325,7 +332,7 @@ class _CartItem extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(9),
             child: DcCachedImage(
-              assetPath: item.product.image,
+              imageUrl: item.product.image,
               width: 76,
               height: 76,
               fit: BoxFit.cover,

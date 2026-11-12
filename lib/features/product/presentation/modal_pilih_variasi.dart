@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_text.dart';
 import '../../../core/assets.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/cart_fly_animation.dart';
 import '../../../core/widgets/dc_cached_image.dart';
@@ -27,34 +28,12 @@ Future<void> showModalPilihVariasi(
     useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: Color(0x73000000),
+    barrierColor: const Color(0x73000000),
     builder: (_) => _ModalPilihVariasi(product: product, mode: mode),
   );
 }
 
-// ── Daftar warna/variasi mock ─────────────────────────────────────────────────
-class _Variasi {
-  const _Variasi({
-    required this.label,
-    required this.sublabel,
-    required this.color,
-  });
-
-  final String label;
-  final String sublabel;
-  final Color color;
-}
-
-const List<_Variasi> _variasiList = [
-  _Variasi(label: 'Sand White', sublabel: 'Glossy Finish', color: Color(0xFFF5F0E8)),
-  _Variasi(label: 'Terracotta', sublabel: 'Matte Earthy', color: Color(0xFFC97A5B)),
-  _Variasi(label: 'Raw Speckle', sublabel: 'Bintik Alami', color: Color(0xFFD9D5CD)),
-  _Variasi(label: 'Charcoal Ash', sublabel: 'Tekstur Abu', color: Color(0xFF3F3F3F)),
-];
-
 Color get _borderColor => AppColors.border;
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _ModalPilihVariasi extends StatefulWidget {
   const _ModalPilihVariasi({required this.product, required this.mode});
@@ -68,29 +47,102 @@ class _ModalPilihVariasi extends StatefulWidget {
 
 class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
   final GlobalKey _imageKey = GlobalKey();
+  late Product _product;
   int _selectedVariasi = 0;
   int _jumlah = 1;
 
-  /// Stok tersedia per varian — sejajar indeksnya dengan [_variasiList].
-  static const List<int> _stokPerVariasi = [18, 7, 12, 4];
+  @override
+  void initState() {
+    super.initState();
+    _product = widget.product;
+    _pickInitialVariant();
+    _clampQty();
+    _refreshLiveProduct();
+  }
 
-  int get _stokVariasi => _stokPerVariasi[_selectedVariasi];
+  void _pickInitialVariant() {
+    if (_product.variants.isEmpty) {
+      _selectedVariasi = 0;
+      return;
+    }
+    final inStockIdx = _product.variants.indexWhere((v) => v.stock > 0);
+    _selectedVariasi = inStockIdx >= 0 ? inStockIdx : 0;
+  }
 
-  int get _subtotal => widget.product.price * _jumlah;
+  Future<void> _refreshLiveProduct() async {
+    if (widget.product.id.trim().isEmpty || widget.product.id == '0') return;
+    try {
+      final res = await ApiClient.get('/products/${widget.product.id}/public');
+      if (res['success'] == true && res['data'] is Map<String, dynamic>) {
+        final fresh = Product.fromJson(res['data'] as Map<String, dynamic>);
+        MockData.upsertProduct(fresh);
+        if (!mounted) return;
+        setState(() {
+          final prevName = _selectedVariant?.name;
+          _product = fresh;
+          if (fresh.variants.isNotEmpty) {
+            final idx = prevName != null
+                ? fresh.variants.indexWhere((v) => v.name == prevName)
+                : -1;
+            if (idx >= 0) {
+              _selectedVariasi = idx;
+            } else {
+              _pickInitialVariant();
+            }
+          } else {
+            _selectedVariasi = 0;
+          }
+          _clampQty();
+        });
+      }
+    } catch (_) {}
+  }
+
+  List<ProductVariant> get _variants => _product.variants;
+
+  ProductVariant? get _selectedVariant =>
+      (_variants.isNotEmpty && _selectedVariasi < _variants.length)
+          ? _variants[_selectedVariasi]
+          : null;
+
+  int get _stokTersedia {
+    if (_selectedVariant != null) return _selectedVariant!.stock;
+    return _product.stock < 0 ? 0 : _product.stock;
+  }
+
+  void _clampQty() {
+    final max = _stokTersedia;
+    if (max <= 0) {
+      _jumlah = 0;
+    } else if (_jumlah < 1) {
+      _jumlah = 1;
+    } else if (_jumlah > max) {
+      _jumlah = max;
+    }
+  }
+
+  int get _effectiveJumlah => _stokTersedia <= 0 ? 0 : _jumlah;
+
+  int get _subtotal => _product.price * _effectiveJumlah;
 
   @override
   Widget build(BuildContext context) {
-    // Harga coret dibulatkan ke atas kelipatan 5.000 (Rp65.000 -> Rp90.000)
-    final originalPrice = ((widget.product.price * 1.35) / 5000).ceil() * 5000;
     final bottomPad = MediaQuery.of(context).padding.bottom;
+    final hasVariants = _variants.isNotEmpty;
+    final selected = _selectedVariant;
+    final stok = _stokTersedia;
 
     return Container(
       margin: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.15),
       decoration: BoxDecoration(
         color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(color: Color(0x40000000), blurRadius: 40, offset: Offset(0, -12)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x40000000),
+            blurRadius: 40,
+            offset: Offset(0, -12),
+          ),
         ],
       ),
       child: Column(
@@ -107,16 +159,15 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
             ),
           ),
 
-          // ── Header: info produk + tombol X (X di pojok kanan atas) ──
+          // ── Header: info produk + tombol X ──
           Stack(
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
                 child: _ProductInfoRow(
                   imageKey: _imageKey,
-                  product: widget.product,
-                  originalPrice: originalPrice,
-                  stok: _stokVariasi,
+                  product: _product,
+                  stok: stok,
                 ),
               ),
               Positioned(
@@ -139,106 +190,151 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
             ],
           ),
 
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Divider(height: 1, thickness: 1, color: _borderColor),
-          SizedBox(height: 16),
 
-          // ── Pilihan warna/glaze ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'PILIHAN WARNA / GLAZE'.tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
-                        ),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasVariants && selected != null) ...[
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  'PILIHAN WARNA / GLAZE'.tr,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Flexible(
+                                child: Text(
+                                  '${selected.name} ${selected.label}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.right,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    color: AppColors.textZinc,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final cardWidth = (constraints.maxWidth - 10) / 2;
+                              return Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: List.generate(_variants.length, (i) {
+                                  final v = _variants[i];
+                                  return SizedBox(
+                                    width: cardWidth,
+                                    child: GestureDetector(
+                                      onTap: () => setState(() {
+                                        _selectedVariasi = i;
+                                        _clampQty();
+                                      }),
+                                      child: _VariasiCard(
+                                        variasi: v,
+                                        isSelected: _selectedVariasi == i,
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        '${_variasiList[_selectedVariasi].label} ${_variasiList[_selectedVariasi].sublabel}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.right,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          color: AppColors.textZinc,
-                        ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: _borderColor,
                       ),
                     ),
                   ],
-                ),
-                SizedBox(height: 12),
-                _buildVariasiRow(0, 1),
-                SizedBox(height: 10),
-                _buildVariasiRow(2, 3),
-              ],
-            ),
-          ),
 
-          SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
-          // Divider inset (mengikuti padding konten)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Divider(height: 1, thickness: 1, color: _borderColor),
-          ),
-          SizedBox(height: 14),
-
-          // ── Jumlah produk ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'JUMLAH PRODUK'.tr,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+                  // ── Jumlah produk ──
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'JUMLAH PRODUK'.tr,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                stok <= 0
+                                    ? (AppText.isEnglish
+                                          ? 'Out of stock'
+                                          : 'Stok produk habis')
+                                    : hasVariants
+                                    ? (AppText.isEnglish
+                                          ? 'Only $stok items left for this variant'
+                                          : 'Stok tersisa $stok buah untuk varian ini')
+                                    : (AppText.isEnglish
+                                          ? 'Only $stok items left'
+                                          : 'Stok tersisa $stok buah'),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  color: stok <= 0
+                                      ? AppColors.danger
+                                      : AppColors.textZinc,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        AppText.isEnglish
-                            ? 'Only $_stokVariasi items left for this variant'
-                            : 'Stok tersisa $_stokVariasi buah untuk varian ini',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          color: AppColors.textZinc,
+                        const SizedBox(width: 12),
+                        _JumlahCounter(
+                          value: _effectiveJumlah,
+                          min: stok <= 0 ? 0 : 1,
+                          max: stok,
+                          onChanged: (v) => setState(() => _jumlah = v),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                SizedBox(width: 12),
-                _JumlahCounter(
-                  value: _jumlah,
-                  min: 1,
-                  max: _stokVariasi,
-                  onChanged: (v) => setState(() => _jumlah = v),
-                ),
-              ],
+
+                  const SizedBox(height: 14),
+                ],
+              ),
             ),
           ),
 
-          SizedBox(height: 14),
           Divider(height: 1, thickness: 1, color: _borderColor),
 
           // ── Bottom action bar ──
@@ -263,7 +359,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                         ),
                       ),
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Flexible(
                       child: Text(
                         MockData.formatPrice(_subtotal),
@@ -279,28 +375,36 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
                     ),
                   ],
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
 
                 // Tombol aksi
                 SizedBox(
                   width: double.infinity,
                   height: 44,
                   child: switch (widget.mode) {
-                    ModalVariasiMode.keranjang =>
-                      _buildKeranjangButton(isFullWidth: true),
-                    ModalVariasiMode.beliLangsung =>
-                      _buildBeliLangsungButton(),
+                    ModalVariasiMode.keranjang => _buildKeranjangButton(
+                      isFullWidth: true,
+                      enabled: stok > 0 && _effectiveJumlah > 0,
+                    ),
+                    ModalVariasiMode.beliLangsung => _buildBeliLangsungButton(
+                      enabled: stok > 0 && _effectiveJumlah > 0,
+                    ),
                     ModalVariasiMode.keduanya => Row(
-                        children: [
-                          Expanded(
-                            child: _buildKeranjangButton(isFullWidth: false),
+                      children: [
+                        Expanded(
+                          child: _buildKeranjangButton(
+                            isFullWidth: false,
+                            enabled: stok > 0 && _effectiveJumlah > 0,
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _buildBeliLangsungButton(),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildBeliLangsungButton(
+                            enabled: stok > 0 && _effectiveJumlah > 0,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
                   },
                 ),
               ],
@@ -311,15 +415,18 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
     );
   }
 
-  Widget _buildKeranjangButton({required bool isFullWidth}) {
+  Widget _buildKeranjangButton({
+    required bool isFullWidth,
+    required bool enabled,
+  }) {
     return OutlinedButton.icon(
-      onPressed: _onKeranjang,
+      onPressed: enabled ? _onKeranjang : null,
       icon: SvgPicture.asset(
         AppAssets.iconCartPlus,
         width: isFullWidth ? 22 : 20,
         height: isFullWidth ? 22 : 20,
         colorFilter: ColorFilter.mode(
-          AppColors.ink,
+          enabled ? AppColors.ink : AppColors.textMuted,
           BlendMode.srcIn,
         ),
       ),
@@ -333,9 +440,12 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
         ),
       ),
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.ink,
+        foregroundColor: enabled ? AppColors.ink : AppColors.textMuted,
         shape: const StadiumBorder(),
-        side: BorderSide(color: AppColors.ink, width: isFullWidth ? 2 : 1.5),
+        side: BorderSide(
+          color: enabled ? AppColors.ink : AppColors.border,
+          width: isFullWidth ? 2 : 1.5,
+        ),
         padding: isFullWidth
             ? null
             : const EdgeInsets.symmetric(horizontal: 8),
@@ -343,23 +453,27 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
     );
   }
 
-  Widget _buildBeliLangsungButton() {
+  Widget _buildBeliLangsungButton({required bool enabled}) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        boxShadow: AppColors.darkButtonShadow,
+        boxShadow: enabled ? AppColors.darkButtonShadow : const [],
       ),
       child: FilledButton(
-        onPressed: _onBeliLangsung,
+        onPressed: enabled ? _onBeliLangsung : null,
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.black,
+          disabledBackgroundColor: AppColors.border,
           foregroundColor: AppColors.white,
+          disabledForegroundColor: AppColors.textMuted,
           elevation: 0,
           shape: AppColors.stadiumButtonShape,
           padding: const EdgeInsets.symmetric(horizontal: 8),
         ),
         child: Text(
-          'Beli Langsung'.tr,
+          enabled
+              ? 'Beli Langsung'.tr
+              : (AppText.isEnglish ? 'Out of Stock' : 'Stok Habis'),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.plusJakartaSans(
@@ -371,33 +485,8 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
     );
   }
 
-  /// Satu baris berisi dua kartu variasi.
-  Widget _buildVariasiRow(int left, int right) {
-    Widget item(int i) => Expanded(
-          child: GestureDetector(
-            onTap: () => setState(() {
-              _selectedVariasi = i;
-              // Jumlah mengikuti stok varian yang baru dipilih.
-              _jumlah = _jumlah.clamp(1, _stokPerVariasi[i]);
-            }),
-            child: _VariasiCard(
-              variasi: _variasiList[i],
-              isSelected: _selectedVariasi == i,
-            ),
-          ),
-        );
-
-    return Row(
-      children: [
-        item(left),
-        SizedBox(width: 10),
-        item(right),
-      ],
-    );
-  }
-
   void _onKeranjang() {
-    // Ambil posisi thumbnail sebelum modal ditutup
+    if (_stokTersedia <= 0 || _effectiveJumlah <= 0) return;
     final renderBox =
         _imageKey.currentContext?.findRenderObject() as RenderBox?;
     Offset? startOffset;
@@ -407,26 +496,28 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
       );
     }
 
-    // Simpan ke keranjang sesi agar badge header & halaman keranjang ikut.
+    final variantLabel = _selectedVariant?.name;
     MockData.addToCart(
-      widget.product,
-      _jumlah,
-      _variasiList[_selectedVariasi].label,
+      _product,
+      _effectiveJumlah,
+      variantLabel,
     );
 
-    // Jalankan animasi terlempar ke keranjang
     CartFlyAnimation.run(
       context,
-      imagePath: widget.product.image,
+      imagePath: _product.image,
       startPosition: startOffset,
     );
 
     Navigator.pop(context);
+    final variantSuffix = (variantLabel != null && variantLabel.isNotEmpty)
+        ? ' — $variantLabel'
+        : '';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${widget.product.name} — ${_variasiList[_selectedVariasi].label} '
-          '(x$_jumlah) ${AppText.isEnglish ? 'added to cart!' : 'ditambahkan ke keranjang!'}',
+          '${_product.name}$variantSuffix (x$_effectiveJumlah) '
+          '${AppText.isEnglish ? 'added to cart!' : 'ditambahkan ke keranjang!'}',
         ),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
@@ -435,10 +526,11 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
   }
 
   void _onBeliLangsung() {
-    final selectedVariantLabel = _variasiList[_selectedVariasi].label;
+    if (_stokTersedia <= 0 || _effectiveJumlah <= 0) return;
+    final selectedVariantLabel = _selectedVariant?.name;
     final directItem = CartItem(
-      product: widget.product,
-      qty: _jumlah,
+      product: _product,
+      qty: _effectiveJumlah,
       variant: selectedVariantLabel,
     );
     Navigator.pop(context);
@@ -452,13 +544,11 @@ class _ProductInfoRow extends StatelessWidget {
   const _ProductInfoRow({
     this.imageKey,
     required this.product,
-    required this.originalPrice,
     required this.stok,
   });
 
   final Key? imageKey;
   final Product product;
-  final int originalPrice;
   final int stok;
 
   @override
@@ -466,7 +556,6 @@ class _ProductInfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Gambar dalam kotak berborder tipis (dapat diketuk untuk preview full)
         GestureDetector(
           key: imageKey,
           onTap: () {
@@ -488,7 +577,7 @@ class _ProductInfoRow extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(13),
               child: DcCachedImage(
-                assetPath: product.image,
+                imageUrl: product.image,
                 width: 72,
                 height: 72,
                 fit: BoxFit.cover,
@@ -496,9 +585,8 @@ class _ProductInfoRow extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
 
-        // Teks (disisakan ruang di kanan agar tidak menabrak tombol X)
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(right: 24),
@@ -512,7 +600,7 @@ class _ProductInfoRow extends StatelessWidget {
                     color: AppColors.textZinc,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
                   product.name,
                   style: GoogleFonts.plusJakartaSans(
@@ -521,44 +609,25 @@ class _ProductInfoRow extends StatelessWidget {
                     color: AppColors.ink,
                   ),
                 ),
-                SizedBox(height: 4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        MockData.formatPrice(product.price),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        MockData.formatPrice(originalPrice),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: AppColors.textMuted,
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  MockData.formatPrice(product.price),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink,
+                  ),
                 ),
-                SizedBox(height: 3),
+                const SizedBox(height: 3),
                 Row(
                   children: [
                     Flexible(
                       child: Text(
-                        AppText.isEnglish ? 'Artisan Stock: ' : 'Stok Pengrajin: ',
+                        AppText.isEnglish
+                            ? 'Artisan Stock: '
+                            : 'Stok Pengrajin: ',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
@@ -568,11 +637,13 @@ class _ProductInfoRow extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      AppText.isEnglish ? '$stok items' : '$stok buah',
+                      stok <= 0
+                          ? (AppText.isEnglish ? 'Out of stock' : 'Habis')
+                          : (AppText.isEnglish ? '$stok items' : '$stok buah'),
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
+                        color: stok <= 0 ? AppColors.danger : AppColors.ink,
                       ),
                     ),
                   ],
@@ -591,76 +662,80 @@ class _ProductInfoRow extends StatelessWidget {
 class _VariasiCard extends StatelessWidget {
   const _VariasiCard({required this.variasi, required this.isSelected});
 
-  final _Variasi variasi;
+  final ProductVariant variasi;
   final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
-    // Swatch terang (mis. Sand White) butuh ikon hitam
-    final swatchIsDark = variasi.color.computeLuminance() < 0.4;
+    final swatchColor = variasi.colorValue;
+    final swatchIsDark = swatchColor.computeLuminance() < 0.4;
+    final isOutOfStock = variasi.stock <= 0;
 
-    return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: isSelected ? AppColors.ink : _borderColor,
-          width: isSelected ? 2 : 1,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        color: AppColors.surface,
-      ),
-      child: Row(
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: variasi.color,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.border),
-                ),
-              ),
-              if (isSelected)
-                Icon(
-                  Icons.check,
-                  size: 13,
-                  color: swatchIsDark ? Colors.white : Colors.black,
-                ),
-            ],
+    return Opacity(
+      opacity: isOutOfStock ? 0.55 : 1.0,
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? AppColors.ink : _borderColor,
+            width: isSelected ? 2 : 1,
           ),
-          SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
+          borderRadius: BorderRadius.circular(12),
+          color: AppColors.surface,
+        ),
+        child: Row(
+          children: [
+            Stack(
+              alignment: Alignment.center,
               children: [
-                Text(
-                  variasi.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: swatchColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border),
                   ),
                 ),
-                Text(
-                  variasi.sublabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10,
-                    color: AppColors.textZinc,
+                if (isSelected)
+                  Icon(
+                    Icons.check,
+                    size: 13,
+                    color: swatchIsDark ? Colors.white : Colors.black,
                   ),
-                ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    variasi.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  Text(
+                    '${variasi.label} • ${isOutOfStock ? (AppText.isEnglish ? 'Empty' : 'Habis') : '${variasi.stock}'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10,
+                      color: isOutOfStock ? AppColors.danger : AppColors.textZinc,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -683,7 +758,6 @@ class _JumlahCounter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Counter dibungkus kotak berborder tipis: [ − ] 1 [ + ]
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -733,8 +807,6 @@ class _StepBtn extends StatelessWidget {
   });
 
   final IconData icon;
-
-  /// true = tombol hitam solid (+), false = tombol putih berborder (−)
   final bool filled;
   final bool enabled;
   final VoidCallback onTap;

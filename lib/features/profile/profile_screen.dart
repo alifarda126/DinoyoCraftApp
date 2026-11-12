@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -11,6 +12,7 @@ import '../../core/app_text.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/auth_session.dart';
 import '../../core/services/google_auth_service.dart';
+import '../../core/services/pusher_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
 import '../../core/widgets/dc_cached_image.dart';
@@ -32,11 +34,16 @@ class ProfileScreen extends StatefulWidget {
   static final ValueNotifier<String?> selectedTabNotifier =
       ValueNotifier<String?>(null);
 
+  /// Global trigger untuk me-refresh riwayat pesanan saat Profil ditampilkan kembali
+  /// atau status pembayaran/pesanan baru saja berubah.
+  static final ValueNotifier<int> refreshNotifier = ValueNotifier<int>(0);
+
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with WidgetsBindingObserver {
   // ── Token profil ────────────────────────────────────────────────────────
   // Seluruh warna netral mengacu ke token global agar kartu pesanan tetap
   // memiliki hierarki dan kontras yang sama di tema terang maupun gelap.
@@ -65,6 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   List<Map<String, dynamic>> _orders = [];
   bool _ordersLoading = true;
+  StreamSubscription<Map<String, dynamic>>? _orderEventSub;
 
   Future<void> _fetchOrders() async {
     if (!AuthSession.isLoggedIn) {
@@ -88,6 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final target = ProfileScreen.selectedTabNotifier.value;
     if (target != null) {
       _orderTab = target;
@@ -96,10 +105,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _orderTab = widget.initialTab!;
     }
     ProfileScreen.selectedTabNotifier.addListener(_onSelectedTabChanged);
+    ProfileScreen.refreshNotifier.addListener(_onRefreshTriggered);
+    _initOrderRealtime();
     // Tarik profil terbaru dari backend agar nama/email/foto selalu data asli.
     _refreshProfileFromServer();
     // Tarik riwayat pesanan real dari backend.
     _fetchOrders();
+  }
+
+  void _initOrderRealtime() {
+    final uid = AuthSession.user?['id']?.toString() ?? '';
+    if (uid.isNotEmpty) {
+      PusherService.instance.subscribeToUserOrders(uid);
+    }
+    _orderEventSub = PusherService.instance.orderEventStream.listen((_) {
+      if (!mounted) return;
+      _fetchOrders();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _fetchOrders();
+    }
   }
 
   /// GET /auth/profile → perbarui data user tersimpan (nama, email, avatar).
@@ -125,11 +154,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (widget.initialTab != null && widget.initialTab != _orderTab) {
       setState(() => _orderTab = widget.initialTab!);
     }
+    _fetchOrders();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _orderEventSub?.cancel();
     ProfileScreen.selectedTabNotifier.removeListener(_onSelectedTabChanged);
+    ProfileScreen.refreshNotifier.removeListener(_onRefreshTriggered);
     super.dispose();
   }
 
@@ -138,6 +171,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (target != null && mounted) {
       setState(() => _orderTab = target);
       ProfileScreen.selectedTabNotifier.value = null;
+      _fetchOrders();
+    }
+  }
+
+  void _onRefreshTriggered() {
+    if (mounted) {
+      _fetchOrders();
     }
   }
 
@@ -410,7 +450,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Expanded(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => setState(() => _orderTab = tabs[i]),
+                onTap: () {
+                  setState(() => _orderTab = tabs[i]);
+                  _fetchOrders();
+                },
                 child: AnimatedContainer(
                   duration: Duration(milliseconds: 200),
                   margin: EdgeInsets.only(right: i < tabs.length - 1 ? 4 : 0),
@@ -528,7 +571,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   /// Kartu pesanan REAL dari backend (GET /orders).
-  Widget _orderCard(BuildContext context, Map<String, dynamic> order) {
+  Widget _orderCard(
+    BuildContext context,
+    Map<String, dynamic> order, {
+    VoidCallback? onOrderCompleted,
+  }) {
     final status = (order['status'] ?? 'pending').toString();
     final items = (order['items'] as List? ?? [])
         .whereType<Map<String, dynamic>>()
@@ -645,7 +692,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             MockData.formatPrice(totalDue),
             _lineGray),
         const SizedBox(height: 12),
-        _orderActions(context, order, status, store),
+        _orderActions(
+          context,
+          order,
+          status,
+          store,
+          onOrderCompleted: onOrderCompleted,
+        ),
       ],
     );
   }
@@ -677,8 +730,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return '';
   }
 
-  Widget _orderActions(BuildContext context, Map<String, dynamic> order,
-      String status, String store) {
+  Widget _orderActions(
+    BuildContext context,
+    Map<String, dynamic> order,
+    String status,
+    String store, {
+    VoidCallback? onOrderCompleted,
+  }) {
     final actions = <Widget>[];
     if (status == 'pending') {
       actions.add(_actionButton(
@@ -708,7 +766,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fg: AppColors.white,
         bold: true,
         height: 40,
-        onTap: () => showOrderTrackingSheet(context, _asInt(order['id'])),
+        onTap: () => _openTrackingAndRefresh(
+          context,
+          _asInt(order['id']),
+          onOrderCompleted: onOrderCompleted,
+        ),
       ));
       actions.add(_actionButton(
         label: 'Hubungi Penjual'.tr,
@@ -725,22 +787,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
       actions.add(_actionButton(
         label: 'Lacak Pesanan'.tr,
         icon: Icons.route_rounded,
-        bg: AppColors.black,
-        fg: AppColors.white,
-        bold: true,
-        height: 40,
-        onTap: () => showOrderTrackingSheet(context, _asInt(order['id'])),
-      ));
-      actions.add(_actionButton(
-        label: 'Hubungi Penjual'.tr,
-        icon: Icons.chat_bubble_outline_rounded,
         bg: _btnLight,
         fg: _text,
         borderColor: _borderGray,
         bold: true,
         height: 40,
-        onTap: () =>
-            context.push('/chat-room?store=${Uri.encodeComponent(store)}'),
+        onTap: () => _openTrackingAndRefresh(
+          context,
+          _asInt(order['id']),
+          onOrderCompleted: onOrderCompleted,
+        ),
+      ));
+      actions.add(_actionButton(
+        label: 'Pesanan Diterima'.tr,
+        icon: Icons.check_circle_outline_rounded,
+        bg: AppColors.black,
+        fg: AppColors.white,
+        bold: true,
+        height: 40,
+        onTap: () => _confirmCompleteOrder(
+          context,
+          order,
+          onCompleted: onOrderCompleted,
+        ),
       ));
     } else {
       actions.add(_actionButton(
@@ -806,6 +875,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         .whereType<Map<String, dynamic>>()
         .toList();
 
+    final backendMethod = order['payment_method']?.toString() ?? 'qris';
+    final platformFee = _asInt(order['platform_fee']);
+    final baseAmount = _asInt(order['total_amount']);
+    final totalDue = _asInt(order['total_due']) > 0
+        ? _asInt(order['total_due'])
+        : baseAmount + platformFee;
+
     final args = PaymentArgs(
       orderId: '${order['id']}',
       items: [
@@ -825,17 +901,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       subtotal: items.fold<int>(
           0, (s, it) => s + _asInt(it['unit_price']) * _asInt(it['quantity'])),
       shippingFee: _asInt(order['shipping_cost']),
-      serviceFee: 0,
-      total: _asInt(order['total_amount']),
-      paymentMethod: 'QRIS',
+      serviceFee: platformFee,
+      total: totalDue,
+      paymentMethod: PaymentArgs.groupFromBackendMethod(backendMethod),
+      backendMethod: backendMethod,
       shippingMethod: order['shipping_method']?.toString() ?? 'Reguler',
       recipientName: rName,
       recipientPhone: rPhone,
       recipientAddress: rAddr,
+      expiryTime: order['expiry_time']?.toString(),
+      orderCreatedAt: order['created_at']?.toString(),
     );
 
     if (!context.mounted) return;
-    context.push('/checkout/payment', extra: args);
+    await context.push('/checkout/payment', extra: args);
+    if (mounted) {
+      _fetchOrders();
+    }
   }
 
   Future<void> _cancelOrderNow(Map<String, dynamic> order) async {
@@ -919,6 +1001,111 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
+  Future<void> _openTrackingAndRefresh(
+    BuildContext context,
+    int orderId, {
+    VoidCallback? onOrderCompleted,
+  }) async {
+    final completed = await showOrderTrackingSheet(context, orderId);
+    if (completed == true && mounted) {
+      setState(() => _orderTab = 'Diterima');
+      await _fetchOrders();
+      onOrderCompleted?.call();
+    }
+  }
+
+  Future<void> _completeOrderNow(
+    Map<String, dynamic> order, {
+    VoidCallback? onCompleted,
+  }) async {
+    try {
+      await ApiClient.post('/orders/${order['id']}/complete', {});
+      if (mounted) {
+        setState(() => _orderTab = 'Diterima');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.black,
+            content: Text(
+              'Pesanan #DNC-${order['id']} selesai! Dana diteruskan ke penjual.'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13, color: AppColors.white),
+            ),
+          ),
+        );
+      }
+      await _fetchOrders();
+      onCompleted?.call();
+    } catch (e) {
+      if (mounted) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.danger,
+            content: Text(
+              'Gagal menyelesaikan pesanan: $msg'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13, color: AppColors.white),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _confirmCompleteOrder(
+    BuildContext context,
+    Map<String, dynamic> order, {
+    VoidCallback? onCompleted,
+  }) {
+    showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Konfirmasi Pesanan Diterima?'.tr,
+          style: GoogleFonts.plusJakartaSans(
+              fontWeight: FontWeight.w800, color: AppColors.ink),
+        ),
+        content: Text(
+          'Pastikan produk pada #DNC-${order['id']} sudah diterima dengan baik. Setelah dikonfirmasi, pesanan selesai dan dana masuk ke saldo aktif penjual.'.tr,
+          style: GoogleFonts.plusJakartaSans(
+              fontSize: 13, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Belum'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w700, color: AppColors.ink),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx, true);
+              _completeOrderNow(order, onCompleted: onCompleted);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.black,
+              foregroundColor: AppColors.white,
+              shape: const StadiumBorder(),
+              elevation: 0,
+            ),
+            child: Text(
+              'Ya, Pesanan Diterima'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _cardShell({
     required Color borderColor,
     required double radius,
@@ -1380,7 +1567,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   else
                     for (int i = 0; i < _orders.length; i++) ...[
                       if (i > 0) const SizedBox(height: 12),
-                      _orderCard(ctx, _orders[i]),
+                      _orderCard(
+                        ctx,
+                        _orders[i],
+                        onOrderCompleted: () {
+                          if (ctx.mounted) Navigator.of(ctx).pop();
+                        },
+                      ),
                     ],
                 ],
               ),

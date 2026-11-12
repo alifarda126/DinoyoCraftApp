@@ -119,19 +119,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  /// Biaya layanan — total yang DIBEBANKAN ke pembayar, dihitung dengan
-  /// rumus yang sama persis dengan backend + gateway:
+  /// Biaya layanan — hanya platform fee (Midtrans channel fee ditanggung platform):
   ///   platform : Rp1.000 + 5% nilai pesanan (subtotal + ongkir)
-  ///   channel  : round(nilai x 0,705%)  (fee borne QRIS, terverifikasi)
-  /// Sehingga total di checkout == total di layar pembayaran == isi QR.
-  int get _platformFee => 1000 + (((_subtotal + _shippingFee) * 5) / 100).round();
+  /// Sehingga total di checkout == total di layar pembayaran == charge Midtrans Core API.
+  int get _platformFee =>
+      1000 + (((_subtotal + _shippingFee) * 5) / 100).round();
 
-  int get _channelFee =>
-      (((_subtotal + _shippingFee + _platformFee) * 705) / 100000).round();
-
-  int get _serviceFee => _platformFee + _channelFee;
+  int get _serviceFee => _items.isEmpty ? 0 : _platformFee;
 
   int get _total => _items.isEmpty ? 0 : _subtotal + _shippingFee + _serviceFee;
+
+  String get _backendPaymentMethod {
+    switch (_payment) {
+      case 'VA':
+        return 'bca_va';
+      case 'E-Wallet':
+        return 'gopay';
+      case 'QRIS':
+      default:
+        return 'qris';
+    }
+  }
 
   String _shippingLabel() {
     switch (_shipping) {
@@ -459,57 +467,49 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     setState(() => _isPaying = true);
     try {
-      // 1. Alamat dari server — sinkron otomatis dari _currentAddress jika belum ada di server.
+      // 1. Alamat dari server — wajib punya address_id untuk checkout BE.
+      final addrRes = await ApiClient.get('/addresses');
+      final List addrList =
+          (addrRes['data'] as List?)?.whereType<Map<String, dynamic>>().toList() ?? [];
       Map<String, dynamic>? addr;
-      try {
-        final addrRes = await ApiClient.get('/addresses');
-        final List addrList =
-            (addrRes['data'] as List?)?.whereType<Map<String, dynamic>>().toList() ?? [];
-        for (final a in addrList) {
-          if (a['is_default'] == 1 || a['is_default'] == true) {
-            addr = a;
-            break;
-          }
-        }
-        addr ??= addrList.isNotEmpty ? addrList.first : null;
-      } catch (_) {}
-
-      if (addr == null) {
-        try {
-          final createdAddr = await ApiClient.post('/addresses', {
-            'recipient_name': _currentAddress.name,
-            'phone': _currentAddress.phone,
-            'full_address': _currentAddress.address,
-            'label': _currentAddress.label,
-            'is_default': true,
-          });
-          addr = {
-            'id': createdAddr['addressId'] ?? createdAddr['data']?['id'],
-            'recipient_name': _currentAddress.name,
-            'phone': _currentAddress.phone,
-            'full_address': _currentAddress.address,
-          };
-        } catch (_) {
-          addr = {
-            'id': null,
-            'recipient_name': _currentAddress.name,
-            'phone': _currentAddress.phone,
-            'full_address': _currentAddress.address,
-          };
+      for (final a in addrList) {
+        if (a['is_default'] == 1 || a['is_default'] == true) {
+          addr = a;
+          break;
         }
       }
+      addr ??= addrList.isNotEmpty ? addrList.first : null;
+      if (addr == null) {
+        if (mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Belum ada alamat pengiriman. Tambahkan alamat terlebih dahulu di menu Alamat.'),
+            ),
+          );
+        }
+        return;
+      }
 
-      // 2. mitra_id dari produk pertama (fallback ke 1 jika produk lokal).
-      final mitraId = _items.first.product.mitraId > 0 ? _items.first.product.mitraId : 1;
+      // 2. mitra_id dari produk pertama (satu pesanan = satu toko).
+      final mitraId = _items.first.product.mitraId;
+      if (mitraId <= 0) {
+        if (mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            const SnackBar(content: Text('Produk tidak valid (mitra tidak diketahui).')),
+          );
+        }
+        return;
+      }
 
       // 3. Buat pesanan REAL di backend.
+      final selectedBackendMethod = _backendPaymentMethod;
       final res = await ApiClient.post('/orders/checkout', {
         'mitra_id': mitraId,
         'address_id': addr['id'],
-        'shipping_address': '${_currentAddress.name} (${_currentAddress.phone}) - ${_currentAddress.address}',
         'shipping_method': _shipping,
         'shipping_cost': _shippingFee,
-        'payment_method': 'qris',
+        'payment_method': selectedBackendMethod,
         if (_noteCtrl.text.trim().isNotEmpty) 'customer_notes': _noteCtrl.text.trim(),
         'items': [
           for (int i = 0; i < _items.length; i++)
@@ -539,11 +539,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         serviceFee: _serviceFee,
         total: _total,
         paymentMethod: _payment,
+        backendMethod: selectedBackendMethod,
         shippingMethod: _shipping,
         recipientName: addr['recipient_name']?.toString() ?? _currentAddress.name,
         recipientPhone: addr['phone']?.toString() ?? _currentAddress.phone,
         recipientAddress: addr['full_address']?.toString() ?? _currentAddress.address,
         note: _noteCtrl.text.trim().isNotEmpty ? _noteCtrl.text.trim() : null,
+        expiryTime: data['expiry_time']?.toString(),
+        orderCreatedAt: data['created_at']?.toString(),
       );
 
       try {
@@ -841,10 +844,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: DcCachedImage(
-                              assetPath: item.product.image,
+                              imageUrl: item.product.image,
                               width: 80,
                               height: 80,
                               fit: BoxFit.cover,
+                              errorWidget: Container(
+                                width: 80,
+                                height: 80,
+                                color: AppColors.inputBg,
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
                             ),
                           ),
                           SizedBox(width: 14),
@@ -931,8 +943,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                       onMinus: _qtys[i] > 1
                                           ? () => setState(() => _qtys[i]--)
                                           : () => _confirmRemoveItem(i),
-                                      onPlus: () =>
-                                          setState(() => _qtys[i]++),
+                                      onPlus: (() {
+                                        final maxStock = item.product
+                                            .availableStockForVariant(item.variant);
+                                        return (maxStock > 0 && _qtys[i] < maxStock)
+                                            ? () => setState(() => _qtys[i]++)
+                                            : null;
+                                      })(),
                                     ),
                                   ],
                                 ),
@@ -983,9 +1000,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   icon: Icons.qr_code_scanner_rounded,
                   title: 'QRIS Instant',
                   subtitle:
-                      'Bayar instan bebas biaya admin dengan scan kode QRIS.',
+                      'Bayar instan dengan scan kode QRIS dari m-Banking atau e-Wallet.',
                   badge: 'DIREKOMENDASIKAN',
-                  tags: ['QRIS', 'GoPay', 'OVO', 'ShopeePay', 'BCA'],
+                  tags: ['QRIS', 'GoPay', 'OVO', 'ShopeePay', 'DANA'],
                   selected: _payment == 'QRIS',
                   onTap: () => setState(() => _payment = 'QRIS'),
                 ),
@@ -994,7 +1011,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   title: 'Virtual Account',
                   subtitle:
                       'Verifikasi otomatis 24 jam tanpa perlu bukti transfer.',
-                  tags: ['BCA', 'Mandiri', 'BRI', 'BNI 46'],
+                  tags: ['BCA', 'Mandiri', 'BRI', 'BNI', 'Permata'],
                   selected: _payment == 'VA',
                   onTap: () => setState(() => _payment = 'VA'),
                 ),
@@ -1002,8 +1019,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   icon: Icons.smartphone_rounded,
                   title: 'E-Wallet',
                   subtitle:
-                      'Terhubung langsung ke akun dompet digital favorit kamu.',
-                  tags: ['ShopeePay', 'GoPay', 'OVO', 'DANA'],
+                      'Bayar langsung via aplikasi GoPay atau ShopeePay.',
+                  tags: ['GoPay', 'ShopeePay'],
                   selected: _payment == 'E-Wallet',
                   onTap: () => setState(() => _payment = 'E-Wallet'),
                 ),
@@ -1334,7 +1351,7 @@ class _QtyStepper extends StatelessWidget {
 
   final int qty;
   final VoidCallback? onMinus;
-  final VoidCallback onPlus;
+  final VoidCallback? onPlus;
 
   Widget _btn(IconData icon, VoidCallback? onTap) => InkWell(
     onTap: onTap,

@@ -31,7 +31,7 @@ class _StoresScreenState extends State<StoresScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    await MockData.fetchPublicData();
+    await MockData.fetchPublicData(force: true);
     if (mounted) setState(() {});
   }
 
@@ -144,11 +144,62 @@ class _StoresScreenState extends State<StoresScreen> {
                     children: [
                       // Gambar: Expanded → mengisi sisa tinggi cell
                       Expanded(
-                        child: DcCachedImage(
-                          assetPath: store.image,
-                          width: double.infinity,
-                          height: double.infinity,
-                          fit: BoxFit.cover,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Positioned.fill(
+                              child: DcCachedImage(
+                                imageUrl: (store.banner != null && store.banner!.isNotEmpty)
+                                    ? store.banner!
+                                    : Store.defaultBanner,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              left: 8,
+                              bottom: 8,
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [Color(0xFF000000), Color(0xFFC0673D)],
+                                  ),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x33000000),
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipOval(
+                                  child: store.hasCustomAvatar
+                                      ? DcCachedImage(
+                                          imageUrl: store.avatar ?? store.image,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Center(
+                                          child: Text(
+                                            store.initials,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       // Area teks: tinggi menyesuaikan, tapi dibatasi
@@ -187,7 +238,9 @@ class _StoresScreenState extends State<StoresScreen> {
                                 ),
                                 SizedBox(width: 4),
                                 Text(
-                                  store.rating.toStringAsFixed(1),
+                                  store.rating > 0
+                                      ? store.rating.toStringAsFixed(1)
+                                      : (AppText.isEnglish ? 'New' : 'Baru'),
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,

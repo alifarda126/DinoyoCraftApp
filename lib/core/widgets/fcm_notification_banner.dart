@@ -5,8 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/fcm_notification_model.dart';
+import '../services/auth_session.dart';
 import '../services/fcm_service.dart';
+import '../services/pusher_service.dart';
 import '../theme/app_colors.dart';
+import '../../data/mock_data.dart';
 
 /// Kartu desain notifikasi in-app untuk FCM.
 /// Didesain modern bergaya floating heads-up banner dengan animasi slide-down.
@@ -226,18 +229,31 @@ class FcmNotificationHost extends StatefulWidget {
 }
 
 class _FcmNotificationHostState extends State<FcmNotificationHost>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _animController;
   late final Animation<Offset> _slideAnimation;
   late final Animation<double> _fadeAnimation;
 
   StreamSubscription? _fcmSub;
+  StreamSubscription? _orderSub;
+  StreamSubscription? _chatSub;
   Timer? _dismissTimer;
   FcmNotificationModel? _currentNotification;
+  bool _wasLoggedIn = false;
+
+  static const Set<String> _shellBranches = {
+    '/home',
+    '/products',
+    '/stores',
+    '/workshop',
+    '/profile',
+  };
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 380),
@@ -264,12 +280,72 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
     _fcmSub = FcmService.instance.notificationModelStream.listen((notif) {
       showNotification(notif);
     });
+
+    // Global Pusher fallback: pastikan status pembayaran -> dikemas -> dikirim ->
+    // diterima & chat baru tetap memicu tray + badge walau tidak di halaman Profil.
+    _orderSub = PusherService.instance.orderEventStream.listen((event) {
+      unawaited(FcmService.instance.showOrderStatusNotificationFromRealtime(event));
+    });
+    _chatSub = PusherService.instance.messageStream.listen((msg) {
+      if (!msg.isMine && msg.text.trim().isNotEmpty) {
+        unawaited(
+          FcmService.instance.showTrayForChatMessage(
+            messageId: msg.id,
+            senderName: msg.senderName,
+            body: msg.text,
+            senderId: msg.senderId,
+          ),
+        );
+      }
+    });
+
+    FcmService.instance.setNotificationRouteHandler((route) {
+      if (!mounted) return;
+      _navigateToRoute(route);
+    });
+
+    _wasLoggedIn = AuthSession.isLoggedIn;
+    AuthSession.instance.addListener(_onAuthSessionChanged);
+    if (_wasLoggedIn) {
+      _syncUserRealtimeAndUnread();
+    }
+  }
+
+  void _onAuthSessionChanged() {
+    final isNowLoggedIn = AuthSession.isLoggedIn;
+    if (isNowLoggedIn) {
+      _syncUserRealtimeAndUnread();
+    } else if (_wasLoggedIn && !isNowLoggedIn) {
+      MockData.resetNotifications();
+      MockData.resetChats();
+    }
+    _wasLoggedIn = isNowLoggedIn;
+  }
+
+  void _syncUserRealtimeAndUnread() {
+    final uid = AuthSession.user?['id']?.toString();
+    if (uid != null && uid.isNotEmpty) {
+      unawaited(PusherService.instance.subscribeToUserOrders(uid));
+    }
+    unawaited(MockData.refreshUnreadCounts());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && AuthSession.isLoggedIn) {
+      _syncUserRealtimeAndUnread();
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    AuthSession.instance.removeListener(_onAuthSessionChanged);
+    FcmService.instance.setNotificationRouteHandler(null);
     _dismissTimer?.cancel();
     _fcmSub?.cancel();
+    _orderSub?.cancel();
+    _chatSub?.cancel();
     _animController.dispose();
     super.dispose();
   }
@@ -301,32 +377,52 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
     });
   }
 
+  void _navigateToRoute(String route) {
+    try {
+      final router = GoRouter.of(context);
+      final normalized = route.trim();
+      if (_shellBranches.contains(normalized)) {
+        router.go(normalized);
+      } else if (normalized == '/chat') {
+        router.push('/messages');
+      } else {
+        router.push(normalized);
+      }
+    } catch (e) {
+      debugPrint('[FcmNotificationHost] Gagal navigasi ke $route: $e');
+    }
+  }
+
   void _handleTap() {
     if (_currentNotification == null) return;
     final notif = _currentNotification!;
     dismissNotification();
 
-    // Arahkan ke rute tujuan
-    if (notif.route != null && notif.route!.isNotEmpty) {
-      if (notif.category == FcmNotificationCategory.chat) {
-        final storeName = notif.data['store_name']?.toString() ??
-            'Dinoyo Ceramic Studio';
-        final productId = notif.data['product_id']?.toString();
-        final extraData = <String, dynamic>{
-          'storeName': storeName,
-        };
-        if (productId != null) {
-          extraData['productId'] = productId;
-        }
-        context.push(
-          '/chat',
-          extra: extraData,
+    // Arahkan ke rute tujuan yang valid di GoRouter
+    if (notif.category == FcmNotificationCategory.chat) {
+      final storeName = (notif.data['store_name'] ?? notif.data['sender_name'])
+          ?.toString()
+          .trim();
+      final senderId = notif.data['sender_id']?.toString().trim();
+      if (storeName != null && storeName.isNotEmpty) {
+        final uri = Uri(
+          path: '/chat-room',
+          queryParameters: {
+            'store': storeName,
+            if (senderId != null && senderId.isNotEmpty) 'userId': senderId,
+          },
         );
+        _navigateToRoute(uri.toString());
       } else {
-        context.push(notif.route!);
+        _navigateToRoute('/messages');
       }
+      return;
+    }
+
+    if (notif.route != null && notif.route!.trim().isNotEmpty) {
+      _navigateToRoute(notif.route!);
     } else {
-      context.push('/notifications');
+      _navigateToRoute('/notifications');
     }
   }
 

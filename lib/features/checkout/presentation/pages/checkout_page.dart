@@ -72,6 +72,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       serviceFee: _serviceFee,
       total: _total,
       paymentMethod: _payment,
+      backendMethod: _payment == 'VA'
+          ? 'bca_va'
+          : _payment == 'E-Wallet'
+              ? 'gopay'
+              : 'qris',
       shippingMethod: _shipping,
       recipientName: 'Customer',
       recipientPhone: '0859-777-588-138',

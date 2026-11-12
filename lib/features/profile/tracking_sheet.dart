@@ -13,8 +13,8 @@ import '../../core/theme/app_colors.dart';
 /// (GET /orders/:id/tracking) dan otomatis menyegarkan diri setiap 8 detik
 /// selama sheet terbuka, sehingga perubahan status dari mitra tampil
 /// tanpa perlu apa pun dari user.
-Future<void> showOrderTrackingSheet(BuildContext context, int orderId) {
-  return showModalBottomSheet<void>(
+Future<bool?> showOrderTrackingSheet(BuildContext context, int orderId) {
+  return showModalBottomSheet<bool>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
@@ -65,6 +65,7 @@ class _OrderTrackingSheetState extends State<OrderTrackingSheet> {
   Map<String, dynamic>? _order;
   List<Map<String, dynamic>> _timeline = [];
   bool _loading = true;
+  bool _completing = false;
   String? _error;
   Timer? _pollTimer;
 
@@ -364,6 +365,52 @@ class _OrderTrackingSheetState extends State<OrderTrackingSheet> {
                                     const SizedBox(height: 18),
                                     _buildItemsSummary(),
                                   ],
+                                  if (currentStatus == 'shipped') ...[
+                                    const SizedBox(height: 16),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 46,
+                                      child: ElevatedButton.icon(
+                                        onPressed: _completing
+                                            ? null
+                                            : _confirmCompleteOrder,
+                                        icon: _completing
+                                            ? const SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : const Icon(
+                                                Icons
+                                                    .check_circle_outline_rounded,
+                                                size: 18,
+                                              ),
+                                        label: Text(
+                                          (_completing
+                                                  ? 'Memproses...'
+                                                  : 'Pesanan Diterima')
+                                              .tr,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.black,
+                                          foregroundColor: AppColors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          elevation: 0,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                       ),
@@ -412,6 +459,96 @@ class _OrderTrackingSheetState extends State<OrderTrackingSheet> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _confirmCompleteOrder() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Konfirmasi Pesanan Diterima?'.tr,
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink,
+          ),
+        ),
+        content: Text(
+          'Pastikan produk sudah diterima dengan baik. Setelah dikonfirmasi, pesanan selesai dan dana masuk ke saldo aktif penjual.'.tr,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Belum'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.black,
+              foregroundColor: AppColors.white,
+              shape: const StadiumBorder(),
+              elevation: 0,
+            ),
+            child: Text(
+              'Ya, Pesanan Diterima'.tr,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _completing = true);
+    try {
+      await ApiClient.post('/orders/${widget.orderId}/complete', {});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.black,
+          content: Text(
+            'Pesanan #DNC-${widget.orderId} selesai! Dana diteruskan ke penjual.'.tr,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.redAccent,
+          content: Text(
+            'Gagal mengonfirmasi pesanan: $msg'.tr,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+      setState(() => _completing = false);
     }
   }
 

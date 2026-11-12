@@ -22,6 +22,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -40,19 +41,54 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       final email = _email.text.trim();
-      AppSettings.instance.lastAuthEmail = email;
+      setState(() => _isLoading = true);
       try {
-        await ApiClient.post('/auth/forgot-password', {'email': email});
-      } catch (_) {}
-      if (!mounted) return;
-      final uri = Uri(
-        path: '/verify-otp',
-        queryParameters: {
-          'from': 'forgot',
-          if (email.isNotEmpty) 'email': email,
-        },
-      );
-      context.push(uri.toString());
+        final response = await ApiClient.post('/auth/forgot-password', {'email': email});
+        if (response['success'] == true) {
+          AppSettings.instance.lastAuthEmail = email;
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  response['message']?.toString() ?? 'Kode OTP telah dikirim ke email kamu',
+                ),
+                backgroundColor: AppColors.ink,
+              ),
+            );
+            final uri = Uri(
+              path: '/verify-otp',
+              queryParameters: {
+                'from': 'forgot',
+                'email': email,
+              },
+            );
+            context.push(uri.toString());
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(response['message']?.toString() ?? 'Gagal mengirim kode OTP'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
@@ -190,21 +226,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               boxShadow: AppColors.darkButtonShadow,
                             ),
                             child: FilledButton(
-                              onPressed: _submit,
+                              onPressed: _isLoading ? null : _submit,
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.black,
                                 foregroundColor: AppColors.white,
                                 shape: AppColors.stadiumButtonShape,
                                 elevation: 0,
                               ),
-                              child: Text(
-                                'Kirim Kode Verifikasi',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.white,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Kirim Kode Verifikasi',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.white,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),

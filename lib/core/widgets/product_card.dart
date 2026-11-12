@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_text.dart';
 import '../../data/mock_data.dart';
 import '../../features/product/presentation/modal_pilih_variasi.dart';
 import '../assets.dart';
@@ -57,7 +58,30 @@ const   ProductCard({super.key, required this.product, this.onAdd});
                           fit: BoxFit.cover,
                         ),
                       ),
-                      if (product.hot)
+                      if (product.effectiveStock <= 0)
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.danger,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Habis'.tr,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ),
+                        )
+                      else if (product.hot)
                         Positioned(
                           top: 8,
                           left: 8,
@@ -117,7 +141,9 @@ const   ProductCard({super.key, required this.product, this.onAdd});
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                product.rating.toStringAsFixed(1),
+                                product.rating > 0
+                                    ? product.rating.toStringAsFixed(1)
+                                    : (AppText.isEnglish ? 'New' : 'Baru'),
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,

@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import 'dc_cached_image.dart';
 
 // ─── Model ───────────────────────────────────────────────────────────────────
 class VariantOption {
@@ -134,12 +135,12 @@ class _DcVariantSheetState extends State<DcVariantSheet> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-                        child: Image.asset(
-                          widget.productImagePath,
+                        child: DcCachedImage(
+                          imageUrl: widget.productImagePath,
                           width: 80,
                           height: 80,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => ColoredBox(
+                          errorWidget: ColoredBox(
                             color: AppColors.inputBg,
                             child: SizedBox(width: 80, height: 80),
                           ),

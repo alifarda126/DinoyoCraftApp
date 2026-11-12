@@ -1,8 +1,107 @@
 import 'dart:collection';
+import 'dart:convert';
+import 'dart:ui' show Color;
 import 'package:flutter/foundation.dart';
 
 import '../core/assets.dart';
 import '../core/network/api_client.dart';
+
+class ProductVariant {
+  const ProductVariant({
+    required this.name,
+    required this.hex,
+    this.label = 'Standar',
+    required this.stock,
+  });
+
+  final String name;
+  final String hex;
+  final String label;
+  final int stock;
+
+  Color get colorValue {
+    var clean = hex.trim().replaceFirst('#', '');
+    if (clean.length == 6) clean = 'FF$clean';
+    final parsed = int.tryParse(clean, radix: 16);
+    if (parsed != null) return Color(parsed);
+    return const Color(0xFFB85C3C);
+  }
+
+  factory ProductVariant.fromJson(Map<String, dynamic> json) {
+    final rawStock = json['stock'];
+    final int stock;
+    if (rawStock is num) {
+      stock = rawStock.toInt();
+    } else if (rawStock is String) {
+      stock = int.tryParse(rawStock) ?? 0;
+    } else {
+      stock = 0;
+    }
+    return ProductVariant(
+      name: (json['name'] ?? json['label'] ?? '').toString().trim(),
+      hex: (json['hex'] ?? '#b85c3c').toString().trim(),
+      label: (json['label'] ?? 'Standar').toString().trim(),
+      stock: stock < 0 ? 0 : stock,
+    );
+  }
+}
+
+class ProductReview {
+  const ProductReview({
+    required this.id,
+    required this.userName,
+    required this.rating,
+    this.variant = '',
+    this.comment = '',
+    this.photoUrls = const [],
+    this.helpfulCount = 0,
+    this.sellerReply,
+    this.repliedAt,
+    this.createdAt,
+  });
+
+  final String id;
+  final String userName;
+  final double rating;
+  final String variant;
+  final String comment;
+  final List<String> photoUrls;
+  final int helpfulCount;
+  final String? sellerReply;
+  final String? repliedAt;
+  final String? createdAt;
+
+  factory ProductReview.fromJson(Map<String, dynamic> json) {
+    final photos = <String>[];
+    final rawPhotos = json['photo_urls'];
+    if (rawPhotos is List) {
+      for (final p in rawPhotos) {
+        if (p != null && p.toString().trim().isNotEmpty) {
+          photos.add(ApiClient.resolveImageUrl(p.toString()));
+        }
+      }
+    }
+    final rawRating = json['rating'];
+    final double parsedRating = rawRating is num
+        ? rawRating.toDouble()
+        : double.tryParse('$rawRating') ?? 5.0;
+
+    return ProductReview(
+      id: (json['id'] ?? '').toString(),
+      userName: (json['user_name'] ?? 'Pembeli').toString().trim(),
+      rating: parsedRating,
+      variant: (json['variant'] ?? '').toString().trim(),
+      comment: (json['comment'] ?? '').toString().trim(),
+      photoUrls: photos,
+      helpfulCount: (json['helpful_count'] is num)
+          ? (json['helpful_count'] as num).toInt()
+          : int.tryParse('${json['helpful_count']}') ?? 0,
+      sellerReply: json['seller_reply']?.toString(),
+      repliedAt: json['replied_at']?.toString(),
+      createdAt: json['created_at']?.toString(),
+    );
+  }
+}
 
 class Product {
   const Product({
@@ -16,6 +115,14 @@ class Product {
     this.images,
     this.hot = false,
     this.mitraId = 0,
+    this.description = '',
+    this.stock = 0,
+    this.weightGram = 500,
+    this.variants = const [],
+    this.totalReviews = 0,
+    this.soldCount = 0,
+    this.workshopAddress = '',
+    this.reviews = const [],
   });
 
   final String id;
@@ -31,22 +138,56 @@ class Product {
   /// ID toko mitra pemilik produk (dari backend, untuk checkout).
   final int mitraId;
 
+  final String description;
+  final int stock;
+  final int weightGram;
+  final List<ProductVariant> variants;
+  final int totalReviews;
+  final int soldCount;
+  final String workshopAddress;
+  final List<ProductReview> reviews;
+
+  bool get hasVariants => variants.isNotEmpty;
+
+  /// Total stok efektif: bila varian diisi, jumlahkan stok tiap varian.
+  int get effectiveStock => variants.isNotEmpty
+      ? variants.fold<int>(0, (sum, v) => sum + v.stock)
+      : stock;
+
+  int availableStockForVariant(String? variantName) {
+    if (variants.isNotEmpty) {
+      final target = (variantName ?? '').trim().toLowerCase();
+      if (target.isNotEmpty) {
+        for (final v in variants) {
+          if (v.name.trim().toLowerCase() == target) return v.stock;
+        }
+      }
+      return variants.first.stock;
+    }
+    return stock < 0 ? 0 : stock;
+  }
+
   factory Product.fromJson(Map<String, dynamic> json) {
-    final rawPrice = json['price'];
-    final int price;
-    if (rawPrice is num) {
-      price = rawPrice.toInt();
-    } else if (rawPrice is String) {
-      price = double.tryParse(rawPrice)?.toInt() ?? 0;
-    } else {
-      price = 0;
+    int parseInt(dynamic raw, [int fallback = 0]) {
+      if (raw is num) return raw.toInt();
+      if (raw is String) {
+        return double.tryParse(raw)?.toInt() ?? fallback;
+      }
+      return fallback;
     }
 
+    double parseDouble(dynamic raw, [double fallback = 0.0]) {
+      if (raw is num) return raw.toDouble();
+      if (raw is String) return double.tryParse(raw) ?? fallback;
+      return fallback;
+    }
+
+    final price = parseInt(json['price'], 0);
     final rawImages = json['images'];
     List<String>? imagesList;
     if (rawImages is List) {
       imagesList = rawImages
-          .where((e) => e != null)
+          .where((e) => e != null && e.toString().trim().isNotEmpty)
           .map((e) => ApiClient.resolveImageUrl(e.toString()))
           .toList();
     }
@@ -56,6 +197,47 @@ class Product {
         (imagesList != null && imagesList.isNotEmpty ? imagesList.first : null);
     final resolvedImage = ApiClient.resolveImageUrl(imagePath);
 
+    // Parse variants array (bisa berbentuk List atau JSON string)
+    final parsedVariants = <ProductVariant>[];
+    dynamic rawVariants = json['variants'];
+    if (rawVariants is String && rawVariants.trim().isNotEmpty) {
+      try {
+        rawVariants = jsonDecode(rawVariants);
+      } catch (_) {
+        rawVariants = null;
+      }
+    }
+    if (rawVariants is List) {
+      for (final v in rawVariants) {
+        if (v is Map) {
+          final variant = ProductVariant.fromJson(Map<String, dynamic>.from(v));
+          if (variant.name.isNotEmpty) parsedVariants.add(variant);
+        }
+      }
+    }
+
+    // Parse reviews array jika tersedia (dari detail produk)
+    final parsedReviews = <ProductReview>[];
+    final rawReviews = json['reviews'];
+    if (rawReviews is List) {
+      for (final r in rawReviews) {
+        if (r is Map) {
+          parsedReviews.add(ProductReview.fromJson(Map<String, dynamic>.from(r)));
+        }
+      }
+    }
+
+    final storeMap = json['store'] is Map ? json['store'] as Map : null;
+    final workshopAddr = (json['workshop_address'] ??
+            storeMap?['workshop_address'] ??
+            storeMap?['location'] ??
+            '')
+        .toString()
+        .trim();
+
+    final parsedTotalReviews = parseInt(json['total_reviews'], parsedReviews.length);
+    final parsedRating = parseDouble(json['rating'], 0.0);
+
     return Product(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? json['title']?.toString() ?? '',
@@ -63,18 +245,24 @@ class Product {
           json['store_name']?.toString() ??
           'Dinoyo Craft',
       price: price,
-      rating: (json['rating'] is num)
-          ? (json['rating'] as num).toDouble()
-          : 4.8,
+      rating: parsedTotalReviews > 0 ? parsedRating : 0.0,
       category: json['category']?.toString() ??
           json['category_name']?.toString() ??
           'Keramik',
       image: resolvedImage,
       images: imagesList,
       hot: json['hot'] == true,
-      mitraId: (json['mitra_id'] is num)
-          ? (json['mitra_id'] as num).toInt()
-          : int.tryParse('${json['mitra_id']}') ?? 0,
+      mitraId: parseInt(json['mitra_id'], 0),
+      description: (json['description'] ?? '').toString(),
+      stock: parseInt(json['stock'], 0),
+      weightGram: parseInt(json['weight_gram'], 500) <= 0
+          ? 500
+          : parseInt(json['weight_gram'], 500),
+      variants: parsedVariants,
+      totalReviews: parsedTotalReviews,
+      soldCount: parseInt(json['sold_count'], 0),
+      workshopAddress: workshopAddr,
+      reviews: parsedReviews,
     );
   }
 
@@ -93,36 +281,103 @@ class Product {
 
 class Store {
   const Store({
+    this.id = 0,
+    this.userId,
     required this.name,
     required this.location,
     required this.description,
     required this.rating,
     required this.image,
+    this.banner,
+    this.avatar,
+    this.totalReviews = 0,
   });
 
+  static const String defaultBanner =
+      'https://images.unsplash.com/photo-1610701596007-11502861dcfa?q=80&w=1200&auto=format&fit=crop';
+
+  final int id;
+  final int? userId;
   final String name;
   final String location;
   final String description;
   final double rating;
   final String image;
+  final String? banner;
+  final String? avatar;
+  final int totalReviews;
+
+  /// Memeriksa apakah toko memiliki foto profil khusus (bukan default Google avatar dan bukan fallback banner)
+  bool get hasCustomAvatar {
+    final a = avatar;
+    if (a == null || a.trim().isEmpty || a.trim() == 'null') return false;
+    if (a.contains('googleusercontent.com') || a.contains('google.com')) {
+      return false;
+    }
+    if (a == defaultBanner) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Inisial nama toko (sama persis dengan formula FE: 1 huruf jika 1 kata, 2 huruf jika >= 2 kata)
+  String get initials {
+    final words = name.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    if (words.isEmpty) return 'D';
+    if (words.length == 1) {
+      return words[0][0].toUpperCase();
+    }
+    final first = words[0][0];
+    final second = words[1][0];
+    return (first + second).toUpperCase();
+  }
 
   factory Store.fromJson(Map<String, dynamic> json) {
-    final imagePath = json['image']?.toString() ??
-        json['avatar_url']?.toString() ??
-        json['banner_url']?.toString();
-    final resolvedImage = ApiClient.resolveImageUrl(imagePath);
+    final bannerPath = json['banner_url']?.toString();
+    final avatarPath = json['avatar_url']?.toString() ?? json['image']?.toString();
+
+    // Banner default sama persis dengan frontend (Unsplash pottery banner)
+    final resolvedBanner = (bannerPath != null &&
+            bannerPath.trim().isNotEmpty &&
+            bannerPath.trim() != 'null')
+        ? ApiClient.resolveImageUrl(bannerPath.trim())
+        : defaultBanner;
+
+    final resolvedAvatar = (avatarPath != null &&
+            avatarPath.trim().isNotEmpty &&
+            avatarPath.trim() != 'null')
+        ? ApiClient.resolveImageUrl(avatarPath.trim())
+        : null;
+
+    final desc = json['description']?.toString();
+    final resolvedDesc = (desc != null && desc.trim().isNotEmpty && desc.trim() != 'null')
+        ? desc.trim()
+        : 'Studio keramik pengrajin Dinoyo.';
+
+    final totalReviews = (json['total_reviews'] is num)
+        ? (json['total_reviews'] as num).toInt()
+        : int.tryParse('${json['total_reviews']}') ?? 0;
+    final rawRating = (json['rating'] is num)
+        ? (json['rating'] as num).toDouble()
+        : double.tryParse('${json['rating']}') ?? 0.0;
 
     return Store(
+      id: (json['id'] is num)
+          ? (json['id'] as num).toInt()
+          : int.tryParse('${json['id']}') ?? 0,
+      userId: (json['user_id'] is num)
+          ? (json['user_id'] as num).toInt()
+          : int.tryParse('${json['user_id']}'),
       name: json['store_name']?.toString() ?? json['name']?.toString() ?? 'Studio Dinoyo',
       location: json['location']?.toString() ??
           json['workshop_address']?.toString() ??
           'Dinoyo, Malang',
-      description: json['description']?.toString() ??
-          'Studio keramik pengrajin Dinoyo.',
-      rating: (json['rating'] is num)
-          ? (json['rating'] as num).toDouble()
-          : 4.8,
-      image: resolvedImage,
+      description: resolvedDesc,
+      rating: totalReviews > 0 ? rawRating : 0.0,
+      image: resolvedBanner,
+      banner: resolvedBanner,
+      avatar: resolvedAvatar,
+      totalReviews: totalReviews,
     );
   }
 }
@@ -267,7 +522,7 @@ abstract final class MockData {
     FaqItem(
       question: 'Metode pembayaran apa saja yang tersedia?',
       answer:
-          'MVP mendukung QRIS, Virtual Account, dan E-Wallet. Pembayaran di demo ini bersifat simulasi.',
+          'DinoyoCraft mendukung pembayaran via Midtrans Sandbox: QRIS, Virtual Account (BCA, Mandiri, BRI, BNI, Permata), serta E-Wallet (GoPay & ShopeePay).',
     ),
   ];
 
@@ -300,8 +555,24 @@ abstract final class MockData {
   static void markNotificationAsRead(String id) {
     if (!readNotificationIds.contains(id)) {
       readNotificationIds.add(id);
-      unreadNotificationsCount = 0;
+      if (unreadNotificationsCount > 0) {
+        unreadNotificationsCount = unreadNotificationsCount - 1;
+      }
     }
+  }
+
+  /// Sinkronisasi hitungan notifikasi belum dibaca dari server.
+  static void syncUnreadNotificationsCount(int count) {
+    final safeCount = count < 0 ? 0 : count;
+    if (unreadNotificationsCount != safeCount) {
+      unreadNotificationsCount = safeCount;
+    }
+  }
+
+  /// Naikkan hitungan badge notifikasi saat push/realtime baru diterima.
+  static void incrementUnreadNotifications([int delta = 1]) {
+    if (delta <= 0) return;
+    unreadNotificationsCount = unreadNotificationsCount + delta;
   }
 
   /// Reset state notifikasi ke kondisi kosong
@@ -313,13 +584,56 @@ abstract final class MockData {
   /// Set nama toko dengan chat yang belum dibaca (dimulai dari KOSONG)
   static final Set<String> unreadChatStores = {};
 
+  /// Rincian jumlah pesan belum dibaca per toko (lowercase store name)
+  static final Map<String, int> unreadChatCountByStore = {};
+
+  /// Room obrolan yang sedang dibuka user saat ini agar pesan masuk tidak
+  /// otomatis menambah badge unread.
+  static String? activeChatStoreName;
+  static String? activeChatUserId;
+
   /// ValueNotifier untuk jumlah pesan chat belum dibaca (default 0)
   static final ValueNotifier<int> unreadChatNotifier = ValueNotifier<int>(0);
 
   /// Jumlah pesan chat belum dibaca untuk badge angka di header
   static int get unreadChatCount => unreadChatNotifier.value;
   static set unreadChatCount(int val) {
-    unreadChatNotifier.value = val;
+    unreadChatNotifier.value = val < 0 ? 0 : val;
+  }
+
+  /// Sinkronkan daftar toko & total pesan chat belum dibaca dari respons `/chat/contacts`.
+  static void syncUnreadChatFromContacts(List<Map<String, dynamic>> contacts) {
+    unreadChatStores.clear();
+    unreadChatCountByStore.clear();
+    int total = 0;
+    for (final c in contacts) {
+      final storeName = (c['name'] ?? c['store_name'] ?? '').toString().trim();
+      final rawUnread = c['unread'] ?? c['unread_count'] ?? 0;
+      final unread = rawUnread is num
+          ? rawUnread.toInt()
+          : int.tryParse('$rawUnread') ?? 0;
+      if (unread > 0) {
+        total += unread;
+        if (storeName.isNotEmpty) {
+          unreadChatStores.add(storeName);
+          unreadChatCountByStore[storeName.toLowerCase()] = unread;
+        }
+      }
+    }
+    unreadChatCount = total;
+  }
+
+  /// Tambah hitungan badge chat secara instan saat pesan baru masuk di luar room.
+  static void recordIncomingUnreadChat(String storeName) {
+    final trimmed = storeName.trim();
+    if (trimmed.isEmpty) {
+      unreadChatCount = unreadChatCount + 1;
+      return;
+    }
+    final key = trimmed.toLowerCase();
+    unreadChatStores.add(trimmed);
+    unreadChatCountByStore[key] = (unreadChatCountByStore[key] ?? 0) + 1;
+    unreadChatCount = unreadChatCount + 1;
   }
 
   /// Menandai chat toko sebagai terbaca
@@ -328,10 +642,18 @@ abstract final class MockData {
     final matching = unreadChatStores
         .where((s) => s.trim().toLowerCase() == trimmed)
         .toList();
+    final removedCount = unreadChatCountByStore.remove(trimmed) ?? 0;
     if (matching.isNotEmpty) {
       for (final s in matching) {
         unreadChatStores.remove(s);
       }
+    }
+    if (unreadChatCountByStore.isNotEmpty) {
+      unreadChatCount = unreadChatCountByStore.values.fold(0, (a, b) => a + b);
+    } else if (removedCount > 0) {
+      final next = unreadChatCount - removedCount;
+      unreadChatCount = next < 0 ? 0 : next;
+    } else if (matching.isNotEmpty) {
       unreadChatCount = unreadChatStores.length;
     }
   }
@@ -345,24 +667,142 @@ abstract final class MockData {
   /// Reset state chat (kosong)
   static void resetChats() {
     unreadChatStores.clear();
+    unreadChatCountByStore.clear();
     unreadChatCount = 0;
   }
 
-  /// Tambah produk ke keranjang; qty di-merge bila produk dan varian sama.
+  static bool _isRefreshingUnreadCounts = false;
+
+  /// Ambil ulang jumlah notifikasi & pesan chat belum dibaca dari backend.
+  static Future<void> refreshUnreadCounts() async {
+    final token = ApiClient.authToken;
+    if (token == null || token.trim().isEmpty || _isRefreshingUnreadCounts) {
+      return;
+    }
+    _isRefreshingUnreadCounts = true;
+    try {
+      await Future.wait([
+        _refreshNotificationUnreadCount(),
+        _refreshChatUnreadCount(),
+      ]);
+    } finally {
+      _isRefreshingUnreadCounts = false;
+    }
+  }
+
+  static Future<void> _refreshNotificationUnreadCount() async {
+    try {
+      final res = await ApiClient.get('/notifications/unread-count');
+      final rawCount = res['unread_count'] ??
+          (res['data'] is Map ? (res['data'] as Map)['unread_count'] : null);
+      if (rawCount != null) {
+        final parsed = rawCount is num
+            ? rawCount.toInt()
+            : int.tryParse('$rawCount') ?? 0;
+        syncUnreadNotificationsCount(parsed);
+        return;
+      }
+    } catch (_) {
+      // Fallback ke endpoint list jika endpoint unread-count belum tersedia.
+    }
+
+    try {
+      final res = await ApiClient.get('/notifications');
+      final rawCount = res['unread_count'];
+      if (rawCount != null) {
+        final parsed = rawCount is num
+            ? rawCount.toInt()
+            : int.tryParse('$rawCount') ?? 0;
+        syncUnreadNotificationsCount(parsed);
+        return;
+      }
+      final list = res['notifications'] ?? res['data'];
+      if (list is List) {
+        final unread = list.where((e) {
+          if (e is Map) {
+            return e['is_read'] != true && e['is_read'] != 1;
+          }
+          return false;
+        }).length;
+        syncUnreadNotificationsCount(unread);
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> _refreshChatUnreadCount() async {
+    try {
+      final res = await ApiClient.get('/chat/unread-count');
+      final dataMap = res['data'] is Map
+          ? Map<String, dynamic>.from(res['data'] as Map)
+          : null;
+      final rawCount = res['unread_count'] ?? dataMap?['unread_count'];
+      final rawSenders = res['unread_senders'] ?? dataMap?['unread_senders'];
+      if (rawSenders is List) {
+        final senderMaps = rawSenders
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+        syncUnreadChatFromContacts(senderMaps);
+      }
+      if (rawCount != null) {
+        final parsed = rawCount is num
+            ? rawCount.toInt()
+            : int.tryParse('$rawCount') ?? 0;
+        unreadChatCount = parsed;
+        return;
+      }
+    } catch (_) {
+      // Fallback ke endpoint contacts jika endpoint unread-count belum tersedia.
+    }
+
+    try {
+      final res = await ApiClient.get('/chat/contacts');
+      final list = res['contacts'] ?? res['data'];
+      if (list is List) {
+        final contacts = list
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+        syncUnreadChatFromContacts(contacts);
+      }
+    } catch (_) {}
+  }
+
+  /// Update / sisipkan 1 produk ke cache [products].
+  static void upsertProduct(Product product) {
+    final idx = products.indexWhere((p) => p.id == product.id);
+    if (idx >= 0) {
+      products[idx] = product;
+    } else {
+      products.add(product);
+    }
+  }
+
+  /// Tambah produk ke keranjang; qty di-merge bila produk dan varian sama,
+  /// serta dibatasi stok varian/produk yang tersedia.
   static void addToCart(Product product, int qty, [String? variant]) {
+    final normalizedVariant =
+        (variant != null && variant.trim().isNotEmpty) ? variant.trim() : null;
+    final maxStock = product.availableStockForVariant(normalizedVariant);
     final index = mockCart.indexWhere(
       (item) =>
           item.product.id == product.id &&
-          (item.variant == variant || item.variant == null),
+          (item.variant ?? '').trim().toLowerCase() ==
+              (normalizedVariant ?? '').trim().toLowerCase(),
     );
     if (index >= 0) {
+      final combined = mockCart[index].qty + qty;
+      final clampedQty = maxStock > 0 ? combined.clamp(1, maxStock) : combined;
       mockCart[index] = CartItem(
         product: product,
-        qty: mockCart[index].qty + qty,
-        variant: variant ?? mockCart[index].variant,
+        qty: clampedQty,
+        variant: normalizedVariant,
       );
     } else {
-      mockCart.add(CartItem(product: product, qty: qty, variant: variant));
+      final clampedQty = maxStock > 0 ? qty.clamp(1, maxStock) : qty;
+      mockCart.add(
+        CartItem(product: product, qty: clampedQty, variant: normalizedVariant),
+      );
     }
     cartCountNotifier.value = mockCart.length;
   }

@@ -20,6 +20,12 @@ class DcAppHeader extends StatelessWidget {
   final bool showActions;
   final bool showBorder;
 
+  static String? _formatBadge(int count) {
+    if (count <= 0) return null;
+    if (count > 99) return '99+';
+    return '$count';
+  }
+
   /// Faktor skala responsif berbasis lebar layar logis (dp).
   ///
   /// Di ponsel sempit (< 600dp), metrik diskalakan proporsional (0.88–1.20)
@@ -100,10 +106,13 @@ class DcAppHeader extends StatelessWidget {
                 builder: (context, count, _) => _IconBtn(
                   asset: AppAssets.iconNotification,
                   iconSize: tablet ? 21 : 19,
-                  badge: count > 0 ? '$count' : null,
+                  badge: _formatBadge(count),
                   badgeTop: -2,
                   badgeRight: -2,
-                  onTap: () => showNotificationsModal(context),
+                  onTap: () async {
+                    await showNotificationsModal(context);
+                    MockData.refreshUnreadCounts();
+                  },
                 ),
               ),
               SizedBox(width: actionGap),
@@ -113,7 +122,7 @@ class DcAppHeader extends StatelessWidget {
                   child: _IconBtn(
                     asset: AppAssets.iconCart,
                     iconSize: tablet ? 21 : 19,
-                    badge: cartCount > 0 ? '$cartCount' : null,
+                    badge: _formatBadge(cartCount),
                     badgeTop: -2,
                     badgeRight: -3,
                     onTap: () => showCartModal(context),
@@ -126,10 +135,13 @@ class DcAppHeader extends StatelessWidget {
                 builder: (context, chatCount, _) => _IconBtn(
                   asset: AppAssets.iconChat,
                   iconSize: tablet ? 21 : 19,
-                  badge: chatCount > 0 ? '$chatCount' : null,
+                  badge: _formatBadge(chatCount),
                   badgeTop: -2,
                   badgeRight: -2,
-                  onTap: () => context.push('/messages'),
+                  onTap: () async {
+                    await context.push('/messages');
+                    MockData.refreshUnreadCounts();
+                  },
                 ),
               ),
             ],
@@ -180,7 +192,7 @@ class _IconBtn extends StatelessWidget {
     final iSize = tablet ? iconSize : iconSize * s;
     final bTop = tablet ? badgeTop : badgeTop * s;
     final bRight = tablet ? badgeRight : badgeRight * s;
-    final bMinWidth = tablet ? 16.0 : 14.0 * s;
+    final bMinWidth = tablet ? 17.0 : 15.0 * s;
     final bFontSize = tablet ? 9.5 : 8.0 * s;
 
     return InkWell(
@@ -211,6 +223,7 @@ class _IconBtn extends StatelessWidget {
                 child: Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: tablet ? 4.0 : 3.5 * s,
+                    vertical: 1.0,
                   ),
                   constraints: BoxConstraints(
                     minWidth: bMinWidth,
@@ -225,8 +238,10 @@ class _IconBtn extends StatelessWidget {
                   child: Text(
                     badge!,
                     textAlign: TextAlign.center,
+                    softWrap: false,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: bFontSize,
+                      height: 1.0,
                       fontWeight: FontWeight.w700,
                       color: AppColors.surface,
                     ),

@@ -5,11 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../storage/local_storage.dart';
+import '../services/mobile_log_reporter.dart';
 import 'server_status.dart';
 
 class ApiClient {
   static final List<String> candidateHosts = [
     'http://127.0.0.1:5000',
+    'http://10.35.96.186:5000',
     'http://192.168.1.2:5000',
     'http://192.168.110.161:5000',
     'http://10.0.2.2:5000',
@@ -31,6 +33,14 @@ class ApiClient {
   static String resolveImageUrl(String? path) {
     if (path == null || path.isEmpty) {
       return 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?auto=format&fit=crop&w=400&q=80';
+    }
+    for (final localOrigin in const [
+      'http://localhost:5000',
+      'http://127.0.0.1:5000',
+    ]) {
+      if (path.startsWith('$localOrigin/')) {
+        return '$baseHost${path.substring(localOrigin.length)}';
+      }
     }
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
@@ -65,6 +75,18 @@ class ApiClient {
       final host = candidateHosts[index];
       try {
         final response = await requestFn(host).timeout(timeout);
+        if (i > 0) {
+          MobileLogReporter.reportEvent(
+            category: 'mobile',
+            eventName: 'mobile.network.host_fallback',
+            severity: 'warning',
+            message: 'Aplikasi Mobile beralih dari ${candidateHosts[startIndex]} ke fallback $host',
+            metadata: {
+              'failedHost': candidateHosts[startIndex],
+              'activeHost': host,
+            },
+          );
+        }
         _activeHostIndex = index;
         ServerStatus.markUp(); // respons diterima = server terjangkau
         return response;
@@ -296,10 +318,24 @@ class ApiClient {
         ? (decoded['message'] ?? decoded['error'] ?? 'Terjadi kesalahan')
         : 'HTTP Error ${response.statusCode}';
     final data = decoded is Map<String, dynamic> ? decoded['data'] : null;
+    final requestId = response.headers['x-request-id'];
+
+    if (response.statusCode >= 500) {
+      MobileLogReporter.reportEvent(
+        category: 'mobile',
+        eventName: 'mobile.api.server_error',
+        severity: 'error',
+        message: 'Mobile menerima HTTP ${response.statusCode}: $message',
+        statusCode: response.statusCode,
+        requestId: requestId,
+      );
+    }
+
     throw ApiException(
       statusCode: response.statusCode,
       message: message.toString(),
       data: data,
+      requestId: requestId,
       rawResponse: decoded is Map<String, dynamic> ? decoded : null,
     );
   }
@@ -310,12 +346,14 @@ class ApiException implements Exception {
   final int statusCode;
   final String message;
   final dynamic data;
+  final String? requestId;
   final Map<String, dynamic>? rawResponse;
 
   ApiException({
     required this.statusCode,
     required this.message,
     this.data,
+    this.requestId,
     this.rawResponse,
   });
 
