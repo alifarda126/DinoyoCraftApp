@@ -89,10 +89,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
               ? rawUnread.toInt()
               : int.tryParse('$rawUnread') ?? 0;
           final rawAvatar = c['avatar_url']?.toString().trim();
-          final avatarUrl = (rawAvatar != null &&
+          final resolvedAvatar = (rawAvatar != null &&
                   rawAvatar.isNotEmpty &&
                   rawAvatar != 'null')
               ? ApiClient.resolveImageUrl(rawAvatar)
+              : null;
+          final isStoreContact = role == 'mitra' || rawStore.isNotEmpty;
+          final avatarUrl = _isValidChatAvatar(
+            resolvedAvatar,
+            excludeGoogleAvatar: isStoreContact,
+          )
+              ? resolvedAvatar
               : null;
 
           parsed.add(
@@ -255,6 +262,34 @@ class _ChatListScreenState extends State<ChatListScreen> {
       ),
     );
   }
+  static bool _isValidChatAvatar(
+    String? url, {
+    required bool excludeGoogleAvatar,
+  }) {
+    if (url == null) return false;
+    final trimmed = url.trim();
+    if (trimmed.isEmpty || trimmed == 'null') return false;
+    if (trimmed == Store.defaultBanner) return false;
+    if (excludeGoogleAvatar &&
+        (trimmed.contains('googleusercontent.com') ||
+            trimmed.contains('google.com'))) {
+      return false;
+    }
+    return trimmed.startsWith('http://') || trimmed.startsWith('https://');
+  }
+}
+
+String _chatInitials(String name) {
+  final words = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
+  if (words.isEmpty) return 'D';
+  if (words.length == 1) {
+    return words[0][0].toUpperCase();
+  }
+  return '${words[0][0]}${words[1][0]}'.toUpperCase();
 }
 
 class _ChatData {
@@ -371,6 +406,17 @@ class _ChatCard extends StatelessWidget {
         MockData.unreadChatCountByStore[chat.store.trim().toLowerCase()] ??
             (isUnread ? (chat.unreadCount > 0 ? chat.unreadCount : 1) : 0);
 
+    final initialsFallback = Center(
+      child: Text(
+        _chatInitials(chat.store),
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 16,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+        ),
+      ),
+    );
+
     return InkWell(
       onTap: () async {
         MockData.markChatAsRead(chat.store);
@@ -407,13 +453,29 @@ class _ChatCard extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                if (chat.avatarUrl != null && chat.avatarUrl!.startsWith('http'))
-                  ClipOval(
-                    child: DcCachedImage(
-                      imageUrl: chat.avatarUrl!,
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
+                if (chat.userId != null)
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF000000), Color(0xFFC0673D)],
+                      ),
+                    ),
+                    child: ClipOval(
+                      child: (chat.avatarUrl != null &&
+                              chat.avatarUrl!.startsWith('http'))
+                          ? DcCachedImage(
+                              imageUrl: chat.avatarUrl!,
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                              errorWidget: initialsFallback,
+                            )
+                          : initialsFallback,
                     ),
                   )
                 else

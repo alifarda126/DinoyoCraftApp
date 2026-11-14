@@ -12,6 +12,8 @@ class ApiClient {
   static final List<String> candidateHosts = [
     'http://127.0.0.1:5000',
     'http://10.35.96.186:5000',
+    'http://10.35.96.186:5000',
+    'http://192.168.1.3:5000',
     'http://192.168.1.2:5000',
     'http://192.168.110.161:5000',
     'http://10.0.2.2:5000',

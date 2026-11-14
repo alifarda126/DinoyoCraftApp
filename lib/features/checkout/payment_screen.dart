@@ -161,6 +161,8 @@ class _PaymentScreenState extends State<PaymentScreen>
   bool _payLoading = false;
   String? _payError;
   Timer? _statusPollTimer;
+  Timer? _fastWebViewPollTimer;
+  bool _inAppWebViewOpen = false;
   StreamSubscription<Map<String, dynamic>>? _orderEventSub;
   bool _paidNotified = false;
   bool _isTerminalState = false;
@@ -349,9 +351,32 @@ class _PaymentScreenState extends State<PaymentScreen>
     });
   }
 
+  void _startFastWebViewPolling() {
+    _inAppWebViewOpen = true;
+    _fastWebViewPollTimer?.cancel();
+    var ticks = 0;
+    _fastWebViewPollTimer = Timer.periodic(const Duration(seconds: 2), (t) {
+      ticks++;
+      if (!mounted || _paidNotified || _isTerminalState || ticks > 90) {
+        t.cancel();
+        return;
+      }
+      _syncStatusOnce();
+    });
+  }
+
+  void _closePaymentWebViewIfOpen() {
+    _fastWebViewPollTimer?.cancel();
+    _fastWebViewPollTimer = null;
+    if (!_inAppWebViewOpen) return;
+    _inAppWebViewOpen = false;
+    closeInAppWebView().then((_) {}, onError: (_) {});
+  }
+
   void _handlePaidConfirmed() {
     if (_paidNotified) return;
     _paidNotified = true;
+    _closePaymentWebViewIfOpen();
     _statusPollTimer?.cancel();
     _countdownTimer?.cancel();
     ProfileScreen.refreshNotifier.value++;
@@ -359,6 +384,7 @@ class _PaymentScreenState extends State<PaymentScreen>
   }
 
   void _handleTerminalStatus(String status) {
+    _closePaymentWebViewIfOpen();
     _statusPollTimer?.cancel();
     _countdownTimer?.cancel();
     ProfileScreen.refreshNotifier.value++;
@@ -450,6 +476,8 @@ class _PaymentScreenState extends State<PaymentScreen>
         _isRealOrder &&
         !_paidNotified &&
         !_isTerminalState) {
+      _inAppWebViewOpen = false;
+      _fastWebViewPollTimer?.cancel();
       _syncStatusOnce();
     }
   }
@@ -459,6 +487,7 @@ class _PaymentScreenState extends State<PaymentScreen>
     WidgetsBinding.instance.removeObserver(this);
     _countdownTimer?.cancel();
     _statusPollTimer?.cancel();
+    _fastWebViewPollTimer?.cancel();
     _orderEventSub?.cancel();
     super.dispose();
   }
@@ -1446,9 +1475,24 @@ class _PaymentScreenState extends State<PaymentScreen>
     final uri = Uri.tryParse(resolvedUrl);
     if (uri != null) {
       try {
-        final launched =
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-        if (launched) return;
+        // Pada Android 17+, Chrome eksternal memblokir IP lokal HTTP (REVOKED_COMPAT / ERR_TOO_MANY_RETRIES).
+        // Gunakan inAppWebView untuk HTTP lokal / simulator Midtrans agar terbuka di aplikasi
+        // dan langsung tertutup otomatis kembali ke layar sukses begitu status berubah PAID.
+        final useInAppWebView = uri.scheme == 'http' ||
+            uri.host.contains('simulator.sandbox.midtrans.com');
+        final mode = useInAppWebView
+            ? LaunchMode.inAppWebView
+            : LaunchMode.externalApplication;
+        final launched = await launchUrl(uri, mode: mode);
+        if (launched) {
+          if (useInAppWebView &&
+              _isRealOrder &&
+              !_paidNotified &&
+              !_isTerminalState) {
+            _startFastWebViewPolling();
+          }
+          return;
+        }
       } catch (_) {}
     }
     if (!mounted) return;
