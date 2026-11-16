@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../network/api_client.dart';
 import '../theme/app_colors.dart';
 import 'dc_shimmer.dart';
 
@@ -30,7 +31,10 @@ class DcCachedImage extends StatelessWidget {
   final Widget? errorWidget;
 
   bool get _isNetwork =>
-      imageUrl.startsWith('http://') || imageUrl.startsWith('https://');
+      imageUrl.startsWith('http://') ||
+      imageUrl.startsWith('https://') ||
+      imageUrl.startsWith('/uploads/') ||
+      imageUrl.startsWith('uploads/');
 
   bool get _isAsset => imageUrl.startsWith('assets/');
 
@@ -39,8 +43,12 @@ class DcCachedImage extends StatelessWidget {
     Widget imageWidget;
 
     if (_isNetwork) {
+      final effectiveUrl = (imageUrl.startsWith('/uploads/') || imageUrl.startsWith('uploads/'))
+          ? ApiClient.resolveImageUrl(imageUrl)
+          : imageUrl;
+
       imageWidget = CachedNetworkImage(
-        imageUrl: imageUrl,
+        imageUrl: effectiveUrl,
         width: width,
         height: height,
         fit: fit,

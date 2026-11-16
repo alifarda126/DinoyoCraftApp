@@ -212,6 +212,46 @@ class ApiClient {
     );
   }
 
+  /// Mengirim request multipart/form-data (misal: upload foto chat, avatar, dokumen mitra)
+  static Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    Map<String, String>? fields,
+    String? fileField,
+    String? filePath,
+    List<http.MultipartFile>? extraFiles,
+  }) async {
+    Future<http.Response> makeRequest(String host) async {
+      final url = Uri.parse('$host/api$path');
+      final request = http.MultipartRequest('POST', url);
+      final token = authToken;
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.headers['Accept'] = 'application/json';
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+      if (fileField != null && filePath != null && filePath.isNotEmpty) {
+        final file = File(filePath);
+        if (await file.exists()) {
+          request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
+        }
+      }
+      if (extraFiles != null) {
+        request.files.addAll(extraFiles);
+      }
+      final streamed = await request.send();
+      return http.Response.fromStream(streamed);
+    }
+
+    final response = await _executeWithFallback(makeRequest);
+    return _handleResponseWithRefresh(
+      response,
+      path,
+      () => _executeWithFallback(makeRequest),
+    );
+  }
+
   /// Jika response 401 dan path bukan endpoint auth, coba refresh token
   /// lalu ulangi request sekali. Gagal refresh → session dibersihkan.
   static Future<Map<String, dynamic>> _handleResponseWithRefresh(

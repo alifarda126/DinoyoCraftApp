@@ -27,6 +27,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   List<_ChatData> _serverChats = [];
   bool _loading = false;
   StreamSubscription? _msgSub;
+  Timer? _pollTimer;
 
   @override
   void initState() {
@@ -34,24 +35,38 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (AuthSession.isLoggedIn) {
       _loading = true;
       _fetchContacts();
+      final uid = (AuthSession.user?['id'] ?? AuthSession.user?['userId'])?.toString();
+      if (uid != null && uid.isNotEmpty) {
+        unawaited(PusherService.instance.subscribeToUserOrders(uid));
+      }
     }
     _msgSub = PusherService.instance.messageStream.listen((_) {
       if (AuthSession.isLoggedIn && mounted) {
-        _fetchContacts();
+        _fetchContacts(silent: true);
+      }
+    });
+
+    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (AuthSession.isLoggedIn && mounted) {
+        _fetchContacts(silent: true);
       }
     });
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _msgSub?.cancel();
     super.dispose();
   }
 
-  Future<void> _fetchContacts() async {
+  Future<void> _fetchContacts({bool silent = false}) async {
     if (!AuthSession.isLoggedIn) {
       if (mounted) setState(() => _loading = false);
       return;
+    }
+    if (!silent && _serverChats.isEmpty && mounted) {
+      setState(() => _loading = true);
     }
     try {
       final res = await ApiClient.get('/chat/contacts');
@@ -102,6 +117,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               ? resolvedAvatar
               : null;
 
+          final isOnline = c['is_online'] == true || c['is_online'] == 1;
           parsed.add(
             _ChatData(
               userId: c['id']?.toString(),
@@ -114,7 +130,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               avatarUrl: avatarUrl,
               unread: unreadCount > 0,
               unreadCount: unreadCount,
-              online: role == 'mitra',
+              online: isOnline,
               contextLabel: role == 'mitra' ? 'Pengrajin DinoyoCraft' : 'Pesan',
             ),
           );

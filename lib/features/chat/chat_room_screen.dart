@@ -36,16 +36,11 @@ class ChatRoomScreen extends StatefulWidget {
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
 }
 
-enum _SenderType {
-  user,
-  store,
-  storeBot,
-  seller,
-  system,
-}
+enum _SenderType { user, store, storeBot, seller, system }
 
 class _ChatMessage {
   const _ChatMessage({
+    this.id,
     required this.text,
     required this.isMine,
     required this.time,
@@ -56,6 +51,7 @@ class _ChatMessage {
     this.senderType = _SenderType.store,
   });
 
+  final String? id;
   final String text;
   final bool isMine;
   final String time;
@@ -67,6 +63,30 @@ class _ChatMessage {
   final bool isSticker;
   final Product? product;
   final _SenderType senderType;
+
+  _ChatMessage copyWith({
+    String? id,
+    String? text,
+    bool? isMine,
+    String? time,
+    String? imagePath,
+    bool? isFileImage,
+    bool? isSticker,
+    Product? product,
+    _SenderType? senderType,
+  }) {
+    return _ChatMessage(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      isMine: isMine ?? this.isMine,
+      time: time ?? this.time,
+      imagePath: imagePath ?? this.imagePath,
+      isFileImage: isFileImage ?? this.isFileImage,
+      isSticker: isSticker ?? this.isSticker,
+      product: product ?? this.product,
+      senderType: senderType ?? this.senderType,
+    );
+  }
 }
 
 class _ChatRoomScreenState extends State<ChatRoomScreen> {
@@ -78,13 +98,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isSellerConnected = false;
   bool _isConnectingSeller = false;
   bool _loadingHistory = false;
+  bool _isSending = false;
+  bool _isPartnerOnline = false;
+  String? _partnerLastSeen;
   String? _resolvedTargetUserId;
+  String? _activeChatChannel;
+  String? _activeUserChannel;
   final Set<String> _seenMessageIds = {};
   StreamSubscription<PusherChatMessage>? _incomingMsgSub;
   Timer? _botTimer;
   Timer? _sellerTimer;
+  Timer? _pollTimer;
 
-  late final String _channelName =
+  late final String _storeChannel =
       'chat.store.${widget.storeName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
 
   bool get _useBackendChat =>
@@ -106,34 +132,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       _initRealChat();
     }
 
-    _incomingMsgSub = PusherService.instance.messageStream.listen((msg) {
-      if (!mounted || msg.isMine) return;
-      final targetId = _resolvedTargetUserId?.trim();
-      final matchesTarget = targetId != null &&
-          targetId.isNotEmpty &&
-          msg.senderId.trim() == targetId;
-      if (!matchesTarget) return;
-      if (msg.id.isNotEmpty && _seenMessageIds.contains(msg.id)) return;
-      if (msg.id.isNotEmpty) _seenMessageIds.add(msg.id);
-
-      setState(() {
-        _messages.add(
-          _ChatMessage(
-            isMine: false,
-            time: _formatMessageTime(msg.time),
-            text: msg.text,
-            senderType: _SenderType.seller,
-          ),
-        );
-      });
-      _scrollToBottom();
-      MockData.markChatAsRead(widget.storeName);
-      if (AuthSession.isLoggedIn && targetId.isNotEmpty) {
-        ApiClient.patch('/chat/messages/$targetId/read')
-            .then((_) => MockData.refreshUnreadCounts())
-            .catchError((_) {});
-      }
-    });
+    _incomingMsgSub = PusherService.instance.messageStream.listen(
+      _processIncomingPusherMessage,
+    );
 
     if (widget.productId != null) {
       try {
@@ -146,6 +147,49 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
+  void _processIncomingPusherMessage(PusherChatMessage msg) {
+    if (!mounted || msg.isMine) return;
+    final targetId = _resolvedTargetUserId?.trim();
+
+    // Verifikasi pesan ditujukan untuk room obrolan aktif ini:
+    // 1) senderId cocok dengan partnerId toko/mitra
+    // 2) ATAU channel pesan sama dengan channel bilateral (_activeChatChannel)
+    final matchesTarget = (targetId != null &&
+            targetId.isNotEmpty &&
+            msg.senderId.trim() == targetId) ||
+        (_activeChatChannel != null && msg.channel == _activeChatChannel);
+
+    if (!matchesTarget) return;
+    if (msg.id.isNotEmpty && _seenMessageIds.contains(msg.id)) return;
+    if (msg.id.isNotEmpty) _seenMessageIds.add(msg.id);
+
+    final isSticker = (msg.imagePath != null &&
+            (msg.imagePath!.contains('sticker') ||
+                msg.imagePath!.contains('/stickers/'))) ||
+        msg.type == 'sticker';
+
+    setState(() {
+      _messages.add(
+        _ChatMessage(
+          id: msg.id,
+          isMine: false,
+          time: _formatMessageTime(msg.time),
+          text: msg.text,
+          imagePath: msg.imagePath,
+          isSticker: isSticker,
+          senderType: _SenderType.seller,
+        ),
+      );
+    });
+    _scrollToBottom();
+    MockData.markChatAsRead(widget.storeName);
+    if (AuthSession.isLoggedIn && targetId != null && targetId.isNotEmpty) {
+      ApiClient.patch('/chat/messages/$targetId/read')
+          .then((_) => MockData.refreshUnreadCounts())
+          .catchError((_) {});
+    }
+  }
+
   Future<void> _initRealChat() async {
     String? targetId = widget.targetUserId?.trim();
     if (targetId != null && (targetId.isEmpty || targetId == 'null')) {
@@ -154,13 +198,23 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
     if (targetId == null) {
       final localMatch = MockData.stores.cast<Store?>().firstWhere(
-            (s) =>
-                s?.name.trim().toLowerCase() ==
-                widget.storeName.trim().toLowerCase(),
-            orElse: () => null,
-          );
+        (s) =>
+            s?.name.trim().toLowerCase() ==
+            widget.storeName.trim().toLowerCase(),
+        orElse: () => null,
+      );
       if (localMatch?.userId != null) {
         targetId = localMatch!.userId.toString();
+      }
+    }
+
+    if (targetId == null && _productPreview != null && _productPreview!.mitraId > 0) {
+      final storeMatch = MockData.stores.cast<Store?>().firstWhere(
+        (s) => s?.id == _productPreview!.mitraId,
+        orElse: () => null,
+      );
+      if (storeMatch?.userId != null && storeMatch!.userId! > 0) {
+        targetId = storeMatch.userId.toString();
       }
     }
 
@@ -171,10 +225,34 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         if (rows is List) {
           final targetLower = widget.storeName.trim().toLowerCase();
           for (final item in rows.whereType<Map>()) {
-            final sName = (item['store_name'] ?? '').toString().trim().toLowerCase();
+            final sName = (item['store_name'] ?? '')
+                .toString()
+                .trim()
+                .toLowerCase();
             final uName = (item['name'] ?? '').toString().trim().toLowerCase();
-            if (sName == targetLower || uName == targetLower) {
+            if (sName == targetLower ||
+                uName == targetLower ||
+                (targetLower.isNotEmpty && sName.contains(targetLower)) ||
+                (sName.isNotEmpty && targetLower.contains(sName))) {
               targetId = item['id']?.toString();
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (targetId == null) {
+      try {
+        final mitraRes = await ApiClient.get('/mitra/public');
+        if (mitraRes['success'] == true && mitraRes['data'] is List) {
+          final targetLower = widget.storeName.trim().toLowerCase();
+          for (final item in (mitraRes['data'] as List).whereType<Map>()) {
+            final sName = (item['store_name'] ?? item['name'] ?? '').toString().trim().toLowerCase();
+            if (sName == targetLower ||
+                (targetLower.isNotEmpty && sName.contains(targetLower)) ||
+                (sName.isNotEmpty && targetLower.contains(sName))) {
+              targetId = (item['user_id'] ?? item['userId'] ?? item['id'])?.toString();
               break;
             }
           }
@@ -185,6 +263,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (!mounted) return;
     _resolvedTargetUserId = targetId;
     MockData.activeChatUserId = targetId;
+    _subscribePusher();
 
     if (targetId == null || targetId.isEmpty) {
       setState(() => _loadingHistory = false);
@@ -194,8 +273,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     try {
       final res = await ApiClient.get('/chat/messages/$targetId');
       final rawList = res['data'];
-      final currentId = (res['current_user_id'] ??
-              AuthSession.user?['id'])
+      final currentId = (res['current_user_id'] ?? AuthSession.user?['id'])
           ?.toString();
       final loaded = <_ChatMessage>[];
       if (rawList is List) {
@@ -204,11 +282,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           if (idStr.isNotEmpty) _seenMessageIds.add(idStr);
           final isMine =
               currentId != null && row['sender_id']?.toString() == currentId;
+          final imgUrl = row['image_url']?.toString();
+          final isSticker = (imgUrl != null &&
+                  (imgUrl.contains('sticker') ||
+                      imgUrl.contains('/stickers/'))) ||
+              row['type'] == 'sticker';
           loaded.add(
             _ChatMessage(
+              id: idStr,
               isMine: isMine,
               time: _formatMessageTime(row['created_at']?.toString() ?? ''),
               text: row['message']?.toString() ?? '',
+              imagePath:
+                  (imgUrl != null && imgUrl.isNotEmpty && imgUrl != 'null')
+                  ? imgUrl
+                  : null,
+              isSticker: isSticker,
               senderType: isMine ? _SenderType.user : _SenderType.seller,
             ),
           );
@@ -216,8 +305,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       }
 
       if (!mounted) return;
+      final isOnline = res['is_online'] == true ||
+          res['target_user']?['is_online'] == true;
+      final lastSeen = res['last_seen_at']?.toString() ??
+          res['target_user']?['last_seen_at']?.toString();
+
       setState(() {
         _isSellerConnected = true;
+        _isPartnerOnline = isOnline;
+        _partnerLastSeen = lastSeen;
         _loadingHistory = false;
         _messages
           ..clear()
@@ -226,6 +322,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       _scrollToBottom();
       MockData.markChatAsRead(widget.storeName);
       unawaited(MockData.refreshUnreadCounts());
+      _startPolling();
       return;
     } catch (_) {
       if (mounted) {
@@ -233,7 +330,117 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           _isSellerConnected = true;
           _loadingHistory = false;
         });
+        _startPolling();
       }
+    }
+  }
+
+  /// Memulai auto-polling interval 2 detik agar pesan baru selalu masuk secara realtime
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (!mounted || !_useBackendChat) return;
+      _syncMessagesSilently();
+    });
+  }
+
+  /// Mengambil update pesan terbaru secara hening di latar belakang
+  Future<void> _syncMessagesSilently() async {
+    final targetId = _resolvedTargetUserId;
+    if (targetId == null || targetId.isEmpty) return;
+
+    try {
+      final res = await ApiClient.get('/chat/messages/$targetId');
+      final rawList = res['data'];
+      final currentId =
+          (res['current_user_id'] ?? AuthSession.user?['id'])?.toString();
+      if (rawList is! List) return;
+
+      bool hasNewMessage = false;
+      final newMessages = <_ChatMessage>[];
+
+      for (final row in rawList.whereType<Map>()) {
+        final idStr = row['id']?.toString() ?? '';
+        if (idStr.isEmpty || _seenMessageIds.contains(idStr)) continue;
+
+        final isMine =
+            currentId != null && row['sender_id']?.toString() == currentId;
+        final imgUrl = row['image_url']?.toString();
+        final rowText = row['message']?.toString() ?? '';
+        final isSticker = (imgUrl != null &&
+                (imgUrl.contains('sticker') ||
+                    imgUrl.contains('/stickers/'))) ||
+            row['type'] == 'sticker';
+
+        // Rekonsiliasi pesan optimis lokal (temp_*) agar tidak double bubble
+        if (isMine) {
+          final pendingIdx = _messages.indexWhere((m) =>
+              m.id != null &&
+              m.id!.startsWith('temp_') &&
+              ((m.isSticker && isSticker) ||
+                  (m.imagePath != null &&
+                      imgUrl != null &&
+                      (m.imagePath == imgUrl ||
+                          m.imagePath!.endsWith(imgUrl.split('/').last))) ||
+                  (m.text.isNotEmpty && m.text == rowText)));
+
+          if (pendingIdx != -1) {
+            _seenMessageIds.add(idStr);
+            _messages[pendingIdx] = _messages[pendingIdx].copyWith(
+              id: idStr,
+              imagePath:
+                  (imgUrl != null && imgUrl.isNotEmpty && imgUrl != 'null')
+                  ? imgUrl
+                  : _messages[pendingIdx].imagePath,
+              isSticker: isSticker || _messages[pendingIdx].isSticker,
+            );
+            continue;
+          }
+        }
+
+        _seenMessageIds.add(idStr);
+        hasNewMessage = true;
+        newMessages.add(
+          _ChatMessage(
+            id: idStr,
+            isMine: isMine,
+            time: _formatMessageTime(row['created_at']?.toString() ?? ''),
+            text: rowText,
+            imagePath:
+                (imgUrl != null && imgUrl.isNotEmpty && imgUrl != 'null')
+                ? imgUrl
+                : null,
+            isSticker: isSticker,
+            senderType: isMine ? _SenderType.user : _SenderType.seller,
+          ),
+        );
+      }
+
+      final isOnline = res['is_online'] == true ||
+          res['target_user']?['is_online'] == true;
+      final lastSeen = res['last_seen_at']?.toString() ??
+          res['target_user']?['last_seen_at']?.toString();
+
+      if (mounted &&
+          (_isPartnerOnline != isOnline || _partnerLastSeen != lastSeen)) {
+        setState(() {
+          _isPartnerOnline = isOnline;
+          _partnerLastSeen = lastSeen;
+        });
+      }
+
+      if (hasNewMessage && mounted) {
+        setState(() {
+          _isSellerConnected = true;
+          _messages.addAll(newMessages);
+        });
+        _scrollToBottom();
+        MockData.markChatAsRead(widget.storeName);
+        ApiClient.patch('/chat/messages/$targetId/read').catchError((_) => <String, dynamic>{});
+        unawaited(MockData.refreshUnreadCounts());
+      }
+    } catch (_) {
+      // Abaikan gangguan koneksi sesaat saat polling background
     }
   }
 
@@ -249,26 +456,56 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
-  void _subscribePusher() {
-    PusherService.instance.subscribeToChat(
-      channelName: _channelName,
-      onMessage: _handleIncomingPusherMessage,
-    );
+  String _formatPartnerStatus() {
+    if (_isPartnerOnline) {
+      return 'Online • Siap melayani'.tr;
+    }
+    if (_partnerLastSeen != null && _partnerLastSeen!.isNotEmpty) {
+      final timeStr = _formatMessageTime(_partnerLastSeen!);
+      return 'Terakhir dilihat $timeStr'.tr;
+    }
+    return _isSellerConnected ? 'Offline'.tr : 'Asisten Toko Siaga • Dibalas otomatis'.tr;
   }
 
-  void _handleIncomingPusherMessage(PusherChatMessage message) {
-    if (!mounted || message.isMine) return;
-    setState(() {
-      _messages.add(
-        _ChatMessage(
-          isMine: false,
-          time: message.time.isNotEmpty ? message.time : _nowLabel(),
-          text: message.text,
-          senderType: _SenderType.seller,
-        ),
-      );
-    });
-    _scrollToBottom();
+  Color _getPartnerStatusColor() {
+    if (_isPartnerOnline) return _onlineGreen;
+    if (_isSellerConnected || (_partnerLastSeen != null && _partnerLastSeen!.isNotEmpty)) {
+      return AppColors.textMuted;
+    }
+    return const Color(0xFF3B82F6);
+  }
+
+  void _subscribePusher() {
+    final myIdStr = (AuthSession.user?['id'] ?? AuthSession.user?['userId'])?.toString();
+    final myId = int.tryParse(myIdStr ?? '');
+    final targetId = int.tryParse(_resolvedTargetUserId ?? widget.targetUserId ?? '');
+
+    // 1. Subscribe ke channel percakapan bilateral: chat-{minId}-{maxId}
+    if (myId != null && targetId != null && myId > 0 && targetId > 0) {
+      final ids = [myId, targetId]..sort();
+      final channelName = 'chat-${ids[0]}-${ids[1]}';
+      if (_activeChatChannel != channelName) {
+        if (_activeChatChannel != null) {
+          PusherService.instance.unsubscribe(_activeChatChannel!);
+        }
+        _activeChatChannel = channelName;
+        debugPrint('[ChatRoomScreen] Subscribing ke channel Pusher: $channelName');
+        PusherService.instance.subscribeToChat(channelName: channelName);
+      }
+    }
+
+    // 2. Subscribe ke channel pribadi user: user-{myId}
+    if (myId != null && myId > 0) {
+      final userChan = 'user-$myId';
+      if (_activeUserChannel != userChan) {
+        _activeUserChannel = userChan;
+        debugPrint('[ChatRoomScreen] Subscribing ke channel Pusher pribadi: $userChan');
+        PusherService.instance.subscribeToChat(channelName: userChan);
+      }
+    }
+
+    // 3. Subscribe ke channel fallback toko (untuk broadcast / bot)
+    PusherService.instance.subscribeToChat(channelName: _storeChannel);
   }
 
   late final List<_ChatMessage> _messages = [
@@ -320,13 +557,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   void _send([String? customText]) {
+    if (_isSending) return;
     final text = customText ?? _inputController.text.trim();
     if (text.isEmpty && _productPreview == null) return;
     final sentProduct = _productPreview;
+
+    final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    _seenMessageIds.add(tempId);
+
     setState(() {
+      _isSending = true;
       if (sentProduct != null) {
         _messages.add(
           _ChatMessage(
+            id: 'temp_prod_${DateTime.now().millisecondsSinceEpoch}',
             isMine: true,
             time: _nowLabel(),
             text: '',
@@ -339,6 +583,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       if (text.isNotEmpty) {
         _messages.add(
           _ChatMessage(
+            id: tempId,
             isMine: true,
             time: _nowLabel(),
             text: text,
@@ -348,41 +593,46 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         if (customText == null) {
           _inputController.clear();
         }
-
-        // Kirim event chat ke Pusher Channels (siap integrasi BE)
-        PusherService.instance.sendChatMessage(
-          channelName: _channelName,
-          message: PusherChatMessage(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            channel: _channelName,
-            senderId: 'customer_current',
-            senderName: 'Customer',
-            text: text,
-            time: _nowLabel(),
-            isMine: true,
-          ),
-        );
       }
     });
     _scrollToBottom();
 
-    if (_useBackendChat) {
+    if (_useBackendChat && _resolvedTargetUserId != null) {
       if (text.isNotEmpty) {
-        unawaited(
-          ApiClient.post('/chat/send/${_resolvedTargetUserId!}', {
-            'message': text,
-          }).catchError((_) => <String, dynamic>{}),
-        );
+        ApiClient.post('/chat/send/${_resolvedTargetUserId!}', {
+          'message': text,
+        }).then((res) {
+          final serverId = res['data']?['id']?.toString();
+          if (serverId != null && serverId.isNotEmpty) {
+            _seenMessageIds.add(serverId);
+            final idx = _messages.indexWhere((m) => m.id == tempId);
+            if (idx != -1 && mounted) {
+              setState(() {
+                _messages[idx] = _messages[idx].copyWith(id: serverId);
+              });
+            }
+          }
+          _syncMessagesSilently();
+        }).catchError((err) {
+          debugPrint('[Chat] Gagal kirim pesan: $err');
+        }).whenComplete(() {
+          if (mounted) setState(() => _isSending = false);
+        });
       } else if (sentProduct != null) {
-        unawaited(
-          ApiClient.post('/chat/send/${_resolvedTargetUserId!}', {
-            'message': 'Menanyakan produk: ${sentProduct.name}',
-          }).catchError((_) => <String, dynamic>{}),
-        );
+        ApiClient.post('/chat/send/${_resolvedTargetUserId!}', {
+          'message': 'Menanyakan produk: ${sentProduct.name}',
+        }).then((_) {
+          _syncMessagesSilently();
+        }).catchError((err) {
+          debugPrint('[Chat] Gagal kirim pesan produk: $err');
+        }).whenComplete(() {
+          if (mounted) setState(() => _isSending = false);
+        });
       }
       return;
     }
 
+    setState(() => _isSending = false);
     if (!_isSellerConnected && !_isConnectingSeller) {
       _triggerStoreBotResponse(text, sentProduct);
     } else if (_isSellerConnected) {
@@ -415,13 +665,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           'Halo Kak! Terima kasih sudah menanyakan ${product.name}. Karya keramik ini ready stock dan langsung dibuat oleh pengrajin sentra Dinoyo. Ingin info varian warna atau estimasi packing? Asisten bot siap membantu, atau klik tombol di bawah untuk berbicara langsung dengan penjual! 😊'
               .tr;
     } else if (isMedia) {
-      botReply =
-          'Foto referensi berhasil kami terima kak! Ada model keramik serupa yang ingin ditanyakan ketersediaannya? Asisten bot siap membantu, atau hubungi penjual langsung jika butuh custom keramik! 📸🏺'
-              .tr;
+      botReply = 'Foto referensi berhasil kami terima kak! Ada model keramik serupa yang ingin ditanyakan ketersediaannya? Asisten bot siap membantu, atau hubungi penjual langsung jika butuh custom keramik! 📸🏺'
+          .tr;
     } else if (isSticker) {
-      botReply =
-          'Terima kasih stikernya kak! Ada yang bisa kami bantu mengenai pesanan atau koleksi keramik DinoyoCraft hari ini? 🎨✨'
-              .tr;
+      botReply = 'Terima kasih stikernya kak! Ada yang bisa kami bantu mengenai pesanan atau koleksi keramik DinoyoCraft hari ini? 🎨✨'
+          .tr;
     } else if (lower.contains('stok') ||
         lower.contains('ready') ||
         lower.contains('ada') ||
@@ -437,17 +685,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         lower.contains('kayu') ||
         lower.contains('surabaya') ||
         lower.contains('luar kota')) {
-      botReply =
-          'Untuk pengiriman luar kota, toko kami menggunakan proteksi ekstra: bubble wrap tebal berlapis dan rangka kayu pelindung. Kami juga memberikan garansi ganti baru jika produk retak di perjalanan! 📦🛡️'
-              .tr;
+      botReply = 'Untuk pengiriman luar kota, toko kami menggunakan proteksi ekstra: bubble wrap tebal berlapis dan rangka kayu pelindung. Kami juga memberikan garansi ganti baru jika produk retak di perjalanan! 📦🛡️'
+          .tr;
     } else if (lower.contains('harga') ||
         lower.contains('diskon') ||
         lower.contains('promo') ||
         lower.contains('nego') ||
         lower.contains('murah')) {
-      botReply =
-          'Harga di etalase kami merupakan harga pengrajin lokal tangan pertama. Untuk pemesanan grosir atau souvenir acara dalam jumlah banyak, Kakak bisa nego langsung dengan penjual lewat tombol di bawah! 🏷️'
-              .tr;
+      botReply = 'Harga di etalase kami merupakan harga pengrajin lokal tangan pertama. Untuk pemesanan grosir atau souvenir acara dalam jumlah banyak, Kakak bisa nego langsung dengan penjual lewat tombol di bawah! 🏷️'
+          .tr;
     } else if (lower.contains('custom') ||
         lower.contains('motif') ||
         lower.contains('nama') ||
@@ -457,9 +703,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           '${widget.storeName} melayani pembuatan keramik custom (desain motif, glasir khusus, ukiran nama/logo). Silakan chat langsung dengan penjual untuk berkonsultasi detailnya ya! 🏺'
               .tr;
     } else {
-      botReply =
-          'Halo Kak! Pesanmu sudah kami terima. Penjual saat ini sedang di workshop keramik. Saya sebagai Asisten Bot Toko siap membantu menjawab pertanyaan seputar keramik. Jika butuh respons langsung dari pemilik toko, silakan tekan tombol di bawah ya! 🙏'
-              .tr;
+      botReply = 'Halo Kak! Pesanmu sudah kami terima. Penjual saat ini sedang di workshop keramik. Saya sebagai Asisten Bot Toko siap membantu menjawab pertanyaan seputar keramik. Jika butuh respons langsung dari pemilik toko, silakan tekan tombol di bawah ya! 🙏'
+          .tr;
     }
 
     _botTimer?.cancel();
@@ -525,9 +770,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           _ChatMessage(
             isMine: false,
             time: _nowLabel(),
-            text:
-                'Baik Kak, pertanyaan Kakak sudah saya catat langsung. Kualitas tembikar dan keramik Dinoyo kami utamakan selalu. Jika ingin memesan, silakan langsung checkout atau kabari saya jika butuh varian custom ya! 🙌'
-                    .tr,
+            text: 'Baik Kak, pertanyaan Kakak sudah saya catat langsung. Kualitas tembikar dan keramik Dinoyo kami utamakan selalu. Jika ingin memesan, silakan langsung checkout atau kabari saya jika butuh varian custom ya! 🙌'
+                .tr,
             senderType: _SenderType.seller,
           ),
         );
@@ -535,7 +779,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       _scrollToBottom();
     });
   }
-
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -551,34 +794,103 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   /// Kirim foto produk (dari sheet lampiran) sebagai bubble gambar.
   void _sendImage(String assetPath) {
+    if (_isSending) return;
+    final tempId = 'temp_img_${DateTime.now().millisecondsSinceEpoch}';
+    _seenMessageIds.add(tempId);
+
     setState(() {
-      _messages.add(_ChatMessage(
-        isMine: true,
-        time: _nowLabel(),
-        text: '',
-        imagePath: assetPath,
-      ));
+      _isSending = true;
+      _messages.add(
+        _ChatMessage(
+          id: tempId,
+          isMine: true,
+          time: _nowLabel(),
+          text: '',
+          imagePath: assetPath,
+          senderType: _SenderType.user,
+        ),
+      );
     });
     _scrollToBottom();
-    if (!_isSellerConnected && !_isConnectingSeller) {
-      _triggerStoreBotResponse('', null, isMedia: true);
+
+    if (_useBackendChat && _resolvedTargetUserId != null) {
+      ApiClient.post('/chat/send/$_resolvedTargetUserId', {
+        'message': '',
+        'image_url': assetPath,
+      }).then((res) {
+        final serverId = res['data']?['id']?.toString();
+        if (serverId != null && serverId.isNotEmpty) {
+          _seenMessageIds.add(serverId);
+          final idx = _messages.indexWhere((m) => m.id == tempId);
+          if (idx != -1 && mounted) {
+            setState(() {
+              _messages[idx] = _messages[idx].copyWith(id: serverId);
+            });
+          }
+        }
+        _syncMessagesSilently();
+      }).catchError((err) {
+        debugPrint('[Chat] Gagal kirim gambar: $err');
+      }).whenComplete(() {
+        if (mounted) setState(() => _isSending = false);
+      });
+    } else {
+      setState(() => _isSending = false);
+      if (!_isSellerConnected && !_isConnectingSeller) {
+        _triggerStoreBotResponse('', null, isMedia: true);
+      }
     }
   }
 
   /// Kirim stiker DinoyoCraft (Si Clay) ke ruang obrolan.
   void _sendSticker(DinoyoSticker sticker) {
+    if (_isSending) return;
+    final tempId = 'temp_stk_${DateTime.now().millisecondsSinceEpoch}';
+    _seenMessageIds.add(tempId);
+
     setState(() {
-      _messages.add(_ChatMessage(
-        isMine: true,
-        time: _nowLabel(),
-        text: '',
-        imagePath: sticker.assetPath,
-        isSticker: true,
-      ));
+      _isSending = true;
+      _messages.add(
+        _ChatMessage(
+          id: tempId,
+          isMine: true,
+          time: _nowLabel(),
+          text: '',
+          imagePath: sticker.assetPath,
+          isSticker: true,
+          senderType: _SenderType.user,
+        ),
+      );
     });
     _scrollToBottom();
-    if (!_isSellerConnected && !_isConnectingSeller) {
-      _triggerStoreBotResponse('', null, isSticker: true);
+
+    if (_useBackendChat && _resolvedTargetUserId != null) {
+      final stickerFile = sticker.assetPath.split('/').last;
+      ApiClient.post('/chat/send/$_resolvedTargetUserId', {
+        'message': '',
+        'image_url': '/uploads/stickers/$stickerFile',
+      }).then((res) {
+        final serverId = res['data']?['id']?.toString();
+        if (serverId != null && serverId.isNotEmpty) {
+          _seenMessageIds.add(serverId);
+          final idx = _messages.indexWhere((m) => m.id == tempId);
+          if (idx != -1 && mounted) {
+            setState(() {
+              _messages[idx] = _messages[idx].copyWith(id: serverId);
+            });
+          }
+        }
+        _syncMessagesSilently();
+      }).catchError((err) {
+        debugPrint('[Chat] Gagal kirim stiker: $err');
+      }).whenComplete(() {
+        if (mounted) setState(() => _isSending = false);
+      });
+    } else {
+      setState(() => _isSending = false);
+      if (!_isSellerConnected && !_isConnectingSeller) {
+        _triggerStoreBotResponse('', null, isSticker: true);
+      }
     }
   }
 
@@ -589,16 +901,66 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
     if (result != null && mounted) {
       if (result.isFile) {
+        final tempId = 'temp_file_${DateTime.now().millisecondsSinceEpoch}';
+        _seenMessageIds.add(tempId);
         setState(() {
-          _messages.add(_ChatMessage(
-            isMine: true,
-            time: _nowLabel(),
-            text: '',
-            imagePath: result.path,
-            isFileImage: true,
-          ));
+          _isSending = true;
+          _messages.add(
+            _ChatMessage(
+              id: tempId,
+              isMine: true,
+              time: _nowLabel(),
+              text: '',
+              imagePath: result.path,
+              isFileImage: true,
+              senderType: _SenderType.user,
+            ),
+          );
         });
         _scrollToBottom();
+
+        if (_resolvedTargetUserId == null && AuthSession.isLoggedIn) {
+          await _initRealChat();
+        }
+
+        if (_useBackendChat && _resolvedTargetUserId != null) {
+          try {
+            final res = await ApiClient.postMultipart(
+              '/chat/send/$_resolvedTargetUserId',
+              fileField: 'image',
+              filePath: result.path,
+              fields: {'message': ''},
+            );
+            final serverId = res['data']?['id']?.toString();
+            if (serverId != null && serverId.isNotEmpty) {
+              _seenMessageIds.add(serverId);
+              final idx = _messages.indexWhere((m) => m.id == tempId);
+              if (idx != -1 && mounted) {
+                setState(() {
+                  _messages[idx] = _messages[idx].copyWith(id: serverId);
+                });
+              }
+            }
+            _syncMessagesSilently();
+          } catch (e) {
+            debugPrint('[Chat] Gagal kirim foto: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Gagal mengirim foto ke penjual: $e'),
+                  backgroundColor: AppColors.danger,
+                ),
+              );
+            }
+          } finally {
+            if (mounted) setState(() => _isSending = false);
+          }
+        } else {
+          if (mounted) setState(() => _isSending = false);
+          if (!_isSellerConnected && !_isConnectingSeller) {
+            _triggerStoreBotResponse('', null, isMedia: true);
+          }
+        }
       } else {
         _sendImage(result.path);
       }
@@ -637,8 +999,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
               onTap: () {
                 Navigator.of(sheetCtx).pop();
-                final index = MockData.stores
-                    .indexWhere((s) => widget.storeName.contains(s.name));
+                final index = MockData.stores.indexWhere(
+                  (s) => widget.storeName.contains(s.name),
+                );
                 router.push('/store/${index < 0 ? 0 : index}');
               },
             ),
@@ -690,12 +1053,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     MockData.activeChatStoreName = null;
     MockData.activeChatUserId = null;
     _botTimer?.cancel();
     _sellerTimer?.cancel();
     _incomingMsgSub?.cancel();
-    PusherService.instance.unsubscribe(_channelName);
+    if (_activeChatChannel != null) {
+      PusherService.instance.unsubscribe(_activeChatChannel!);
+    }
+    PusherService.instance.unsubscribe(_storeChannel);
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -749,9 +1116,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.divider, width: 0.8),
-        ),
+        border: Border(top: BorderSide(color: AppColors.divider, width: 0.8)),
       ),
       child: Row(
         children: [
@@ -764,8 +1129,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               shape: BoxShape.circle,
             ),
             child: _isSellerConnected
-                ? const Icon(Icons.verified_user_rounded,
-                    size: 14, color: Color(0xFF16A34A))
+                ? const Icon(
+                    Icons.verified_user_rounded,
+                    size: 14,
+                    color: Color(0xFF16A34A),
+                  )
                 : SvgPicture.asset(
                     AppAssets.iconBot,
                     width: 14,
@@ -795,8 +1163,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             GestureDetector(
               onTap: _connectToSeller,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.black,
                   borderRadius: BorderRadius.circular(999),
@@ -809,7 +1176,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       width: 12,
                       height: 12,
                       colorFilter: const ColorFilter.mode(
-                          Colors.white, BlendMode.srcIn),
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -833,9 +1202,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     _ChatMessage(
                       isMine: false,
                       time: _nowLabel(),
-                      text:
-                          'Asisten Bot Toko aktif kembali. Silakan tanyakan seputar produk atau toko! 🤖'
-                              .tr,
+                      text: 'Asisten Bot Toko aktif kembali. Silakan tanyakan seputar produk atau toko! 🤖'
+                          .tr,
                       senderType: _SenderType.storeBot,
                     ),
                   );
@@ -843,8 +1211,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 _scrollToBottom();
               },
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceSubtle,
                   borderRadius: BorderRadius.circular(999),
@@ -883,7 +1250,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           Builder(
             builder: (context) {
               final matchingStore = MockData.stores.cast<Store?>().firstWhere(
-                (s) => s?.name.trim().toLowerCase() == widget.storeName.trim().toLowerCase(),
+                (s) =>
+                    s?.name.trim().toLowerCase() ==
+                    widget.storeName.trim().toLowerCase(),
                 orElse: () => null,
               );
               return Stack(
@@ -894,11 +1263,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     height: 38,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 1.5,
-                      ),
-                      gradient: (matchingStore == null || !matchingStore.hasCustomAvatar)
+                      border: Border.all(color: Colors.white, width: 1.5),
+                      gradient:
+                          (matchingStore == null ||
+                              !matchingStore.hasCustomAvatar)
                           ? const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -907,16 +1275,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           : null,
                     ),
                     child: ClipOval(
-                      child: matchingStore != null && matchingStore.hasCustomAvatar
+                      child:
+                          matchingStore != null && matchingStore.hasCustomAvatar
                           ? DcCachedImage(
-                              imageUrl: matchingStore.avatar ?? matchingStore.image,
+                              imageUrl:
+                                  matchingStore.avatar ?? matchingStore.image,
                               fit: BoxFit.cover,
                             )
                           : Center(
                               child: Text(
                                 matchingStore?.initials ??
                                     (widget.storeName.trim().isNotEmpty
-                                        ? widget.storeName.trim()[0].toUpperCase()
+                                        ? widget.storeName
+                                              .trim()[0]
+                                              .toUpperCase()
                                         : 'DC'),
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 13,
@@ -934,9 +1306,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       width: 11,
                       height: 11,
                       decoration: BoxDecoration(
-                        color: _isSellerConnected
-                            ? _onlineGreen
-                            : const Color(0xFF3B82F6),
+                        color: _getPartnerStatusColor(),
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.white, width: 2),
                       ),
@@ -969,24 +1339,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       width: 6,
                       height: 6,
                       decoration: BoxDecoration(
-                        color: _isSellerConnected
-                            ? _onlineGreen
-                            : const Color(0xFF3B82F6),
+                        color: _getPartnerStatusColor(),
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 5),
                     Flexible(
                       child: Text(
-                        _isSellerConnected
-                            ? 'Penjual Online • Siap melayani'.tr
-                            : 'Asisten Toko Siaga • Dibalas otomatis'.tr,
+                        _formatPartnerStatus(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: _isSellerConnected
+                          color: _isPartnerOnline
                               ? _onlineGreen
                               : AppColors.textSecondary,
                         ),
@@ -1031,9 +1397,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.divider),
-        ),
+        border: Border(top: BorderSide(color: AppColors.divider)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -1272,10 +1636,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     padding: EdgeInsets.zero,
                     foregroundColor: AppColors.ink,
                     backgroundColor: AppColors.surfaceSubtle,
-                    side: BorderSide(
-                      color: AppColors.borderAlt,
-                      width: 1.2,
-                    ),
+                    side: BorderSide(color: AppColors.borderAlt, width: 1.2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1351,8 +1712,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   AppAssets.iconBot,
                   width: 10,
                   height: 10,
-                  colorFilter:
-                      ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -1379,8 +1739,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             GestureDetector(
               onTap: _connectToSeller,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.black,
                   borderRadius: BorderRadius.circular(6),
@@ -1393,7 +1755,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       width: 12,
                       height: 12,
                       colorFilter: const ColorFilter.mode(
-                          Colors.white, BlendMode.srcIn),
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
                     ),
                     const SizedBox(width: 4),
                     Flexible(
@@ -1433,8 +1797,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.verified_rounded,
-                    size: 10, color: Color(0xFF16A34A)),
+                const Icon(
+                  Icons.verified_rounded,
+                  size: 10,
+                  color: Color(0xFF16A34A),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Penjual Toko'.tr,
@@ -1484,8 +1851,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.info_outline_rounded,
-                    size: 14, color: AppColors.textSecondary),
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
@@ -1512,73 +1882,86 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
 
     final isProduct = message.product != null;
-    final isSticker = message.isSticker;
+    final isSticker = message.isSticker ||
+        (message.imagePath != null &&
+            (message.imagePath!.contains('sticker') ||
+                message.imagePath!.contains('/stickers/')));
+    final hasImage = message.imagePath != null && message.imagePath!.isNotEmpty;
+
+    final String? imgPath = message.imagePath;
+    final bool isNetworkImg =
+        hasImage &&
+        (imgPath!.startsWith('http://') ||
+            imgPath.startsWith('https://') ||
+            imgPath.startsWith('/uploads/') ||
+            imgPath.startsWith('uploads/'));
+
+    final bool isDiskFile =
+        hasImage &&
+        (message.isFileImage ||
+            (!isNetworkImg &&
+                !imgPath!.startsWith('assets/') &&
+                File(imgPath).existsSync()));
+
     final content = isProduct
         ? _buildProductCard(message.product!)
-        : message.imagePath != null
-            ? GestureDetector(
-                onTap: () {
-                  ImagePreviewDialog.show(
-                    context,
-                    title: message.isMine
-                        ? (isSticker ? 'Stiker Terkirim'.tr : 'Foto Terkirim'.tr)
-                        : (isSticker ? 'Stiker dari Toko'.tr : 'Foto dari Toko'.tr),
-                    subtitle: message.time,
-                    filePath: message.isFileImage ? message.imagePath : null,
-                    assetPath: message.isFileImage ? null : message.imagePath,
-                  );
-                },
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: message.isFileImage
-                          ? Image.file(
-                              File(message.imagePath!),
-                              width: isSticker ? 140 : 220,
-                              height: isSticker ? 140 : 158,
-                              fit: isSticker ? BoxFit.contain : BoxFit.cover,
-                              errorBuilder: (_, _, _) => Container(
-                                width: isSticker ? 140 : 220,
-                                height: isSticker ? 140 : 158,
-                                color: AppColors.inputBg,
-                                child: Center(
-                                  child: Icon(
-                                    Icons.broken_image_rounded,
-                                    size: 28,
-                                    color: AppColors.textMuted,
-                                  ),
-                                ),
+        : hasImage
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: isSticker
+                    ? null
+                    : () {
+                        ImagePreviewDialog.show(
+                          context,
+                          title: message.isMine
+                              ? 'Foto Terkirim'.tr
+                              : 'Foto dari Toko'.tr,
+                          subtitle: message.time,
+                          filePath: isDiskFile ? message.imagePath : null,
+                          assetPath: isDiskFile
+                              ? null
+                              : (isNetworkImg
+                                    ? ApiClient.resolveImageUrl(message.imagePath)
+                                    : message.imagePath),
+                        );
+                      },
+                child: isSticker
+                    ? _buildChatImageWidget(message, true)
+                    : Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: _buildChatImageWidget(message, false),
+                          ),
+                          Positioned(
+                            right: 8,
+                            bottom: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.55),
+                                shape: BoxShape.circle,
                               ),
-                            )
-                          : Image.asset(
-                              message.imagePath!,
-                              width: isSticker ? 140 : 220,
-                              height: isSticker ? 140 : 158,
-                              fit: isSticker ? BoxFit.contain : BoxFit.cover,
+                              child: const Icon(
+                                Icons.fullscreen_rounded,
+                                size: 16,
+                                color: Colors.white,
+                              ),
                             ),
-                    ),
-                    if (!isSticker)
-                      Positioned(
-                        right: 8,
-                        bottom: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
-                            shape: BoxShape.circle,
                           ),
-                          child: const Icon(
-                            Icons.fullscreen_rounded,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                        ),
+                        ],
                       ),
-                  ],
-                ),
-              )
-            : _buildTextContent(message);
+              ),
+              if (message.text.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _buildTextContent(message),
+              ],
+            ],
+          )
+        : _buildTextContent(message);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1608,7 +1991,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           width: 14,
                           height: 14,
                           colorFilter: const ColorFilter.mode(
-                              Colors.white, BlendMode.srcIn),
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
                         )
                       : null,
                 ),
@@ -1616,21 +2001,23 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ],
               Flexible(
                 child: Container(
-                  padding: isProduct
+                  padding: isSticker
+                      ? EdgeInsets.zero
+                      : isProduct
                       ? const EdgeInsets.all(10)
                       : message.imagePath != null
-                          ? const EdgeInsets.all(6)
-                          : const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
+                      ? const EdgeInsets.all(6)
+                      : const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                   constraints: BoxConstraints(
-                    maxWidth: isProduct ? 272 : (isSticker ? 152 : 260),
+                    maxWidth: isProduct ? 272 : (isSticker ? 130 : 260),
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: bubbleRadius,
-                    border: Border.all(color: AppColors.borderAlt),
+                    color: isSticker ? Colors.transparent : AppColors.surface,
+                    borderRadius: isSticker ? BorderRadius.zero : bubbleRadius,
+                    border: isSticker ? null : Border.all(color: AppColors.borderAlt),
                   ),
                   child: content,
                 ),
@@ -1666,6 +2053,80 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  Widget _buildChatImageWidget(_ChatMessage message, bool isSticker) {
+    final path = message.imagePath ?? '';
+    if (isSticker) {
+      final filename = path.split('/').last;
+      final localAsset = 'assets/stickers/$filename';
+      return Image.asset(
+        localAsset,
+        width: 120,
+        height: 120,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => DcCachedImage(
+          imageUrl: ApiClient.resolveImageUrl(path),
+          width: 120,
+          height: 120,
+          fit: BoxFit.contain,
+          errorWidget: _brokenImageWidget(true),
+        ),
+      );
+    }
+
+    final bool isNetworkImg =
+        path.startsWith('http://') ||
+        path.startsWith('https://') ||
+        path.startsWith('/uploads/') ||
+        path.startsWith('uploads/');
+
+    final bool isDiskFile =
+        message.isFileImage ||
+        (!isNetworkImg &&
+            !path.startsWith('assets/') &&
+            File(path).existsSync());
+
+    if (isDiskFile) {
+      return Image.file(
+        File(path),
+        width: 220,
+        height: 158,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _brokenImageWidget(false),
+      );
+    } else if (isNetworkImg) {
+      return DcCachedImage(
+        imageUrl: path,
+        width: 220,
+        height: 158,
+        fit: BoxFit.cover,
+        errorWidget: _brokenImageWidget(false),
+      );
+    } else {
+      return Image.asset(
+        path,
+        width: 220,
+        height: 158,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _brokenImageWidget(false),
+      );
+    }
+  }
+
+  Widget _brokenImageWidget(bool isSticker) {
+    return Container(
+      width: isSticker ? 120 : 220,
+      height: isSticker ? 120 : 158,
+      color: AppColors.inputBg,
+      child: Center(
+        child: Icon(
+          Icons.broken_image_rounded,
+          size: 28,
+          color: AppColors.textMuted,
+        ),
+      ),
+    );
+  }
+
   Widget _buildInputBar() {
     return Container(
       color: AppColors.surfaceSubtle,
@@ -1694,8 +2155,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             child: TextField(
               controller: _inputController,
               textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _send(),
-              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+              onSubmitted: (_) => _isSending ? null : _send(),
+              onTapOutside: (_) =>
+                  FocusManager.instance.primaryFocus?.unfocus(),
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 color: AppColors.ink,
@@ -1741,21 +2203,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           SizedBox(width: 10),
           InkWell(
             key: const ValueKey('chat_send_button'),
-            onTap: _send,
+            onTap: _isSending ? null : _send,
             borderRadius: BorderRadius.circular(22),
             child: Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.black,
+                color: _isSending ? AppColors.textMuted : AppColors.black,
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: SvgPicture.asset(
-                  AppAssets.iconKirimPesan,
-                  width: 16,
-                  height: 16,
-                ),
+                child: _isSending
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : SvgPicture.asset(
+                        AppAssets.iconKirimPesan,
+                        width: 16,
+                        height: 16,
+                      ),
               ),
             ),
           ),

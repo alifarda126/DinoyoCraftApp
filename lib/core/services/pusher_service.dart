@@ -44,6 +44,7 @@ class PusherChatMessage {
     required this.text,
     required this.time,
     this.imagePath,
+    this.type,
     this.isMine = false,
     this.extraData,
   });
@@ -55,6 +56,7 @@ class PusherChatMessage {
   final String text;
   final String time;
   final String? imagePath;
+  final String? type;
   final bool isMine;
   final Map<String, dynamic>? extraData;
 
@@ -75,6 +77,7 @@ class PusherChatMessage {
       text: json['message']?.toString() ?? json['text']?.toString() ?? '',
       time: json['time']?.toString() ?? json['created_at']?.toString() ?? '',
       imagePath: json['image_url']?.toString() ?? json['imagePath']?.toString(),
+      type: json['type']?.toString(),
       isMine: isMine,
       extraData: json['extra'] is Map<String, dynamic> ? json['extra'] : null,
     );
@@ -88,6 +91,7 @@ class PusherChatMessage {
         'message': text,
         'time': time,
         if (imagePath != null) 'image_url': imagePath,
+        if (type != null) 'type': type,
         'is_mine': isMine,
         if (extraData != null) 'extra': extraData,
       };
@@ -123,6 +127,7 @@ class PusherService {
 
   final Map<String, List<void Function(PusherChatMessage)>> _chatListeners = {};
   final Set<String> _subscribedChannels = {};
+  final Set<String> _processedMessageEventIds = <String>{};
 
   /// Stream pesan chat baru dari channel manapun.
   Stream<PusherChatMessage> get messageStream => _messageStreamController.stream;
@@ -384,11 +389,22 @@ class PusherService {
         if (event.channelName.isNotEmpty) 'channel': event.channelName,
         ...dataMap,
       };
-      final currentUserId = AuthSession.user?['id']?.toString();
+      final currentUserId = (AuthSession.user?['id'] ?? AuthSession.user?['userId'])?.toString();
       final msg = PusherChatMessage.fromJson(
         enriched,
         currentUserId: currentUserId,
       );
+
+      if (msg.id.isNotEmpty && _processedMessageEventIds.contains(msg.id)) {
+        return;
+      }
+      if (msg.id.isNotEmpty) {
+        _processedMessageEventIds.add(msg.id);
+        if (_processedMessageEventIds.length > 500) {
+          _processedMessageEventIds.remove(_processedMessageEventIds.first);
+        }
+      }
+
       _messageStreamController.add(msg);
 
       final listeners = _chatListeners[event.channelName];
@@ -432,6 +448,16 @@ class PusherService {
     } catch (e) {
       debugPrint('[PusherService] Gagal subscribe ke $channelName: $e');
     }
+  }
+
+  /// Subscribe ke channel pribadi user untuk menerima event chat/pesanan realtime
+  Future<void> subscribeToUserChannel(String userId) => subscribeToUserOrders(userId);
+
+  /// Helper untuk memformat nama channel percakapan bilateral antara 2 user: chat-{minId}-{maxId}
+  static String formatChatChannel(int userIdA, int userIdB) {
+    final minId = userIdA < userIdB ? userIdA : userIdB;
+    final maxId = userIdA > userIdB ? userIdA : userIdB;
+    return 'chat-$minId-$maxId';
   }
 
   dynamic _onAuthorizer(String channelName, String socketId, dynamic options) {
