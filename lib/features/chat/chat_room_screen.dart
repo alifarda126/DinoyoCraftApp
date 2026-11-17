@@ -99,6 +99,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isConnectingSeller = false;
   bool _loadingHistory = false;
   bool _isSending = false;
+  bool _isSyncing = false;
   bool _isPartnerOnline = false;
   String? _partnerLastSeen;
   String? _resolvedTargetUserId;
@@ -344,10 +345,28 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     });
   }
 
+  void _applyServerMessageId(String tempId, String? serverId) {
+    if (serverId == null || serverId.isEmpty) return;
+    _seenMessageIds.add(serverId);
+    if (!mounted) return;
+    setState(() {
+      final duplicateExists = _messages.any((m) => m.id == serverId);
+      if (duplicateExists) {
+        _messages.removeWhere((m) => m.id == tempId);
+      } else {
+        final idx = _messages.indexWhere((m) => m.id == tempId);
+        if (idx != -1) {
+          _messages[idx] = _messages[idx].copyWith(id: serverId);
+        }
+      }
+    });
+  }
+
   /// Mengambil update pesan terbaru secara hening di latar belakang
   Future<void> _syncMessagesSilently() async {
     final targetId = _resolvedTargetUserId;
-    if (targetId == null || targetId.isEmpty) return;
+    if (targetId == null || targetId.isEmpty || _isSyncing) return;
+    _isSyncing = true;
 
     try {
       final res = await ApiClient.get('/chat/messages/$targetId');
@@ -362,6 +381,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       for (final row in rawList.whereType<Map>()) {
         final idStr = row['id']?.toString() ?? '';
         if (idStr.isEmpty || _seenMessageIds.contains(idStr)) continue;
+        if (_messages.any((m) => m.id == idStr)) {
+          _seenMessageIds.add(idStr);
+          continue;
+        }
 
         final isMine =
             currentId != null && row['sender_id']?.toString() == currentId;
@@ -378,20 +401,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               m.id != null &&
               m.id!.startsWith('temp_') &&
               ((m.isSticker && isSticker) ||
-                  (m.imagePath != null &&
+                  (!isSticker &&
+                      m.imagePath != null &&
                       imgUrl != null &&
-                      (m.imagePath == imgUrl ||
+                      imgUrl.isNotEmpty &&
+                      imgUrl != 'null' &&
+                      (m.isFileImage ||
+                          m.imagePath == imgUrl ||
                           m.imagePath!.endsWith(imgUrl.split('/').last))) ||
                   (m.text.isNotEmpty && m.text == rowText)));
 
           if (pendingIdx != -1) {
             _seenMessageIds.add(idStr);
+            final keepLocalFile = _messages[pendingIdx].isFileImage;
             _messages[pendingIdx] = _messages[pendingIdx].copyWith(
               id: idStr,
-              imagePath:
-                  (imgUrl != null && imgUrl.isNotEmpty && imgUrl != 'null')
-                  ? imgUrl
-                  : _messages[pendingIdx].imagePath,
+              imagePath: keepLocalFile
+                  ? _messages[pendingIdx].imagePath
+                  : ((imgUrl != null && imgUrl.isNotEmpty && imgUrl != 'null')
+                      ? imgUrl
+                      : _messages[pendingIdx].imagePath),
               isSticker: isSticker || _messages[pendingIdx].isSticker,
             );
             continue;
@@ -441,6 +470,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       }
     } catch (_) {
       // Abaikan gangguan koneksi sesaat saat polling background
+    } finally {
+      _isSyncing = false;
     }
   }
 
@@ -602,16 +633,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         ApiClient.post('/chat/send/${_resolvedTargetUserId!}', {
           'message': text,
         }).then((res) {
-          final serverId = res['data']?['id']?.toString();
-          if (serverId != null && serverId.isNotEmpty) {
-            _seenMessageIds.add(serverId);
-            final idx = _messages.indexWhere((m) => m.id == tempId);
-            if (idx != -1 && mounted) {
-              setState(() {
-                _messages[idx] = _messages[idx].copyWith(id: serverId);
-              });
-            }
-          }
+          _applyServerMessageId(tempId, res['data']?['id']?.toString());
           _syncMessagesSilently();
         }).catchError((err) {
           debugPrint('[Chat] Gagal kirim pesan: $err');
@@ -818,16 +840,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         'message': '',
         'image_url': assetPath,
       }).then((res) {
-        final serverId = res['data']?['id']?.toString();
-        if (serverId != null && serverId.isNotEmpty) {
-          _seenMessageIds.add(serverId);
-          final idx = _messages.indexWhere((m) => m.id == tempId);
-          if (idx != -1 && mounted) {
-            setState(() {
-              _messages[idx] = _messages[idx].copyWith(id: serverId);
-            });
-          }
-        }
+        _applyServerMessageId(tempId, res['data']?['id']?.toString());
         _syncMessagesSilently();
       }).catchError((err) {
         debugPrint('[Chat] Gagal kirim gambar: $err');
@@ -870,16 +883,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         'message': '',
         'image_url': '/uploads/stickers/$stickerFile',
       }).then((res) {
-        final serverId = res['data']?['id']?.toString();
-        if (serverId != null && serverId.isNotEmpty) {
-          _seenMessageIds.add(serverId);
-          final idx = _messages.indexWhere((m) => m.id == tempId);
-          if (idx != -1 && mounted) {
-            setState(() {
-              _messages[idx] = _messages[idx].copyWith(id: serverId);
-            });
-          }
-        }
+        _applyServerMessageId(tempId, res['data']?['id']?.toString());
         _syncMessagesSilently();
       }).catchError((err) {
         debugPrint('[Chat] Gagal kirim stiker: $err');
@@ -895,11 +899,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Future<void> _openAttachmentSheet() async {
+    if (_isSending) return;
     final result = await GalleryPickerSheet.show(
       context,
       title: 'Kirim Foto'.tr,
     );
-    if (result != null && mounted) {
+    if (result != null && mounted && !_isSending) {
       if (result.isFile) {
         final tempId = 'temp_file_${DateTime.now().millisecondsSinceEpoch}';
         _seenMessageIds.add(tempId);
@@ -931,16 +936,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               filePath: result.path,
               fields: {'message': ''},
             );
-            final serverId = res['data']?['id']?.toString();
-            if (serverId != null && serverId.isNotEmpty) {
-              _seenMessageIds.add(serverId);
-              final idx = _messages.indexWhere((m) => m.id == tempId);
-              if (idx != -1 && mounted) {
-                setState(() {
-                  _messages[idx] = _messages[idx].copyWith(id: serverId);
-                });
-              }
-            }
+            _applyServerMessageId(tempId, res['data']?['id']?.toString());
             _syncMessagesSilently();
           } catch (e) {
             debugPrint('[Chat] Gagal kirim foto: $e');
