@@ -687,12 +687,40 @@ abstract final class AppText {
 
     // ── Chat Room ────────────────────────────────────────────────────────────
     'Lihat Profil Toko': 'View Store Profile',
+    'Pusat Bantuan': 'Help Center',
     'Asisten Toko (Bot)': 'Store Assistant (Bot)',
+    'Asisten CS (Bot)': 'CS Assistant (Bot)',
     'Asisten Toko Siaga': 'Store Assistant Ready',
+    'Asisten Toko Siaga • Dibalas otomatis':
+        'Store Assistant Ready • Auto-replied',
+    'Asisten CS Siaga • Dibalas otomatis':
+        'CS Assistant Ready • Auto-replied',
+    'Terhubung langsung dengan Penjual': 'Connected directly to Seller',
+    'Terhubung langsung dengan Customer Service':
+        'Connected directly to Customer Service',
+    'Asisten Bot siap membantu sebelum ke Penjual':
+        'Bot Assistant is ready to help before Seller',
+    'Asisten Bot CS siap membantu sebelum ke CS':
+        'CS Bot Assistant is ready to help before CS',
+    'Asisten Bot toko siap menjawab saat toko sibuk':
+        'Store Bot Assistant is ready when store is busy',
+    'Chat dengan Customer Service': 'Chat with Customer Service',
+    'Chat CS': 'Chat CS',
+    'Terhubung kembali langsung dengan Customer Service.':
+        'Reconnected directly with Customer Service.',
+    'Menghubungkan ke Customer Service... Mohon tunggu sebentar ya.':
+        'Connecting to Customer Service... Please wait a moment.',
+    'Asisten Bot Toko aktif kembali. Silakan tanyakan seputar produk atau toko! 🤖':
+        'Store Bot Assistant is back online. Feel free to ask about products or the store! 🤖',
+    'Asisten Bot CS aktif kembali. Silakan tanyakan seputar pesanan, pembayaran, atau akun! 🤖':
+        'CS Bot Assistant is back online. Feel free to ask about orders, payments, or your account! 🤖',
+    'Foto dari Customer Service': 'Photo from Customer Service',
     'Penjual Online': 'Seller Online',
     'Chat dengan Penjual': 'Chat with Seller',
     'Chat Penjual': 'Chat Seller',
     'Chat dengan Penjual Langsung': 'Chat with Seller Directly',
+    'Terhubung kembali langsung dengan Penjual.':
+        'Reconnected directly with the Seller.',
     'Menghubungkan ke Pemilik Toko... Mohon tunggu sebentar ya.':
         'Connecting to the Store Owner... Please wait a moment.',
     'Beralih ke Asisten Bot': 'Switch to Bot Assistant',

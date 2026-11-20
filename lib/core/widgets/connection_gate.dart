@@ -107,9 +107,9 @@ class _ServerUnavailablePageState extends State<ServerUnavailablePage> {
   @override
   void initState() {
     super.initState();
-    // Ping otomatis tiap 10 detik: begitu server hidup, aplikasi terbuka
-    // sendiri tanpa user perlu menekan apa pun.
-    _autoPing = Timer.periodic(const Duration(seconds: 10), (_) => _retry(silent: true));
+    // Ping otomatis tiap 4 detik: begitu server hidup, aplikasi tersambung
+    // dan terbuka sendiri tanpa user perlu menekan apa pun.
+    _autoPing = Timer.periodic(const Duration(seconds: 4), (_) => _retry(silent: true));
   }
 
   @override

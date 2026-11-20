@@ -39,6 +39,15 @@
 	<string>DinoyoCraft membutuhkan izin untuk menyimpan foto produk dan foto profil ke galeri perangkat Anda.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>DinoyoCraft membutuhkan akses mikrofon saat merekam video ulasan produk keramik.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>DinoyoCraft membutuhkan akses jaringan lokal untuk terhubung otomatis ke server DinoyoCraft pada jaringan Wi-Fi yang sama.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -122,7 +122,7 @@ class _LiveScreenState extends State<_LiveScreen>
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootKey,
   initialLocation: '/',
-  refreshListenable: Listenable.merge([AppSettings.instance, AuthSession.instance]),
+  refreshListenable: AuthSession.instance,
   redirect: (context, state) {
     final loggedIn = AuthSession.isLoggedIn;
     final loc = state.matchedLocation;

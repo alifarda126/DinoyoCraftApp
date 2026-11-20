@@ -67,8 +67,8 @@ class MobileLogReporter {
           ? 'iOS'
           : Platform.operatingSystem,
       'appVersion': '1.0.0+1',
-      if (requestId != null) 'requestId': requestId,
-      if (crashlyticsRef != null) 'crashlyticsRef': crashlyticsRef,
+      'requestId': ?requestId,
+      'crashlyticsRef': ?crashlyticsRef,
       if (route != null)
         'http': {
           'method': method ?? 'GET',

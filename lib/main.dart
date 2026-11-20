@@ -16,6 +16,7 @@ import 'core/theme/app_theme.dart';
 import 'core/widgets/fcm_notification_banner.dart';
 import 'core/widgets/connection_gate.dart';
 import 'core/widgets/keyboard_dismiss_wrapper.dart';
+import 'core/widgets/top_toast.dart';
 import 'data/mock_data.dart';
 
 Future<void> main() async {
@@ -129,8 +130,10 @@ class _DinoyoCraftAppState extends State<DinoyoCraftApp> {
                 key: ValueKey((isDark, settings.locale)),
                 child: OfflineBannerWrapper(
                   child: ConnectionGate(
-                    child: FcmNotificationHost(
-                      child: child ?? const SizedBox.shrink(),
+                    child: TopToastHost(
+                      child: FcmNotificationHost(
+                        child: child ?? const SizedBox.shrink(),
+                      ),
                     ),
                   ),
                 ),
