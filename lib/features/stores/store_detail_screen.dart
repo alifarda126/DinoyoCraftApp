@@ -135,6 +135,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                               context,
                               storeName: store.name,
                               storeImage: store.image,
+                              storeId: store.id > 0 ? store.id : null,
                             );
                             if (res == true && mounted) {
                               messenger.showSnackBar(
@@ -368,7 +369,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                         alignment: Alignment.bottomRight,
                         child: GestureDetector(
                           onTap: () => context.push(
-                            '/reviews?store=${Uri.encodeComponent(store.name)}',
+                            '/reviews?store=${Uri.encodeComponent(store.name)}${store.id > 0 ? '&mitraId=${store.id}' : ''}',
                           ),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -456,7 +457,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                           height: 40,
                           child: FilledButton.icon(
                             onPressed: () => context.push(
-                              '/chat-room?store=${Uri.encodeComponent(store.name)}',
+                              '/chat-room?store=${Uri.encodeComponent(store.name)}${store.userId != null ? '&userId=${store.userId}' : ''}',
                             ),
                             icon: Icon(
                               Icons.chat_bubble_outline_rounded,

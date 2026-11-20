@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:ui' show Color;
@@ -5,6 +6,7 @@ import 'package:flutter/foundation.dart';
 
 import '../core/assets.dart';
 import '../core/network/api_client.dart';
+import '../core/storage/local_storage.dart';
 
 class ProductVariant {
   const ProductVariant({
@@ -115,6 +117,7 @@ class Product {
     this.images,
     this.hot = false,
     this.mitraId = 0,
+    this.mitraUserId,
     this.description = '',
     this.stock = 0,
     this.weightGram = 500,
@@ -137,6 +140,9 @@ class Product {
 
   /// ID toko mitra pemilik produk (dari backend, untuk checkout).
   final int mitraId;
+
+  /// User ID akun pemilik toko (untuk live chat langsung ke penjual).
+  final int? mitraUserId;
 
   final String description;
   final int stock;
@@ -253,6 +259,9 @@ class Product {
       images: imagesList,
       hot: json['hot'] == true,
       mitraId: parseInt(json['mitra_id'], 0),
+      mitraUserId: parseInt(json['mitra_user_id'] ?? storeMap?['user_id'], 0) > 0
+          ? parseInt(json['mitra_user_id'] ?? storeMap?['user_id'], 0)
+          : null,
       description: (json['description'] ?? '').toString(),
       stock: parseInt(json['stock'], 0),
       weightGram: parseInt(json['weight_gram'], 500) <= 0
@@ -391,14 +400,30 @@ class FaqItem {
 
 class CartItem {
   const CartItem({
+    this.serverCartId,
     required this.product,
     required this.qty,
     this.variant,
   });
 
+  final int? serverCartId;
   final Product product;
   final int qty;
   final String? variant;
+
+  CartItem copyWith({
+    int? serverCartId,
+    Product? product,
+    int? qty,
+    String? variant,
+  }) {
+    return CartItem(
+      serverCartId: serverCartId ?? this.serverCartId,
+      product: product ?? this.product,
+      qty: qty ?? this.qty,
+      variant: variant ?? this.variant,
+    );
+  }
 }
 
 abstract final class MockData {
@@ -426,6 +451,9 @@ abstract final class MockData {
 
   static List<String> categories = ['Semua'];
 
+  /// Notifier versi katalog publik & kategori agar screen aktif otomatis refresh.
+  static final ValueNotifier<int> catalogVersionNotifier = ValueNotifier<int>(0);
+
   /// Daftar produk nyata dari backend
   static List<Product> products = [];
 
@@ -437,20 +465,62 @@ abstract final class MockData {
   static bool _lastOnline = true;
   static bool _connectivityHooked = false;
 
-  /// Pasang listener: begitu perangkat (kembali) terhubung ke jaringan,
-  /// katalog diambil ulang dari backend agar tampilan selalu data real.
+  /// Pasang listener: begitu perangkat (kembali) terhubung ke jaringan atau host
+  /// aktif berpindah, katalog diambil ulang dari backend agar selalu data real.
   static void hookConnectivity(ValueNotifier<bool> isOnlineNotifier) {
     if (_connectivityHooked) return;
     _connectivityHooked = true;
-    isOnlineNotifier.addListener(() {
+    isOnlineNotifier.addListener(() async {
       final online = isOnlineNotifier.value;
       final wasOnline = _lastOnline;
       _lastOnline = online;
       if (online && !wasOnline) {
-        // Baru saja online (perangkat terhubung) → segarkan katalog real.
-        fetchPublicData(force: true);
+        await ApiClient.discoverActiveHost(force: true);
+        unawaited(fetchPublicData(force: true));
       }
     });
+    ApiClient.baseHostNotifier.addListener(() {
+      if (products.isEmpty) {
+        unawaited(fetchPublicData(force: true));
+      }
+    });
+  }
+
+  /// Menyinkronkan daftar kategori agar hanya menampilkan kategori yang
+  /// memiliki minimal 1 produk aktif, diawali 'Semua'.
+  static void syncCategoriesFromProducts([List<String>? orderedServerCategories]) {
+    final activeByLower = <String, String>{};
+    for (final p in products) {
+      final clean = p.category.trim();
+      if (clean.isNotEmpty) {
+        activeByLower.putIfAbsent(clean.toLowerCase(), () => clean);
+      }
+    }
+
+    final result = <String>['Semua'];
+    final addedLower = <String>{'semua'};
+
+    if (orderedServerCategories != null) {
+      for (final srv in orderedServerCategories) {
+        final key = srv.trim().toLowerCase();
+        if (key.isEmpty || addedLower.contains(key)) continue;
+        final activeName = activeByLower[key];
+        if (activeName != null) {
+          result.add(activeName);
+          addedLower.add(key);
+        }
+      }
+    }
+
+    for (final entry in activeByLower.entries) {
+      if (!addedLower.contains(entry.key)) {
+        result.add(entry.value);
+        addedLower.add(entry.key);
+      }
+    }
+
+    categories = result;
+    catalogVersionNotifier.value++;
   }
 
   /// Mengambil data katalog produk dan toko mitra secara nyata dari Backend API.
@@ -461,21 +531,25 @@ abstract final class MockData {
     isLoadingPublicData = true;
     try {
       // 1. Fetch Produk Publik
-      final prodRes = await ApiClient.get('/products/public');
+      final prodRes = await ApiClient.get('/products/public?limit=100');
       if (prodRes['success'] == true && prodRes['data'] is List) {
         final list = (prodRes['data'] as List)
             .map((item) => Product.fromJson(item as Map<String, dynamic>))
             .toList();
         products = list;
 
-        // Ekstrak kategori unik
-        final catSet = <String>{'Semua'};
-        for (final p in list) {
-          if (p.category.trim().isNotEmpty) {
-            catSet.add(p.category.trim());
+        // Ambil urutan kategori aktif dari backend (hanya kategori berisi produk)
+        final serverCatOrder = <String>[];
+        try {
+          final catRes = await ApiClient.get('/products/categories');
+          if (catRes['success'] == true && catRes['data'] is List) {
+            for (final c in (catRes['data'] as List).whereType<Map>()) {
+              final cname = (c['name'] ?? '').toString().trim();
+              if (cname.isNotEmpty) serverCatOrder.add(cname);
+            }
           }
-        }
-        categories = catSet.toList();
+        } catch (_) {}
+        syncCategoriesFromProducts(serverCatOrder);
       }
 
       // 2. Fetch Mitra/Toko Publik
@@ -485,6 +559,11 @@ abstract final class MockData {
             .map((item) => Store.fromJson(item as Map<String, dynamic>))
             .toList();
         stores = list;
+      }
+
+      // 3. Sinkronkan keranjang dari database jika sudah login
+      if (LocalStorage.isLoggedIn) {
+        await fetchCartFromBackend();
       }
     } catch (e) {
       debugPrint('[MockData] Error fetching public data from backend: $e');
@@ -768,7 +847,7 @@ abstract final class MockData {
     } catch (_) {}
   }
 
-  /// Update / sisipkan 1 produk ke cache [products].
+  /// Update / sisipkan 1 produk ke cache [products] dan perbarui kategori aktif.
   static void upsertProduct(Product product) {
     final idx = products.indexWhere((p) => p.id == product.id);
     if (idx >= 0) {
@@ -776,10 +855,63 @@ abstract final class MockData {
     } else {
       products.add(product);
     }
+    syncCategoriesFromProducts();
+  }
+
+  /// Sinkronisasi isi keranjang belanja dari Backend API (/api/cart).
+  static Future<void> fetchCartFromBackend() async {
+    if (!LocalStorage.isLoggedIn) return;
+    try {
+      final res = await ApiClient.get('/cart');
+      if (res['success'] == true && res['data'] is Map) {
+        final rawItems = (res['data'] as Map)['items'];
+        if (rawItems is List) {
+          final loaded = <CartItem>[];
+          for (final raw in rawItems.whereType<Map>()) {
+            final pid = (raw['product_id'] ?? '').toString();
+            final cachedProduct = products.cast<Product?>().firstWhere(
+                  (p) => p?.id == pid,
+                  orElse: () => null,
+                );
+            final imgUrls = raw['image_urls'] is List ? raw['image_urls'] as List : const [];
+            final prod = cachedProduct ??
+                Product.fromJson({
+                  'id': pid,
+                  'name': raw['product_name'] ?? 'Produk Keramik',
+                  'store_name': raw['store_name'] ?? 'Dinoyo Craft',
+                  'price': raw['product_price'] ?? 0,
+                  'stock': raw['product_stock'] ?? 0,
+                  'weight_gram': raw['weight_gram'] ?? 500,
+                  'mitra_id': raw['mitra_id'] ?? 0,
+                  'workshop_address': raw['workshop_address'] ?? '',
+                  'images': imgUrls,
+                  'image': imgUrls.isNotEmpty ? imgUrls.first : null,
+                });
+            final serverId = int.tryParse('${raw['id']}');
+            final qty = int.tryParse('${raw['quantity']}') ?? 1;
+            final variantStr = raw['variant']?.toString().trim();
+            loaded.add(
+              CartItem(
+                serverCartId: serverId,
+                product: prod,
+                qty: qty < 1 ? 1 : qty,
+                variant: (variantStr != null && variantStr.isNotEmpty) ? variantStr : null,
+              ),
+            );
+          }
+          mockCart
+            ..clear()
+            ..addAll(loaded);
+          cartCountNotifier.value = mockCart.length;
+        }
+      }
+    } catch (e) {
+      debugPrint('[MockData] Error fetchCartFromBackend: $e');
+    }
   }
 
   /// Tambah produk ke keranjang; qty di-merge bila produk dan varian sama,
-  /// serta dibatasi stok varian/produk yang tersedia.
+  /// dibatasi stok varian/produk, dan langsung disinkronkan ke Backend (/api/cart).
   static void addToCart(Product product, int qty, [String? variant]) {
     final normalizedVariant =
         (variant != null && variant.trim().isNotEmpty) ? variant.trim() : null;
@@ -793,7 +925,7 @@ abstract final class MockData {
     if (index >= 0) {
       final combined = mockCart[index].qty + qty;
       final clampedQty = maxStock > 0 ? combined.clamp(1, maxStock) : combined;
-      mockCart[index] = CartItem(
+      mockCart[index] = mockCart[index].copyWith(
         product: product,
         qty: clampedQty,
         variant: normalizedVariant,
@@ -805,18 +937,60 @@ abstract final class MockData {
       );
     }
     cartCountNotifier.value = mockCart.length;
-  }
 
-  /// Hapus produk dari keranjang berdasarkan index dan beri notifikasi reaktif.
-  static void removeFromCart(int index) {
-    if (index >= 0 && index < mockCart.length) {
-      mockCart.removeAt(index);
+    final pidInt = int.tryParse(product.id);
+    if (LocalStorage.isLoggedIn && pidInt != null && pidInt > 0) {
+      ApiClient.post('/cart', {
+        'product_id': pidInt,
+        'quantity': qty,
+        'variant': ?normalizedVariant,
+      }).then((_) => fetchCartFromBackend()).catchError((e) {
+        debugPrint('[MockData] Gagal sync addToCart ke BE: $e');
+      });
     }
   }
 
-  /// Reset keranjang ke kondisi kosong
+  /// Ubah jumlah item keranjang pada [index] dan sinkronkan ke Backend (/api/cart/:id).
+  static void updateCartItemQty(int index, int newQty) {
+    if (index < 0 || index >= mockCart.length || newQty < 1) return;
+    final current = mockCart[index];
+    mockCart[index] = current.copyWith(qty: newQty);
+    cartCountNotifier.value = mockCart.length;
+
+    if (LocalStorage.isLoggedIn && current.serverCartId != null) {
+      ApiClient.put('/cart/${current.serverCartId}', {
+        'quantity': newQty,
+      }).catchError((e) {
+        debugPrint('[MockData] Gagal sync updateCartItemQty ke BE: $e');
+        return <String, dynamic>{};
+      });
+    }
+  }
+
+  /// Hapus produk dari keranjang berdasarkan index dan sinkronkan ke Backend.
+  static void removeFromCart(int index) {
+    if (index >= 0 && index < mockCart.length) {
+      final removed = mockCart.removeAt(index);
+      if (LocalStorage.isLoggedIn && removed.serverCartId != null) {
+        ApiClient.delete('/cart/${removed.serverCartId}').catchError((e) {
+          debugPrint('[MockData] Gagal sync removeFromCart ke BE: $e');
+          return <String, dynamic>{};
+        });
+      }
+    }
+  }
+
+  /// Kosongkan keranjang lokal saja (misal saat logout).
+  static void clearLocalCartOnly() {
+    mockCart.clear();
+  }
+
+  /// Reset keranjang ke kondisi kosong (beserta di Backend bila sedang login)
   static void resetCart() {
     mockCart.clear();
+    if (LocalStorage.isLoggedIn) {
+      ApiClient.delete('/cart').catchError((_) => <String, dynamic>{});
+    }
   }
 
   static String formatPrice(int price) {
@@ -836,8 +1010,11 @@ abstract final class MockData {
     String query = '',
   }) {
     final q = query.trim().toLowerCase();
+    final targetCat = category.trim().toLowerCase();
     return products.where((p) {
-      final catOk = category == 'Semua' || p.category == category;
+      final catOk = category == 'Semua' ||
+          targetCat == 'semua' ||
+          p.category.trim().toLowerCase() == targetCat;
       final queryOk = q.isEmpty ||
           p.name.toLowerCase().contains(q) ||
           p.studio.toLowerCase().contains(q);

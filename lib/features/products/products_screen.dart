@@ -28,11 +28,22 @@ class _ProductsScreenState extends State<ProductsScreen> {
     super.initState();
     final cat = widget.initialCategory;
     _category = MockData.categories.contains(cat) ? cat : 'Semua';
+    MockData.catalogVersionNotifier.addListener(_onCatalogUpdated);
     if (MockData.products.isEmpty) {
       MockData.fetchPublicData().then((_) {
         if (mounted) setState(() {});
       });
     }
+  }
+
+  @override
+  void dispose() {
+    MockData.catalogVersionNotifier.removeListener(_onCatalogUpdated);
+    super.dispose();
+  }
+
+  void _onCatalogUpdated() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -51,7 +62,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final items = MockData.filterProducts(category: _category, query: _query);
+    final activeCategory =
+        MockData.categories.contains(_category) ? _category : 'Semua';
+    final items =
+        MockData.filterProducts(category: activeCategory, query: _query);
     final topHeaderHeight = DcAppHeader.totalHeight(context);
 
     return Scaffold(
@@ -126,7 +140,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       final cat = MockData.categories[i];
                       return CategoryChip(
                         label: cat,
-                        selected: cat == _category,
+                        selected: cat == activeCategory,
                         onTap: () => setState(() => _category = cat),
                       );
                     },
@@ -137,21 +151,49 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-          sliver: SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 20,
-              crossAxisSpacing: 14,
-              childAspectRatio: 0.60,
+        if (items.isEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 48, 20, 100),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 40,
+                      color: AppColors.textMuted,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Produk tidak ditemukan'.tr,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => ProductCard(product: items[index]),
-              childCount: items.length,
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 20,
+                crossAxisSpacing: 14,
+                childAspectRatio: 0.60,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => ProductCard(product: items[index]),
+                childCount: items.length,
+              ),
             ),
           ),
-        ),
         ],
       ),
     ),

@@ -328,6 +328,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             totalReviews: product.totalReviews,
                             soldCount: product.soldCount,
                             store: product.studio,
+                            productId: product.id,
                           ),
                           if (product.variants.isNotEmpty) ...[
                             const SizedBox(height: 18),
@@ -468,6 +469,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   final rev = product.reviews[rIdx];
                                   return _ReviewCard(
                                     review: _Review(
+                                      id: rev.id,
                                       name: rev.userName,
                                       initials: _reviewerInitials(rev.userName),
                                       date: (rev.createdAt ?? '').length >= 10
@@ -522,9 +524,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     width: 44,
                     height: 44,
                     child: OutlinedButton(
-                      onPressed: () => context.push(
-                        '/chat-room?store=${Uri.encodeComponent(product.studio)}&productId=${product.id}',
-                      ),
+                      onPressed: () {
+                        final targetUid =
+                            product.mitraUserId ?? matchedStore?.userId;
+                        context.push(
+                          '/chat-room?store=${Uri.encodeComponent(product.studio)}&productId=${product.id}${targetUid != null ? '&userId=$targetUid' : ''}',
+                        );
+                      },
                       style: OutlinedButton.styleFrom(
                         padding: EdgeInsets.zero,
                         shape: const CircleBorder(),
@@ -856,12 +862,14 @@ class _MetaRow extends StatelessWidget {
     required this.totalReviews,
     required this.soldCount,
     required this.store,
+    this.productId,
   });
 
   final double rating;
   final int totalReviews;
   final int soldCount;
   final String store;
+  final String? productId;
 
   Widget _dot() => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -906,8 +914,9 @@ class _MetaRow extends StatelessWidget {
         _dot(),
         Flexible(
           child: GestureDetector(
-            onTap: () =>
-                context.push('/reviews?store=${Uri.encodeComponent(store)}'),
+            onTap: () => context.push(
+              '/reviews?store=${Uri.encodeComponent(store)}${productId != null && productId!.isNotEmpty ? '&productId=$productId' : ''}',
+            ),
             child: Text(
               reviewsLabel,
               maxLines: 1,
@@ -1375,6 +1384,7 @@ String? _reviewerInitials(String name) {
 
 class _Review {
   const _Review({
+    this.id,
     required this.name,
     required this.date,
     required this.variantLabel,
@@ -1387,6 +1397,7 @@ class _Review {
     this.replyAuthor,
   });
 
+  final String? id;
   final String name;
   final String? initials;
   final String date;
@@ -1415,7 +1426,15 @@ class _ReviewCardState extends State<_ReviewCard> {
   Widget _helpfulPill() {
     final active = _helpful;
     return InkWell(
-      onTap: () => setState(() => _helpful = !_helpful),
+      onTap: () async {
+        final next = !_helpful;
+        setState(() => _helpful = next);
+        if (next && review.id != null && int.tryParse(review.id!) != null) {
+          try {
+            await ApiClient.patch('/reviews/${review.id}/helpful', {});
+          } catch (_) {}
+        }
+      },
       borderRadius: BorderRadius.circular(999),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -1546,6 +1565,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                         context,
                         reviewerName: review.name,
                         reviewText: review.text,
+                        reviewId: review.id,
                       );
                       if (res == true && context.mounted) {
                         messenger.showSnackBar(

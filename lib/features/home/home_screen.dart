@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    MockData.catalogVersionNotifier.addListener(_onCatalogUpdated);
     if (MockData.products.isEmpty) {
       unawaited(MockData.fetchPublicData().then((_) {
         if (mounted) setState(() {});
@@ -53,8 +54,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _onCatalogUpdated() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    MockData.catalogVersionNotifier.removeListener(_onCatalogUpdated);
     _bannerTimer?.cancel();
     _pageCtrl.dispose();
     super.dispose();
@@ -67,7 +73,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final picks = MockData.filterProducts(category: _category)
+    final activeCategory =
+        MockData.categories.contains(_category) ? _category : 'Semua';
+    final picks = MockData.filterProducts(category: activeCategory)
         .take(4)
         .toList();
     final topHeaderHeight = DcAppHeader.totalHeight(context);
@@ -241,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       final cat = MockData.categories[i];
                       return CategoryChip(
                         label: cat,
-                        selected: cat == _category,
+                        selected: cat == activeCategory,
                         // Filter lokal di Beranda — TIDAK berpindah halaman.
                         onTap: () => setState(() => _category = cat),
                       );
