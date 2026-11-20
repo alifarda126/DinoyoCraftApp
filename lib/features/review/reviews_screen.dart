@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
-import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_cached_image.dart';
@@ -12,9 +12,16 @@ import '../../core/widgets/image_preview_dialog.dart';
 import 'presentation/modal_laporkan_ulasan.dart';
 
 class ReviewsScreen extends StatefulWidget {
-const   ReviewsScreen({super.key, this.storeName = 'Dinoyo Ceramic Studio'});
+  const ReviewsScreen({
+    super.key,
+    this.storeName = 'Dinoyo Ceramic Studio',
+    this.productId,
+    this.mitraId,
+  });
 
   final String storeName;
+  final String? productId;
+  final int? mitraId;
 
   @override
   State<ReviewsScreen> createState() => _ReviewsScreenState();
@@ -22,97 +29,177 @@ const   ReviewsScreen({super.key, this.storeName = 'Dinoyo Ceramic Studio'});
 
 class _ReviewItem {
   const _ReviewItem({
+    required this.id,
     required this.name,
     required this.date,
     required this.rating,
     required this.variant,
     required this.text,
     required this.helpful,
+    this.avatarUrl,
     this.photos = const [],
     this.reply,
     this.replyDate,
+    this.storeName,
   });
 
+  final String id;
   final String name;
   final String date;
   final int rating;
   final String variant;
   final String text;
   final int helpful;
+  final String? avatarUrl;
   final List<String> photos;
   final String? reply;
   final String? replyDate;
+  final String? storeName;
 
   String get initials {
-    final parts = name.split(' ');
-    return parts
-        .take(2)
-        .map((p) => p[0].toUpperCase())
-        .join();
+    final cleaned = name.trim();
+    if (cleaned.isEmpty) return 'U';
+    final parts = cleaned.split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    return parts.take(2).map((p) => p[0].toUpperCase()).join();
   }
 }
 
-const List<_ReviewItem> _reviews = [
-  _ReviewItem(
-    name: 'Customer',
-    date: '12 Feb 2025',
-    rating: 5,
-    variant: 'Varian: Sand White Glossy - Vas Keramik Minimalis',
-    text:
-        'Glasirnya sangat halus dan rapi, warna aslinya lebih estetik daripada '
-        'di foto. Pengemasan kayu sangat kokoh dan aman sampai rumah tanpa '
-        'retak sedikitpun. Sangat bangga dengan karya pengrajin Dinoyo Malang!',
-    helpful: 14,
-    photos: [AppAssets.productVas, AppAssets.productCangkir],
-    reply:
-        '"Terima kasih banyak Kak Customer atas apresiasinya! Semoga vas '
-        'keramiknya mempercantik ruangan rumah."',
-    replyDate: '13 Feb 2025',
-  ),
-  _ReviewItem(
-    name: 'Anisa Nur Azizah',
-    date: '10 Feb 2025',
-    rating: 5,
-    variant: 'Varian: Rustic Speckle - Cangkir Kopi Handmade',
-    text:
-        'Tekstur tanah liatnya terasa otentik dan berbobot pas di tangan saat '
-        'minum kopi seduh manual. Finishing matte-nya nyaman banget dipegang. '
-        'Recomended untuk penikmat tembikar seni.',
-    helpful: 9,
-  ),
-  _ReviewItem(
-    name: 'Rian Hidayat',
-    date: '8 Feb 2025',
-    rating: 4,
-    variant: 'Varian: Natural Clay - Piring Artisan',
-    text:
-        'Piringnya kokoh dan glasirnya merata. Hanya saja warnanya sedikit '
-        'lebih gelap dari foto, tapi tetap cantik dipakai sehari-hari.',
-    helpful: 5,
-  ),
-  _ReviewItem(
-    name: 'Dewi Lestari',
-    date: '3 Feb 2025',
-    rating: 4,
-    variant: 'Varian: Speckle Grey - Mangkuk Keramik',
-    text:
-        'Pengiriman cepat dan packing rapi. Mangkuknya bagus, ukurannya pas '
-        'untuk sarapan. Akan order lagi untuk stok ulang.',
-    helpful: 3,
-  ),
-  _ReviewItem(
-    name: 'Budi Santoso',
-    date: '28 Jan 2025',
-    rating: 3,
-    variant: 'Varian: Sand White Glossy - Vas Keramik Minimalis',
-    text:
-        'Produk sesuai deskripsi, namun pengiriman agak lama karena jasa kirim. '
-        'Kualitas keramiknya sendiri tidak perlu diragukan.',
-    helpful: 1,
-  ),
-];
-
 class _ReviewsScreenState extends State<ReviewsScreen> {
+  static const List<String> _months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ];
+
+  bool _loading = true;
+  List<_ReviewItem> _reviews = [];
+  double _avgRating = 0.0;
+  int _totalReviews = 0;
+
+  int? _filterRating;
+  final Set<String> _markedHelpful = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchReviews();
+  }
+
+  String _formatDate(dynamic raw) {
+    if (raw == null) return 'Baru saja';
+    final parsed = DateTime.tryParse(raw.toString())?.toLocal();
+    if (parsed == null) return raw.toString();
+    return '${parsed.day} ${_months[parsed.month - 1]} ${parsed.year}';
+  }
+
+  Future<void> _fetchReviews() async {
+    setState(() => _loading = true);
+    try {
+      final hasProduct =
+          widget.productId != null && widget.productId!.trim().isNotEmpty;
+      final endpoint = hasProduct
+          ? '/reviews/product/${widget.productId!.trim()}'
+          : '/reviews/store?store=${Uri.encodeComponent(widget.storeName)}'
+              '${widget.mitraId != null ? '&mitra_id=${widget.mitraId}' : ''}';
+
+      final res = await ApiClient.get(endpoint);
+      final data = res['data'] as Map<String, dynamic>? ?? {};
+      final rawList = data['reviews'] as List<dynamic>? ?? [];
+
+      final items = rawList.whereType<Map>().map((raw) {
+        final r = Map<String, dynamic>.from(raw);
+        final rawPhotos = r['photo_urls'];
+        final photos = <String>[];
+        if (rawPhotos is List) {
+          for (final p in rawPhotos) {
+            final resolved = ApiClient.resolveImageUrl(p?.toString());
+            if (resolved.isNotEmpty) photos.add(resolved);
+          }
+        }
+        final variantRaw = (r['variant'] ?? '').toString().trim();
+        final prodName = (r['product_name'] ?? '').toString().trim();
+        String variantLabel = '';
+        if (variantRaw.isNotEmpty && prodName.isNotEmpty) {
+          variantLabel = variantRaw.toLowerCase().startsWith('varian')
+              ? '$variantRaw - $prodName'
+              : 'Varian: $variantRaw - $prodName';
+        } else if (variantRaw.isNotEmpty) {
+          variantLabel = variantRaw.toLowerCase().startsWith('varian')
+              ? variantRaw
+              : 'Varian: $variantRaw';
+        } else if (prodName.isNotEmpty) {
+          variantLabel = prodName;
+        } else {
+          variantLabel = 'Varian Standar';
+        }
+
+        final sellerReply = (r['seller_reply'] ?? '').toString().trim();
+        final rawAvatar = (r['user_avatar'] ?? '').toString().trim();
+
+        return _ReviewItem(
+          id: (r['id'] ?? '').toString(),
+          name: (r['user_name'] ?? 'Pelanggan').toString(),
+          avatarUrl:
+              rawAvatar.isNotEmpty ? ApiClient.resolveImageUrl(rawAvatar) : null,
+          date: _formatDate(r['created_at']),
+          rating: (num.tryParse('${r['rating'] ?? 5}') ?? 5).round().clamp(1, 5),
+          variant: variantLabel,
+          text: (r['comment'] ?? '').toString().trim().isNotEmpty
+              ? (r['comment']).toString().trim()
+              : 'Pembeli memberikan penilaian bintang tanpa komentar tertulis.',
+          helpful: (num.tryParse('${r['helpful_count'] ?? 0}') ?? 0).toInt(),
+          photos: photos,
+          reply: sellerReply.isNotEmpty ? sellerReply : null,
+          replyDate: sellerReply.isNotEmpty ? _formatDate(r['replied_at']) : null,
+          storeName: (r['store_name'] ?? widget.storeName).toString(),
+        );
+      }).toList();
+
+      if (!mounted) return;
+      final total = items.length;
+      final avg = total > 0
+          ? items.fold<int>(0, (acc, e) => acc + e.rating) / total
+          : (num.tryParse('${data['avgRating'] ?? 0}') ?? 0).toDouble();
+
+      setState(() {
+        _reviews = items;
+        _totalReviews = total;
+        _avgRating = double.parse(avg.toStringAsFixed(1));
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _toggleHelpful(_ReviewItem review) async {
+    final already = _markedHelpful.contains(review.id);
+    setState(() {
+      if (already) {
+        _markedHelpful.remove(review.id);
+      } else {
+        _markedHelpful.add(review.id);
+      }
+    });
+    if (!already && int.tryParse(review.id) != null) {
+      try {
+        await ApiClient.patch('/reviews/${review.id}/helpful', {});
+      } catch (_) {}
+    }
+  }
+
   /// Penampil foto ulasan full-screen dengan zoom.
   void _openPhotoViewer(BuildContext context, String photo, [_ReviewItem? item]) {
     ImagePreviewDialog.show(
@@ -123,9 +210,6 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     );
   }
 
-  int? _filterRating;
-  final Set<String> _markedHelpful = {};
-
   int _countFor(int rating) =>
       _reviews.where((r) => r.rating == rating).length;
 
@@ -135,13 +219,13 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final histogram = {
-      5: 0.92,
-      4: 0.06,
-      3: 0.02,
-      2: 0.0,
-      1: 0.0,
+    final total = _reviews.length;
+    final histogram = <int, double>{
+      for (final star in [5, 4, 3, 2, 1])
+        star: total > 0 ? _countFor(star) / total : 0.0,
     };
+    final hasProduct =
+        widget.productId != null && widget.productId!.trim().isNotEmpty;
 
     return AppBackScope(
       fallbackRoute: '/home',
@@ -169,7 +253,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                     ),
                     Expanded(
                       child: Text(
-                        'Ulasan Toko'.tr,
+                        hasProduct ? 'Ulasan Produk'.tr : 'Ulasan Toko'.tr,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 16,
@@ -183,18 +267,66 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 ),
               ),
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
-                  children: [
-                    _buildTitleBlock(),
-                    SizedBox(height: 14),
-                    _buildSummaryCard(histogram),
-                    SizedBox(height: 16),
-                    _buildFilterChips(),
-                    SizedBox(height: 6),
-                    ..._filtered.map(_buildReviewCard),
-                  ],
-                ),
+                child: _loading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.ink,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    : RefreshIndicator(
+                        color: AppColors.ink,
+                        onRefresh: _fetchReviews,
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
+                          children: [
+                            _buildTitleBlock(),
+                            SizedBox(height: 14),
+                            _buildSummaryCard(histogram),
+                            SizedBox(height: 16),
+                            _buildFilterChips(),
+                            SizedBox(height: 6),
+                            if (_filtered.isEmpty)
+                              Container(
+                                margin: const EdgeInsets.only(top: 18),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 36,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: AppColors.borderAlt),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.rate_review_outlined,
+                                      size: 36,
+                                      color: AppColors.textMuted,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      _filterRating != null
+                                          ? 'Belum ada ulasan dengan bintang $_filterRating'
+                                              .tr
+                                          : 'Belum ada ulasan untuk ditampilkan'
+                                              .tr,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              ..._filtered.map(_buildReviewCard),
+                          ],
+                        ),
+                      ),
               ),
             ],
           ),
@@ -250,6 +382,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
   }
 
   Widget _buildSummaryCard(Map<int, double> histogram) {
+    final recommendedCount = _reviews.where((r) => r.rating >= 4).length;
+    final recommendPercent = _totalReviews > 0
+        ? ((recommendedCount / _totalReviews) * 100).round()
+        : 0;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -267,7 +404,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '4.9',
+                      _totalReviews > 0 ? _avgRating.toStringAsFixed(1) : '0.0',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 36,
                         fontWeight: FontWeight.w800,
@@ -276,10 +413,10 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                       ),
                     ),
                     SizedBox(height: 4),
-                    _starRow(5, size: 18),
+                    _starRow(_avgRating.round(), size: 18),
                     SizedBox(height: 4),
                     Text(
-                      '128 ulasan'.tr,
+                      '$_totalReviews ${'ulasan'.tr}',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -317,7 +454,9 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '98% pembeli merekomendasikan produk studio ini'.tr,
+                    _totalReviews > 0
+                        ? '$recommendPercent% ${'pembeli merekomendasikan produk studio ini'.tr}'
+                        : 'Jadilah pembeli pertama yang memberikan ulasan'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -427,7 +566,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
   Widget _buildReviewCard(_ReviewItem review) {
     final isDark = AppColors.isDark;
-    final marked = _markedHelpful.contains(review.name);
+    final marked = _markedHelpful.contains(review.id);
 
     return Container(
       margin: const EdgeInsets.only(top: 14),
@@ -443,18 +582,28 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           // Reviewer row
           Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.inputBg,
-                child: Text(
-                  review.initials,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
+              if (review.avatarUrl != null && review.avatarUrl!.isNotEmpty)
+                ClipOval(
+                  child: DcCachedImage(
+                    imageUrl: review.avatarUrl!,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: AppColors.inputBg,
+                  child: Text(
+                    review.initials,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                    ),
                   ),
                 ),
-              ),
               SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -526,6 +675,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                         context,
                         reviewerName: review.name,
                         reviewText: review.text,
+                        reviewId: review.id,
                       );
                       if (res == true && context.mounted) {
                         messenger.showSnackBar(
@@ -644,11 +794,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           Row(
             children: [
               OutlinedButton.icon(
-                onPressed: () => setState(() {
-                  marked
-                      ? _markedHelpful.remove(review.name)
-                      : _markedHelpful.add(review.name);
-                }),
+                onPressed: () => _toggleHelpful(review),
                 icon: Icon(
                   marked
                       ? Icons.thumb_up_alt_rounded
@@ -692,45 +838,48 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           // Photos
           if (review.photos.isNotEmpty) ...[
             SizedBox(height: 12),
-            Row(
-              children: [
-                for (final photo in review.photos) ...[
-                  GestureDetector(
-                    key: Key('reviews_screen_photo_tap_$photo'),
-                    onTap: () => _openPhotoViewer(context, photo, review),
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: DcCachedImage(
-                            imageUrl: photo,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          right: 6,
-                          bottom: 6,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: .6),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.fullscreen_rounded,
-                              size: 14,
-                              color: Colors.white,
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final photo in review.photos) ...[
+                    GestureDetector(
+                      key: Key('reviews_screen_photo_tap_${review.id}_$photo'),
+                      onTap: () => _openPhotoViewer(context, photo, review),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: DcCachedImage(
+                              imageUrl: photo,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
                             ),
                           ),
-                        ),
-                      ],
+                          Positioned(
+                            right: 6,
+                            bottom: 6,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: .6),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.fullscreen_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 8),
+                    SizedBox(width: 8),
+                  ],
                 ],
-              ],
+              ),
             ),
           ],
           // Store reply
@@ -757,7 +906,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                       SizedBox(width: 6),
                       Flexible(
                         child: Text(
-                          widget.storeName,
+                          review.storeName ?? widget.storeName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(

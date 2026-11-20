@@ -3,9 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
 import '../../core/services/photo_picker_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
@@ -13,17 +15,21 @@ import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 
 class WriteReviewScreen extends StatefulWidget {
-const   WriteReviewScreen({
+  const WriteReviewScreen({
     super.key,
     this.orderId = '#DNC-001',
+    this.productId,
+    this.orderItemId,
     this.productName = 'Vas Keramik Minimalis',
     this.variant = 'Varian: Sand White Glossy 1x',
     this.studioName = 'Dinoyo Ceramic Studio',
     this.productImage = AppAssets.productVas,
-    this.receivedDate = 'Diterima 12 Feb 2025',
+    this.receivedDate = 'Pesanan Selesai',
   });
 
   final String orderId;
+  final int? productId;
+  final int? orderItemId;
   final String productName;
   final String variant;
   final String studioName;
@@ -59,15 +65,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     ('Keamanan Kemasan & Ekspedisi', 'Bubble wrap tebal & proteksi benturan'),
   ];
 
-  int _rating = 0;
+  int _rating = 5;
+  bool _submitting = false;
   final Set<int> _likes = {};
   final List<int> _attributeRatings = [0, 0, 0];
-  final TextEditingController _reviewController = TextEditingController(
-    text:
-        'Glasirnya sangat rapi dan tekstur tanah liat Dinoyonya terasa kokoh '
-        'serta otentik. Pengemasan kayu sangat aman sampai di rumah tanpa '
-        'retak sedikitpun. Recommended!',
-  );
+  final TextEditingController _reviewController = TextEditingController();
 
   /// Path foto ulasan hasil kamera/galeri perangkat (maksimal 5 foto).
   final List<String> _photos = [];
@@ -83,24 +85,109 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     setState(() => _photos.add(file.path));
   }
 
-  bool get _canSubmit => _rating > 0 && _reviewController.text.trim().isNotEmpty;
+  bool get _canSubmit =>
+      !_submitting && _rating > 0 && _reviewController.text.trim().isNotEmpty;
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_canSubmit) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.black,
-        content: Text(
-          'Ulasan berhasil dikirim. Terima kasih!',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            color: AppColors.white,
+
+    final productId = widget.productId;
+    if (productId == null || productId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.danger,
+          content: Text(
+            'ID produk tidak ditemukan pada pesanan ini.'.tr,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
-    );
-    Navigator.of(context).pop();
+      );
+      return;
+    }
+
+    setState(() => _submitting = true);
+    try {
+      final selectedTags = _likes
+          .where((idx) => idx >= 0 && idx < _likeOptions.length)
+          .map((idx) => _likeOptions[idx])
+          .toList();
+      final baseComment = _reviewController.text.trim();
+      final finalComment = selectedTags.isNotEmpty
+          ? '$baseComment\n\nKelebihan: ${selectedTags.join(', ')}'
+          : baseComment;
+
+      final extraFiles = <http.MultipartFile>[];
+      for (final p in _photos) {
+        if (File(p).existsSync()) {
+          extraFiles.add(await http.MultipartFile.fromPath('photos', p));
+        }
+      }
+
+      await ApiClient.postMultipart(
+        '/reviews',
+        fields: {
+          'product_id': '$productId',
+          if (widget.orderItemId != null && widget.orderItemId! > 0)
+            'order_item_id': '${widget.orderItemId}',
+          'rating': '$_rating',
+          'variant': widget.variant,
+          'comment': finalComment,
+        },
+        extraFiles: extraFiles.isEmpty ? null : extraFiles,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.black,
+          content: Text(
+            'Ulasan berhasil dikirim. Terima kasih!'.tr,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: AppColors.white,
+            ),
+          ),
+        ),
+      );
+      Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.danger,
+          content: Text(
+            e.message,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.danger,
+          content: Text(
+            'Gagal mengirim ulasan. Periksa koneksi Anda.'.tr,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -191,7 +278,9 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: DcCachedImage(
-              imageUrl: widget.productImage,
+              imageUrl: widget.productImage.startsWith('/')
+                  ? ApiClient.resolveImageUrl(widget.productImage)
+                  : widget.productImage,
               width: 64,
               height: 64,
               fit: BoxFit.cover,
@@ -559,98 +648,101 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             ),
           ),
           SizedBox(height: 8),
-          Row(
-            children: [
-              if (_photos.length < _maxPhotos)
-                GestureDetector(
-                  onTap: _addPhoto,
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: AppColors.inputBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.borderAlt,
-                        width: 2,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.photo_camera_outlined,
-                          size: 20,
-                          color: AppColors.textSecondary,
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                if (_photos.length < _maxPhotos)
+                  GestureDetector(
+                    onTap: _addPhoto,
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: AppColors.inputBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.borderAlt,
+                          width: 2,
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Tambah',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.photo_camera_outlined,
+                            size: 20,
                             color: AppColors.textSecondary,
                           ),
-                        ),
-                      ],
+                          SizedBox(height: 4),
+                          Text(
+                            'Tambah',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              for (final photo in _photos) ...[
-                SizedBox(width: 8),
-                Stack(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        ImagePreviewDialog.show(
-                          context,
-                          title: 'Foto Ulasan'.tr,
-                          filePath: photo,
-                        );
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          File(photo),
-                          width: 72,
-                          height: 72,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
+                for (final photo in _photos) ...[
+                  SizedBox(width: 8),
+                  Stack(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          ImagePreviewDialog.show(
+                            context,
+                            title: 'Foto Ulasan'.tr,
+                            filePath: photo,
+                          );
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            File(photo),
                             width: 72,
                             height: 72,
-                            color: AppColors.inputBg,
-                            child: Icon(
-                              Icons.broken_image_rounded,
-                              size: 20,
-                              color: AppColors.textMuted,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => Container(
+                              width: 72,
+                              height: 72,
+                              color: AppColors.inputBg,
+                              child: Icon(
+                                Icons.broken_image_rounded,
+                                size: 20,
+                                color: AppColors.textMuted,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: GestureDetector(
-                        onTap: () => setState(() => _photos.remove(photo)),
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: AppColors.black,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.close_rounded,
-                            size: 12,
-                            color: AppColors.white,
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () => setState(() => _photos.remove(photo)),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: AppColors.black,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 12,
+                              color: AppColors.white,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ],
       ),
@@ -689,7 +781,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             ),
           ),
           child: Text(
-            'Kirim Ulasan'.tr,
+            _submitting ? 'Mengirim Ulasan...'.tr : 'Kirim Ulasan'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 16,
               fontWeight: FontWeight.w700,
