@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_text.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Helper untuk menampilkan modal bottom sheet pelaporan toko.
@@ -9,6 +10,7 @@ Future<bool?> showModalLaporkanToko(
   BuildContext context, {
   required String storeName,
   String? storeImage,
+  int? storeId,
 }) {
   return showModalBottomSheet<bool>(
     context: context,
@@ -19,6 +21,7 @@ Future<bool?> showModalLaporkanToko(
     builder: (_) => ModalLaporkanToko(
       storeName: storeName,
       storeImage: storeImage,
+      storeId: storeId,
     ),
   );
 }
@@ -29,10 +32,12 @@ class ModalLaporkanToko extends StatefulWidget {
     super.key,
     required this.storeName,
     this.storeImage,
+    this.storeId,
   });
 
   final String storeName;
   final String? storeImage;
+  final int? storeId;
 
   @override
   State<ModalLaporkanToko> createState() => _ModalLaporkanTokoState();
@@ -52,6 +57,7 @@ class _ModalLaporkanTokoState extends State<ModalLaporkanToko> {
   final TextEditingController _customReasonController = TextEditingController();
   final FocusNode _customReasonFocus = FocusNode();
   String? _errorMessage;
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -60,7 +66,8 @@ class _ModalLaporkanTokoState extends State<ModalLaporkanToko> {
     super.dispose();
   }
 
-  void _onSubmit() {
+  Future<void> _onSubmit() async {
+    if (_submitting) return;
     setState(() {
       _errorMessage = null;
     });
@@ -81,8 +88,33 @@ class _ModalLaporkanTokoState extends State<ModalLaporkanToko> {
       return;
     }
 
-    // Berhasil divalidasi, tutup modal dan kirim sinyal sukses
-    Navigator.of(context).pop(true);
+    final finalReason = _selectedReason == 'Lainnya'
+        ? _customReasonController.text.trim()
+        : _selectedReason!;
+
+    setState(() => _submitting = true);
+    try {
+      await ApiClient.post('/moderation/report', {
+        'type': 'toko',
+        'target_id': widget.storeId,
+        'target_name': widget.storeName,
+        'reason': finalReason,
+      });
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _errorMessage = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _errorMessage = 'Gagal mengirim laporan. Periksa koneksi Anda.'.tr;
+      });
+    }
   }
 
   @override
@@ -439,7 +471,7 @@ class _ModalLaporkanTokoState extends State<ModalLaporkanToko> {
                         boxShadow: AppColors.darkButtonShadow,
                       ),
                       child: FilledButton(
-                        onPressed: _onSubmit,
+                        onPressed: _submitting ? null : _onSubmit,
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.black,
                           foregroundColor: AppColors.white,
@@ -448,7 +480,7 @@ class _ModalLaporkanTokoState extends State<ModalLaporkanToko> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text(
-                          'Kirim Laporan'.tr,
+                          _submitting ? 'Mengirim...'.tr : 'Kirim Laporan'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,

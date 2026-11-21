@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_text.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Helper untuk menampilkan modal bottom sheet pelaporan ulasan.
@@ -9,6 +10,7 @@ Future<bool?> showModalLaporkanUlasan(
   BuildContext context, {
   required String reviewerName,
   required String reviewText,
+  String? reviewId,
 }) {
   return showModalBottomSheet<bool>(
     context: context,
@@ -19,6 +21,7 @@ Future<bool?> showModalLaporkanUlasan(
     builder: (_) => ModalLaporkanUlasan(
       reviewerName: reviewerName,
       reviewText: reviewText,
+      reviewId: reviewId,
     ),
   );
 }
@@ -29,10 +32,12 @@ class ModalLaporkanUlasan extends StatefulWidget {
     super.key,
     required this.reviewerName,
     required this.reviewText,
+    this.reviewId,
   });
 
   final String reviewerName;
   final String reviewText;
+  final String? reviewId;
 
   @override
   State<ModalLaporkanUlasan> createState() => _ModalLaporkanUlasanState();
@@ -52,6 +57,7 @@ class _ModalLaporkanUlasanState extends State<ModalLaporkanUlasan> {
   final TextEditingController _customReasonController = TextEditingController();
   final FocusNode _customReasonFocus = FocusNode();
   String? _errorMessage;
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -60,7 +66,8 @@ class _ModalLaporkanUlasanState extends State<ModalLaporkanUlasan> {
     super.dispose();
   }
 
-  void _onSubmit() {
+  Future<void> _onSubmit() async {
+    if (_submitting) return;
     setState(() {
       _errorMessage = null;
     });
@@ -81,8 +88,36 @@ class _ModalLaporkanUlasanState extends State<ModalLaporkanUlasan> {
       return;
     }
 
-    // Berhasil divalidasi, tutup modal dan kirim sinyal sukses
-    Navigator.of(context).pop(true);
+    final finalReason = _selectedReason == 'Lainnya'
+        ? _customReasonController.text.trim()
+        : _selectedReason!;
+    final snippet = widget.reviewText.trim().length > 120
+        ? '${widget.reviewText.trim().substring(0, 120)}...'
+        : widget.reviewText.trim();
+
+    setState(() => _submitting = true);
+    try {
+      await ApiClient.post('/moderation/report', {
+        'type': 'ulasan',
+        'target_id': int.tryParse(widget.reviewId ?? ''),
+        'target_name': 'Ulasan ${widget.reviewerName}',
+        'reason': snippet.isNotEmpty ? '$finalReason — "$snippet"' : finalReason,
+      });
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _errorMessage = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _errorMessage = 'Gagal mengirim laporan. Periksa koneksi Anda.'.tr;
+      });
+    }
   }
 
   @override
@@ -478,7 +513,7 @@ class _ModalLaporkanUlasanState extends State<ModalLaporkanUlasan> {
                         boxShadow: AppColors.darkButtonShadow,
                       ),
                       child: FilledButton(
-                        onPressed: _onSubmit,
+                        onPressed: _submitting ? null : _onSubmit,
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.black,
                           foregroundColor: AppColors.white,
@@ -487,7 +522,7 @@ class _ModalLaporkanUlasanState extends State<ModalLaporkanUlasan> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text(
-                          'Kirim Laporan'.tr,
+                          _submitting ? 'Mengirim...'.tr : 'Kirim Laporan'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,

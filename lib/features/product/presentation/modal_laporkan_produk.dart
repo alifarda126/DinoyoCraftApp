@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/app_text.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Fungsi helper untuk menampilkan modal bottom sheet pelaporan produk.
@@ -56,6 +57,7 @@ class _ModalLaporkanProdukState extends State<ModalLaporkanProduk> {
   final TextEditingController _customReasonController = TextEditingController();
   final FocusNode _customReasonFocus = FocusNode();
   String? _errorMessage;
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -64,7 +66,8 @@ class _ModalLaporkanProdukState extends State<ModalLaporkanProduk> {
     super.dispose();
   }
 
-  void _onSubmit() {
+  Future<void> _onSubmit() async {
+    if (_submitting) return;
     setState(() {
       _errorMessage = null;
     });
@@ -85,8 +88,33 @@ class _ModalLaporkanProdukState extends State<ModalLaporkanProduk> {
       return;
     }
 
-    // Berhasil divalidasi, tutup modal dan kirim sinyal sukses
-    Navigator.of(context).pop(true);
+    final finalReason = _selectedReason == 'Lainnya'
+        ? _customReasonController.text.trim()
+        : _selectedReason!;
+
+    setState(() => _submitting = true);
+    try {
+      await ApiClient.post('/moderation/report', {
+        'type': 'produk',
+        'target_id': int.tryParse(widget.productId),
+        'target_name': widget.productName,
+        'reason': finalReason,
+      });
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _errorMessage = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _errorMessage = 'Gagal mengirim laporan. Periksa koneksi Anda.'.tr;
+      });
+    }
   }
 
   @override
@@ -443,7 +471,7 @@ class _ModalLaporkanProdukState extends State<ModalLaporkanProduk> {
                         boxShadow: AppColors.darkButtonShadow,
                       ),
                       child: FilledButton(
-                        onPressed: _onSubmit,
+                        onPressed: _submitting ? null : _onSubmit,
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.black,
                           foregroundColor: AppColors.white,
@@ -452,7 +480,7 @@ class _ModalLaporkanProdukState extends State<ModalLaporkanProduk> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text(
-                          'Kirim Laporan'.tr,
+                          _submitting ? 'Mengirim...'.tr : 'Kirim Laporan'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
