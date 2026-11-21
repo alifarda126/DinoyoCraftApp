@@ -4,41 +4,81 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/auth_session.dart';
 import '../../core/theme/app_colors.dart';
 
 class Alamat {
-const   Alamat({
+  const Alamat({
+    this.id,
     required this.label,
     required this.recipient,
     required this.phone,
     required this.address,
+    this.city,
+    this.postalCode,
     this.isPrimary = false,
     this.courierNote,
     this.verifiedPin = false,
   });
 
+  final int? id;
   final String label;
   final String recipient;
   final String phone;
   final String address;
+  final String? city;
+  final String? postalCode;
   final bool isPrimary;
   final String? courierNote;
   final bool verifiedPin;
 
+  factory Alamat.fromJson(Map<String, dynamic> json) {
+    final fullRaw = (json['full_address'] ?? '').toString().trim();
+    String mainAddr = fullRaw;
+    String? parsedNote;
+    const marker = '\nCatatan Kurir: ';
+    if (fullRaw.contains(marker)) {
+      final idx = fullRaw.indexOf(marker);
+      mainAddr = fullRaw.substring(0, idx).trim();
+      parsedNote = fullRaw.substring(idx + marker.length).trim();
+    }
+    return Alamat(
+      id: int.tryParse('${json['id']}'),
+      label: (json['label'] ?? 'Rumah').toString().trim().isEmpty
+          ? 'Rumah'
+          : json['label'].toString().trim(),
+      recipient: (json['recipient_name'] ?? 'Penerima').toString(),
+      phone: (json['phone'] ?? '').toString(),
+      address: mainAddr,
+      city: json['city']?.toString(),
+      postalCode: json['postal_code']?.toString(),
+      isPrimary: json['is_default'] == 1 || json['is_default'] == true,
+      courierNote: parsedNote,
+      verifiedPin: true,
+    );
+  }
+
   Alamat copyWith({
+    int? id,
     String? label,
     String? recipient,
     String? phone,
     String? address,
+    String? city,
+    String? postalCode,
     bool? isPrimary,
     String? courierNote,
     bool? verifiedPin,
   }) {
     return Alamat(
+      id: id ?? this.id,
       label: label ?? this.label,
       recipient: recipient ?? this.recipient,
       phone: phone ?? this.phone,
       address: address ?? this.address,
+      city: city ?? this.city,
+      postalCode: postalCode ?? this.postalCode,
       isPrimary: isPrimary ?? this.isPrimary,
       courierNote: courierNote ?? this.courierNote,
       verifiedPin: verifiedPin ?? this.verifiedPin,
@@ -47,7 +87,7 @@ const   Alamat({
 }
 
 class AlamatScreen extends StatefulWidget {
-const   AlamatScreen({super.key});
+  const AlamatScreen({super.key});
 
   @override
   State<AlamatScreen> createState() => _AlamatScreenState();
@@ -56,31 +96,43 @@ const   AlamatScreen({super.key});
 class _AlamatScreenState extends State<AlamatScreen> {
   Color get _destructive => AppColors.danger;
 
-  final List<Alamat> _addresses = [
-    Alamat(
-      label: 'Rumah',
-      recipient: 'Customer',
-      phone: '+62 812-3456-7890',
-      address:
-          'Jl. Raya Sukun No. 128, RT 03 / RW 02, Sukun Raya, Kec. Sukun, '
-          'Kota Malang, Jawa Timur 65144',
-      isPrimary: true,
-      courierNote:
-          '"Pagar hitam depan studio keramik, titip ke satpam jika tidak '
-          'ada di tempat."',
-      verifiedPin: true,
-    ),
-    Alamat(
-      label: 'Kantor',
-      recipient: 'Customer (Kantor)',
-      phone: '+62 812-9876-5432',
-      address:
-          'Kantor Dinoyo Hub, Jl. Mayjen Haryono No. 9, Dinoyo, Lowokwaru, '
-          'Kota Malang, Jawa Timur 65145',
-      courierNote: 'Lantai 2 divisi artisan keramik',
-      verifiedPin: true,
-    ),
-  ];
+  final List<Alamat> _addresses = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddresses();
+  }
+
+  Future<void> _loadAddresses() async {
+    if (!AuthSession.isLoggedIn) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final res = await ApiClient.get('/addresses');
+      final rows = (res['data'] as List?)
+              ?.whereType<Map<String, dynamic>>()
+              .where((r) =>
+                  (r['full_address'] ?? '').toString().trim() !=
+                  'Belum ada alamat lengkap')
+              .map(Alamat.fromJson)
+              .toList() ??
+          [];
+      if (!mounted) return;
+      setState(() {
+        _addresses
+          ..clear()
+          ..addAll(rows);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
 
   void _showFeedback(String message) {
     if (!mounted) return;
@@ -104,19 +156,21 @@ class _AlamatScreenState extends State<AlamatScreen> {
     );
   }
 
-  void _makePrimary(int index) {
+  Future<void> _makePrimary(int index) async {
     if (index >= _addresses.length) return;
     final selected = _addresses[index];
-    setState(() {
-      final addr = _addresses.removeAt(index);
-      _addresses.insert(0, addr.copyWith(isPrimary: true));
-      for (var i = 1; i < _addresses.length; i++) {
-        if (_addresses[i].isPrimary) {
-          _addresses[i] = _addresses[i].copyWith(isPrimary: false);
-        }
+    if (selected.id != null) {
+      try {
+        await ApiClient.patch('/addresses/${selected.id}/default', {});
+        await _loadAddresses();
+        _showFeedback('Alamat "${selected.label}" dijadikan alamat utama.');
+        return;
+      } catch (e) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        _showFeedback('Gagal mengubah alamat utama: $msg');
+        return;
       }
-    });
-    _showFeedback('Alamat "${selected.label}" dijadikan alamat utama.');
+    }
   }
 
   void _confirmDeleteAddress(int index) {
@@ -155,17 +209,18 @@ class _AlamatScreenState extends State<AlamatScreen> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(dialogCtx);
-              setState(() {
-                final wasPrimary = addr.isPrimary;
-                _addresses.removeAt(index);
-                // Jika yang dihapus alamat utama dan masih ada alamat lain, jadikan yang pertama sebagai utama
-                if (wasPrimary && _addresses.isNotEmpty) {
-                  _addresses[0] = _addresses[0].copyWith(isPrimary: true);
+              if (addr.id != null) {
+                try {
+                  await ApiClient.delete('/addresses/${addr.id}');
+                  await _loadAddresses();
+                  _showFeedback('Alamat "${addr.label.tr}" berhasil dihapus.');
+                } catch (e) {
+                  final msg = e.toString().replaceFirst('Exception: ', '');
+                  _showFeedback('Gagal menghapus alamat: $msg');
                 }
-              });
-              _showFeedback('Alamat "${addr.label.tr}" berhasil dihapus.');
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: _destructive,
@@ -709,11 +764,11 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                 boxShadow: AppColors.darkButtonShadow,
                               ),
                               child: ElevatedButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 final r = recipientCtrl.text.trim();
                                 final p = phoneCtrl.text.trim();
                                 final a = addressCtrl.text.trim();
-                                final note = courierNoteCtrl.text.trim();
+                                final note = courierNoteCtrl.text.trim().replaceAll('"', '');
 
                                 if (r.isEmpty) {
                                   setModalState(() {
@@ -722,77 +777,59 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                   });
                                   return;
                                 }
-                                if (p.isEmpty) {
+                                if (p.length < 9) {
                                   setModalState(() {
                                     errorMessage =
-                                        'Nomor telepon tidak boleh kosong.';
+                                        'Nomor telepon minimal 9 digit.';
                                   });
                                   return;
                                 }
-                                if (a.isEmpty) {
+                                if (a.length < 5) {
                                   setModalState(() {
                                     errorMessage =
-                                        'Alamat lengkap tidak boleh kosong.';
+                                        'Alamat lengkap minimal 5 karakter.';
                                   });
                                   return;
                                 }
 
-                                final newAddress = Alamat(
-                                  label: selectedLabel,
-                                  recipient: r,
-                                  phone: p,
-                                  address: a,
-                                  isPrimary: isPrimary,
-                                  courierNote: note.isNotEmpty
-                                      ? '"$note"'
-                                      : null,
-                                  verifiedPin: verifiedPin,
-                                );
+                                final combinedAddress = note.isNotEmpty
+                                    ? '$a\nCatatan Kurir: $note'
+                                    : a;
+                                final payload = {
+                                  'recipient_name': r,
+                                  'phone': p,
+                                  'full_address': combinedAddress,
+                                  'label': selectedLabel,
+                                  'is_default': isPrimary || _addresses.isEmpty,
+                                };
 
-                                setState(() {
-                                  if (isEditing) {
-                                    if (isPrimary) {
-                                      _addresses.removeAt(editIndex);
-                                      for (
-                                        var i = 0;
-                                        i < _addresses.length;
-                                        i++
-                                      ) {
-                                        _addresses[i] = _addresses[i].copyWith(
-                                          isPrimary: false,
-                                        );
-                                      }
-                                      _addresses.insert(0, newAddress);
-                                    } else {
-                                      _addresses[editIndex] = newAddress;
-                                    }
+                                try {
+                                  if (isEditing &&
+                                      editIndex < _addresses.length &&
+                                      _addresses[editIndex].id != null) {
+                                    await ApiClient.put(
+                                      '/addresses/${_addresses[editIndex].id}',
+                                      payload,
+                                    );
                                   } else {
-                                    if (isPrimary || _addresses.isEmpty) {
-                                      for (
-                                        var i = 0;
-                                        i < _addresses.length;
-                                        i++
-                                      ) {
-                                        _addresses[i] = _addresses[i].copyWith(
-                                          isPrimary: false,
-                                        );
-                                      }
-                                      _addresses.insert(
-                                        0,
-                                        newAddress.copyWith(isPrimary: true),
-                                      );
-                                    } else {
-                                      _addresses.add(newAddress);
-                                    }
+                                    await ApiClient.post('/addresses', payload);
                                   }
-                                });
-
-                                Navigator.pop(sheetContext);
-                                _showFeedback(
-                                  isEditing
-                                      ? 'Alamat "${newAddress.label}" berhasil diperbarui.'
-                                      : 'Alamat "${newAddress.label}" berhasil ditambahkan.',
-                                );
+                                  if (sheetContext.mounted) {
+                                    Navigator.pop(sheetContext);
+                                  }
+                                  await _loadAddresses();
+                                  _showFeedback(
+                                    isEditing
+                                        ? 'Alamat "$selectedLabel" berhasil diperbarui.'
+                                        : 'Alamat "$selectedLabel" berhasil ditambahkan.',
+                                  );
+                                } catch (e) {
+                                  setModalState(() {
+                                    errorMessage = e
+                                        .toString()
+                                        .replaceFirst('Exception: ', '');
+                                  });
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.black,
@@ -944,7 +981,17 @@ class _AlamatScreenState extends State<AlamatScreen> {
                         ],
                       ),
                       SizedBox(height: 14),
-                      if (_addresses.isEmpty) ...[
+                      if (_loading)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 60),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.ink,
+                              strokeWidth: 2.5,
+                            ),
+                          ),
+                        )
+                      else if (_addresses.isEmpty) ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 60),
                           child: Column(

@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_text.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
+import '../chat/models/chat_context_preview.dart';
 
 /// Sheet pelacakan pesanan — timeline status yang DIAMBIL DARI BACKEND
 /// (GET /orders/:id/tracking) dan otomatis menyegarkan diri setiap 8 detik
@@ -364,6 +366,71 @@ class _OrderTrackingSheetState extends State<OrderTrackingSheet> {
                                       .isNotEmpty) ...[
                                     const SizedBox(height: 18),
                                     _buildItemsSummary(),
+                                  ],
+                                  if (_order != null) ...[
+                                    const SizedBox(height: 14),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 44,
+                                      child: OutlinedButton.icon(
+                                        onPressed: () {
+                                          final orderData = _order!;
+                                          final store =
+                                              (orderData['store_name'] ??
+                                                      'Toko Keramik')
+                                                  .toString();
+                                          final mitraUid =
+                                              (orderData['mitra_user_id'] ?? '')
+                                                  .toString()
+                                                  .trim();
+                                          final preview =
+                                              OrderChatPreview.fromOrderMap(
+                                            orderData,
+                                            initiatedBy: 'customer',
+                                            fallbackStoreName: store,
+                                          );
+                                          final router = GoRouter.of(context);
+                                          Navigator.of(context).pop();
+                                          final uri = Uri(
+                                            path: '/chat-room',
+                                            queryParameters: {
+                                              'store': store,
+                                              if (mitraUid.isNotEmpty &&
+                                                  mitraUid != 'null' &&
+                                                  mitraUid != '0')
+                                                'userId': mitraUid,
+                                            },
+                                          );
+                                          router.push(
+                                            uri.toString(),
+                                            extra: {'orderPreview': preview},
+                                          );
+                                        },
+                                        icon: const Icon(
+                                          Icons.chat_bubble_outline_rounded,
+                                          size: 16,
+                                        ),
+                                        label: Text(
+                                          'Hubungi Penjual Terkait Pesanan Ini'
+                                              .tr,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: AppColors.ink,
+                                          side: BorderSide(
+                                            color: AppColors.ink,
+                                            width: 1.2,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                   if (currentStatus == 'shipped') ...[
                                     const SizedBox(height: 16),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show PathMetric;
 
 import 'package:flutter/material.dart';
@@ -35,18 +36,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String _payment = 'QRIS';
   final TextEditingController _noteCtrl = TextEditingController();
 
-  // Daftar alamat tersimpan (index 0 = alamat utama)
-  final List<_Address> _addresses = [
-    _Address(
-      name: 'Customer',
-      phone: '0859-777-588-138',
-      address:
-          'Jl. Sawiji Sari No.14, Kel. Mulyorejo, Kec. Sukun, Kota Malang, Jawa Timur 65147',
-    ),
-  ];
+  // Daftar alamat tersimpan dari Backend (/api/addresses)
+  final List<_Address> _addresses = [];
+  bool _loadingAddresses = true;
+  bool _hasMultipleStoresInCart = false;
   int _selected = 0;
 
-  _Address get _currentAddress => _addresses[_selected];
+  _Address? get _currentAddress =>
+      (_addresses.isNotEmpty && _selected >= 0 && _selected < _addresses.length)
+          ? _addresses[_selected]
+          : null;
 
   /// Badge kecil berisi label alamat (RUMAH/KANTOR/...) di kartu alamat.
   Widget _labelBadge(String label) {
@@ -77,13 +76,66 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void initState() {
     super.initState();
     _initItems();
+    _loadServerAddresses();
   }
 
   void _initItems() {
-    _items = widget.directBuyItems != null
-        ? List<CartItem>.from(widget.directBuyItems!)
-        : MockData.mockCart;
+    if (widget.directBuyItems != null) {
+      _items = List<CartItem>.from(widget.directBuyItems!);
+      _hasMultipleStoresInCart = false;
+    } else {
+      final source = List<CartItem>.from(MockData.mockCart);
+      if (source.isNotEmpty) {
+        final firstMitra = source.first.product.mitraId;
+        final distinctMitra =
+            source.map((e) => e.product.mitraId).toSet().length;
+        _hasMultipleStoresInCart = distinctMitra > 1;
+        _items = _hasMultipleStoresInCart
+            ? source.where((e) => e.product.mitraId == firstMitra).toList()
+            : source;
+      } else {
+        _items = [];
+        _hasMultipleStoresInCart = false;
+      }
+    }
     _qtys = _items.map((item) => item.qty).toList();
+  }
+
+  Future<void> _loadServerAddresses({int? selectAddressId}) async {
+    if (!AuthSession.isLoggedIn) {
+      if (mounted) setState(() => _loadingAddresses = false);
+      return;
+    }
+    setState(() => _loadingAddresses = true);
+    try {
+      final res = await ApiClient.get('/addresses');
+      final rows = (res['data'] as List?)
+              ?.whereType<Map<String, dynamic>>()
+              .where((r) =>
+                  (r['full_address'] ?? '').toString().trim() !=
+                  'Belum ada alamat lengkap')
+              .map(_Address.fromJson)
+              .toList() ??
+          [];
+      if (!mounted) return;
+      int nextIdx = 0;
+      if (selectAddressId != null) {
+        final found = rows.indexWhere((a) => a.id == selectAddressId);
+        if (found >= 0) nextIdx = found;
+      } else {
+        final defIdx = rows.indexWhere((a) => a.isPrimary);
+        if (defIdx >= 0) nextIdx = defIdx;
+      }
+      setState(() {
+        _addresses
+          ..clear()
+          ..addAll(rows);
+        _selected = rows.isEmpty ? 0 : nextIdx.clamp(0, rows.length - 1);
+        _loadingAddresses = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingAddresses = false);
+    }
   }
 
   @override
@@ -166,23 +218,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _addAddress() async {
     final result = await _showAddressForm();
     if (result == null || !mounted) return;
-    _applyNewAddress(result);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Alamat baru ditambahkan')),
-    );
-  }
-
-  /// Simpan hasil form: alamat utama masuk ke indeks 0, lainnya di akhir.
-  void _applyNewAddress(_Address result) {
-    setState(() {
-      if (result.isPrimary) {
-        _addresses.insert(0, result);
-        _selected = 0;
-      } else {
-        _addresses.add(result);
-        _selected = _addresses.length - 1;
-      }
-    });
+    try {
+      final combinedAddress = result.note.trim().isNotEmpty
+          ? '${result.address}\nCatatan Kurir: ${result.note.trim()}'
+          : result.address;
+      final res = await ApiClient.post('/addresses', {
+        'recipient_name': result.name,
+        'phone': result.phone,
+        'full_address': combinedAddress,
+        'label': result.label,
+        'is_default': result.isPrimary || _addresses.isEmpty,
+      });
+      final newId = int.tryParse('${res['data']?['id']}');
+      await _loadServerAddresses(selectAddressId: newId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Alamat baru berhasil disimpan'.tr)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menyimpan alamat: $msg')),
+      );
+    }
   }
 
   Future<void> _showAddressPicker() {
@@ -343,18 +402,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                         existing: a,
                                       );
                                       if (edited == null || !mounted) return;
-                                      setState(() {
-                                        _addresses[i] = edited;
-                                        if (edited.isPrimary && i != 0) {
-                                          _addresses.removeAt(i);
-                                          _addresses.insert(0, edited);
-                                          if (_selected == i) {
-                                            _selected = 0;
-                                          } else if (i < _selected) {
-                                            _selected++;
-                                          }
-                                        }
-                                      });
+                                      if (a.id != null) {
+                                        try {
+                                          final combined = edited.note.trim().isNotEmpty
+                                              ? '${edited.address}\nCatatan Kurir: ${edited.note.trim()}'
+                                              : edited.address;
+                                          await ApiClient.put('/addresses/${a.id}', {
+                                            'recipient_name': edited.name,
+                                            'phone': edited.phone,
+                                            'full_address': combined,
+                                            'label': edited.label,
+                                            'is_default': edited.isPrimary,
+                                          });
+                                          await _loadServerAddresses(selectAddressId: a.id);
+                                        } catch (_) {}
+                                      }
                                       setSheet(() {});
                                     },
                                     icon: Icon(
@@ -376,9 +438,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       height: 46,
                       child: OutlinedButton.icon(
                         onPressed: () async {
-                          final result = await _showAddressForm();
-                          if (result == null || !mounted) return;
-                          _applyNewAddress(result);
+                          await _addAddress();
                           if (ctx.mounted) Navigator.of(ctx).pop();
                         },
                         icon: Icon(Icons.add, size: 18),
@@ -465,31 +525,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
     if (_items.isEmpty) return;
 
+    if (_currentAddress == null || _currentAddress!.id == null) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text('Tambahkan alamat pengiriman terlebih dahulu.'.tr),
+        ),
+      );
+      await _addAddress();
+      if (_currentAddress == null || _currentAddress!.id == null) return;
+    }
+
     setState(() => _isPaying = true);
     try {
-      // 1. Alamat dari server — wajib punya address_id untuk checkout BE.
-      final addrRes = await ApiClient.get('/addresses');
-      final List addrList =
-          (addrRes['data'] as List?)?.whereType<Map<String, dynamic>>().toList() ?? [];
-      Map<String, dynamic>? addr;
-      for (final a in addrList) {
-        if (a['is_default'] == 1 || a['is_default'] == true) {
-          addr = a;
-          break;
-        }
-      }
-      addr ??= addrList.isNotEmpty ? addrList.first : null;
-      if (addr == null) {
-        if (mounted) {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Belum ada alamat pengiriman. Tambahkan alamat terlebih dahulu di menu Alamat.'),
-            ),
-          );
-        }
-        return;
-      }
+      final selectedAddr = _currentAddress!;
 
       // 2. mitra_id dari produk pertama (satu pesanan = satu toko).
       final mitraId = _items.first.product.mitraId;
@@ -502,11 +550,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         return;
       }
 
-      // 3. Buat pesanan REAL di backend.
+      // 3. Buat pesanan REAL di backend menggunakan address_id yang dipilih user di Checkout.
       final selectedBackendMethod = _backendPaymentMethod;
       final res = await ApiClient.post('/orders/checkout', {
         'mitra_id': mitraId,
-        'address_id': addr['id'],
+        'address_id': selectedAddr.id,
         'shipping_method': _shipping,
         'shipping_cost': _shippingFee,
         'payment_method': selectedBackendMethod,
@@ -529,6 +577,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final data = res['data'] as Map<String, dynamic>;
       final realOrderId = data['order_id']?.toString() ?? '';
 
+      // Segarkan keranjang dari backend agar item yang baru saja di-checkout hilang dari keranjang
+      if (!_isDirectBuy) {
+        unawaited(MockData.fetchCartFromBackend());
+      }
+
       if (!mounted) return;
       final args = PaymentArgs(
         orderId: realOrderId,
@@ -541,9 +594,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         paymentMethod: _payment,
         backendMethod: selectedBackendMethod,
         shippingMethod: _shipping,
-        recipientName: addr['recipient_name']?.toString() ?? _currentAddress.name,
-        recipientPhone: addr['phone']?.toString() ?? _currentAddress.phone,
-        recipientAddress: addr['full_address']?.toString() ?? _currentAddress.address,
+        recipientName: selectedAddr.name,
+        recipientPhone: selectedAddr.phone,
+        recipientAddress: selectedAddr.address,
         note: _noteCtrl.text.trim().isNotEmpty ? _noteCtrl.text.trim() : null,
         expiryTime: data['expiry_time']?.toString(),
         orderCreatedAt: data['created_at']?.toString(),
@@ -635,111 +688,198 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
               children: [
+                if (_hasMultipleStoresInCart && _items.isNotEmpty) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFDE68A)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.storefront_outlined,
+                          size: 18,
+                          color: Color(0xFFB45309),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Memproses pesanan dari ${_items.first.product.studio} terlebih dahulu. Produk dari toko lain tetap tersimpan di keranjang.',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11.5,
+                              height: 1.4,
+                              color: const Color(0xFF92400E),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 // ─── Alamat Pengiriman ──────────────────────────────────
                 _SectionHeader(
                   icon: Icons.location_on_outlined,
                   title: 'Alamat Pengiriman'.tr,
                 ),
                 _Card(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              _currentAddress.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.ink,
-                              ),
+                  child: _loadingAddresses
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                           ),
-                          if (_selected == 0) ...[
-                            SizedBox(width: 8),
-                            const _Badge('UTAMA'),
-                          ],
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: _labelBadge(_currentAddress.label),
-                          ),
-                          Spacer(),
-                          InkWell(
-                            onTap: _showAddressPicker,
-                            borderRadius: BorderRadius.circular(6),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 6,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.edit_outlined,
-                                    size: 14,
+                        )
+                      : _currentAddress == null
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Belum ada alamat pengiriman tersimpan'.tr,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
                                     color: AppColors.ink,
                                   ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Ubah Alamat'.tr,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 12,
-                                      color: AppColors.ink,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Tambahkan alamat penerima agar pengrajin dapat mengirimkan pesanan keramik Anda.'
+                                      .tr,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    height: 1.45,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 42,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _addAddress,
+                                    icon: const Icon(Icons.add_location_alt_outlined, size: 17),
+                                    label: Text(
+                                      'Tambah Alamat Pengiriman'.tr,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.ink,
+                                      side: BorderSide(color: AppColors.ink),
+                                      shape: const StadiumBorder(),
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.phone_outlined,
-                            size: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            _currentAddress.phone,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 6),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(top: 2),
-                            child: Icon(
-                              Icons.location_on_outlined,
-                              size: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              _currentAddress.address,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                height: 1.5,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        _currentAddress!.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.ink,
+                                        ),
+                                      ),
+                                    ),
+                                    if (_currentAddress!.isPrimary || _selected == 0) ...[
+                                      SizedBox(width: 8),
+                                      const _Badge('UTAMA'),
+                                    ],
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 8),
+                                      child: _labelBadge(_currentAddress!.label),
+                                    ),
+                                    Spacer(),
+                                    InkWell(
+                                      onTap: _showAddressPicker,
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 6,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.edit_outlined,
+                                              size: 14,
+                                              color: AppColors.ink,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'Ubah Alamat'.tr,
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 12,
+                                                color: AppColors.ink,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.phone_outlined,
+                                      size: 14,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      _currentAddress!.phone,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 6),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: EdgeInsets.only(top: 2),
+                                      child: Icon(
+                                        Icons.location_on_outlined,
+                                        size: 14,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        _currentAddress!.address,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 13,
+                                          height: 1.5,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                       SizedBox(height: 12),
                       _DashedBorder(
                         radius: 8,
@@ -1783,6 +1923,7 @@ class _RowLine extends StatelessWidget {
 // ─── Model alamat ─────────────────────────────────────────────────────────────
 class _Address {
   _Address({
+    this.id,
     required this.name,
     required this.phone,
     required this.address,
@@ -1792,6 +1933,7 @@ class _Address {
     this.isPrimary = false,
   });
 
+  int? id;
   String name;
   String phone;
   String address;
@@ -1799,6 +1941,30 @@ class _Address {
   String note;
   bool verifiedPin;
   bool isPrimary;
+
+  factory _Address.fromJson(Map<String, dynamic> json) {
+    final fullRaw = (json['full_address'] ?? '').toString().trim();
+    String mainAddr = fullRaw;
+    String parsedNote = '';
+    const marker = '\nCatatan Kurir: ';
+    if (fullRaw.contains(marker)) {
+      final idx = fullRaw.indexOf(marker);
+      mainAddr = fullRaw.substring(0, idx).trim();
+      parsedNote = fullRaw.substring(idx + marker.length).trim();
+    }
+    return _Address(
+      id: int.tryParse('${json['id']}'),
+      name: (json['recipient_name'] ?? 'Penerima').toString(),
+      phone: (json['phone'] ?? '').toString(),
+      address: mainAddr,
+      label: (json['label'] ?? 'Rumah').toString().trim().isEmpty
+          ? 'Rumah'
+          : json['label'].toString().trim(),
+      note: parsedNote,
+      verifiedPin: true,
+      isPrimary: json['is_default'] == 1 || json['is_default'] == true,
+    );
+  }
 }
 
 // ─── Form tambah / ubah alamat — gaya senada halaman Kelola Alamat ───────────

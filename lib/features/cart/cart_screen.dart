@@ -71,8 +71,18 @@ const   CartScreen({super.key});
 }
 
 class _CartScreenState extends State<CartScreen> {
-  late final List<CartItem> _items = MockData.mockCart;
-  late final List<int> _quantities = _items.map((item) => item.qty).toList();
+  List<CartItem> get _items => MockData.mockCart;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncCart();
+  }
+
+  Future<void> _syncCart() async {
+    await MockData.fetchCartFromBackend();
+    if (mounted) setState(() {});
+  }
 
   /// qty == 1 dan tombol minus ditekan → konfirmasi hapus produk.
   Future<void> _confirmRemoveItem(int index) async {
@@ -80,8 +90,7 @@ class _CartScreenState extends State<CartScreen> {
     final confirmed = await _confirmRemoveCartItemDialog(context, productName);
     if (!confirmed || !mounted) return;
     setState(() {
-      _items.removeAt(index);
-      _quantities.removeAt(index);
+      MockData.removeFromCart(index);
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -98,7 +107,7 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     final total = List.generate(
       _items.length,
-      (index) => _items[index].product.price * _quantities[index],
+      (index) => _items[index].product.price * _items[index].qty,
     ).fold<int>(0, (sum, price) => sum + price);
     return AppBackScope(
       fallbackRoute: '/home',
@@ -164,16 +173,27 @@ class _CartScreenState extends State<CartScreen> {
                       _items.length,
                       (index) {
                         final item = _items[index];
+                        final qty = item.qty;
                         final maxStock = item.product.availableStockForVariant(item.variant);
-                        final canIncrement = maxStock <= 0 ? false : _quantities[index] < maxStock;
+                        final canIncrement = maxStock <= 0 ? false : qty < maxStock;
                         return _CartItem(
                           item: item,
-                          quantity: _quantities[index],
-                          onMinus: _quantities[index] > 1
-                              ? () => setState(() => _quantities[index]--)
+                          quantity: qty,
+                          onMinus: qty > 1
+                              ? () => setState(
+                                    () => MockData.updateCartItemQty(
+                                      index,
+                                      qty - 1,
+                                    ),
+                                  )
                               : () => _confirmRemoveItem(index),
                           onPlus: canIncrement
-                              ? () => setState(() => _quantities[index]++)
+                              ? () => setState(
+                                    () => MockData.updateCartItemQty(
+                                      index,
+                                      qty + 1,
+                                    ),
+                                  )
                               : null,
                         );
                       },
@@ -439,13 +459,20 @@ class _CartSheet extends StatefulWidget {
 class _CartSheetState extends State<_CartSheet> {
   Color get _handleBarColor => AppColors.borderAlt;
 
-  late final List<CartItem> _items = MockData.mockCart;
-  late final List<int> _quantities = _items.map((item) => item.qty).toList();
+  List<CartItem> get _items => MockData.mockCart;
+
+  @override
+  void initState() {
+    super.initState();
+    MockData.fetchCartFromBackend().then((_) {
+      if (mounted) setState(() {});
+    });
+  }
 
   int get _subtotal {
     var total = 0;
     for (var i = 0; i < _items.length; i++) {
-      total += _items[i].product.price * _quantities[i];
+      total += _items[i].product.price * _items[i].qty;
     }
     return total;
   }
@@ -455,8 +482,7 @@ class _CartSheetState extends State<_CartSheet> {
     final confirmed = await _confirmRemoveCartItemDialog(context, productName);
     if (!confirmed || !mounted) return;
     setState(() {
-      _items.removeAt(index);
-      _quantities.removeAt(index);
+      MockData.removeFromCart(index);
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -617,14 +643,32 @@ class _CartSheetState extends State<_CartSheet> {
                     children: [
                       ...List.generate(
                         _items.length,
-                        (index) => _CartItem(
-                          item: _items[index],
-                          quantity: _quantities[index],
-                          onMinus: _quantities[index] > 1
-                              ? () => setState(() => _quantities[index]--)
-                              : () => _confirmRemoveItem(index),
-                          onPlus: () => setState(() => _quantities[index]++),
-                        ),
+                        (index) {
+                          final item = _items[index];
+                          final qty = item.qty;
+                          final maxStock = item.product.availableStockForVariant(item.variant);
+                          final canIncrement = maxStock <= 0 ? false : qty < maxStock;
+                          return _CartItem(
+                            item: item,
+                            quantity: qty,
+                            onMinus: qty > 1
+                                ? () => setState(
+                                      () => MockData.updateCartItemQty(
+                                        index,
+                                        qty - 1,
+                                      ),
+                                    )
+                                : () => _confirmRemoveItem(index),
+                            onPlus: canIncrement
+                                ? () => setState(
+                                      () => MockData.updateCartItemQty(
+                                        index,
+                                        qty + 1,
+                                      ),
+                                    )
+                                : null,
+                          );
+                        },
                       ),
                     ],
                   ),
