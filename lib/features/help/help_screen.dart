@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
+import '../../core/network/api_client.dart';
+import '../../core/services/auth_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_button.dart';
@@ -19,6 +21,43 @@ class HelpScreen extends StatefulWidget {
 
 class _HelpScreenState extends State<HelpScreen> {
   String _query = '';
+  bool _openingCs = false;
+
+  Future<void> _openLiveCsChat() async {
+    if (_openingCs) return;
+    if (!AuthSession.isLoggedIn) {
+      context.push('/login');
+      return;
+    }
+    setState(() => _openingCs = true);
+    try {
+      final res = await ApiClient.get('/chat/cs-agent');
+      final data = res['data'] as Map<String, dynamic>?;
+      final csId = data?['id']?.toString() ?? '';
+      const csName = 'Customer Service';
+      if (!mounted) return;
+      setState(() => _openingCs = false);
+      if (csId.isNotEmpty) {
+        final uri = Uri(
+          path: '/chat-room',
+          queryParameters: {'store': csName, 'userId': csId, 'isCs': '1'},
+        );
+        context.push(uri.toString());
+        return;
+      }
+    } catch (_) {
+      if (mounted) setState(() => _openingCs = false);
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          'Layanan Live Chat CS sedang sibuk. Coba lagi sesaat.'.tr,
+        ),
+      ),
+    );
+  }
 
   Widget _buildHeader() {
     return SizedBox(
@@ -78,139 +117,148 @@ class _HelpScreenState extends State<HelpScreen> {
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                children: [
-                  Text(
-                    'Butuh Bantuan?'.tr,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.ink,
+                  children: [
+                    Text(
+                      'Butuh Bantuan?'.tr,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Temukan jawaban cepat atau hubungi tim kami.'.tr,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  SizedBox(height: 14),
-                  TextField(
-                    onChanged: (v) => setState(() => _query = v),
-                    onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-                    decoration: InputDecoration(
-                      hintText: 'Cari pertanyaan...'.tr,
-                      hintStyle: GoogleFonts.plusJakartaSans(
+                    SizedBox(height: 8),
+                    Text(
+                      'Temukan jawaban cepat atau hubungi tim kami.'.tr,
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
-                        color: AppColors.textMuted,
-                      ),
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: SvgPicture.asset(
-                          AppAssets.iconSearch,
-                          width: 20,
-                          height: 20,
-                          colorFilter: ColorFilter.mode(
-                            AppColors.textMuted,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.inputBg,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
+                        color: AppColors.textSecondary,
                       ),
                     ),
-                  ),
-                  SizedBox(height: 18),
-                  Text(
-                    'FAQ',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  ...faqs.map(
-                    (f) => Theme(
-                      data: Theme.of(context)
-                          .copyWith(dividerColor: Colors.transparent),
-                      child: ExpansionTile(
-                        tilePadding: EdgeInsets.zero,
-                        childrenPadding:
-                            const EdgeInsets.only(bottom: 12),
-                        title: Text(
-                          f.question,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.ink,
+                    SizedBox(height: 14),
+                    TextField(
+                      onChanged: (v) => setState(() => _query = v),
+                      onTapOutside: (_) =>
+                          FocusManager.instance.primaryFocus?.unfocus(),
+                      decoration: InputDecoration(
+                        hintText: 'Cari pertanyaan...'.tr,
+                        hintStyle: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: AppColors.textMuted,
+                        ),
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: SvgPicture.asset(
+                            AppAssets.iconSearch,
+                            width: 20,
+                            height: 20,
+                            colorFilter: ColorFilter.mode(
+                              AppColors.textMuted,
+                              BlendMode.srcIn,
+                            ),
                           ),
                         ),
-                        children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              f.answer,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                height: 1.5,
-                                color: AppColors.textSecondary,
+                        filled: true,
+                        fillColor: AppColors.inputBg,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 18),
+                    Text(
+                      'FAQ',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    ...faqs.map(
+                      (f) => Theme(
+                        data: Theme.of(context)
+                            .copyWith(dividerColor: Colors.transparent),
+                        child: ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          childrenPadding: const EdgeInsets.only(bottom: 12),
+                          title: Text(
+                            f.question,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                f.answer,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  height: 1.5,
+                                  color: AppColors.textSecondary,
+                                ),
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.inputBg,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Kontak Customer Service'.tr,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Email: csdinoyocraft@gmail.com\nWhatsApp: +62 812-3456-7890\nJam operasional: 09.00–18.00 WIB',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              height: 1.5,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.inputBg,
-                      borderRadius: BorderRadius.circular(16),
+                    SizedBox(height: 16),
+                    DcButton(
+                      label: _openingCs
+                          ? 'Menghubungkan CS...'.tr
+                          : 'Live Chat Customer Service'.tr,
+                      trailingIconPath: AppAssets.iconFloatingCS,
+                      onPressed: _openingCs ? null : _openLiveCsChat,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Kontak Customer Service'.tr,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Email: hello@dinoyocraft.id\nWhatsApp: +62 812-3456-7890\nJam operasional: 09.00–18.00 WIB',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            height: 1.5,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
+                    SizedBox(height: 10),
+                    DcButton(
+                      label: 'ClayBot Asisten'.tr,
+                      outlined: true,
+                      trailingIconPath: AppAssets.iconChat,
+                      onPressed: () => context.push('/chatbot'),
                     ),
-                  ),
-                  SizedBox(height: 16),
-                  DcButton(
-                    label: 'ClayBot Asisten'.tr,
-                    trailingIconPath: AppAssets.iconChat,
-                    onPressed: () => context.push('/chatbot'),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
