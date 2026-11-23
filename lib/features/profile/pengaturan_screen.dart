@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/network/api_client.dart';
 import '../../core/services/auth_session.dart';
 import '../../core/services/google_auth_service.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/app_info_service.dart';
+import '../../core/widgets/top_toast.dart';
 
 class PengaturanScreen extends StatefulWidget {
   const PengaturanScreen({super.key});
@@ -20,18 +22,54 @@ class PengaturanScreen extends StatefulWidget {
 
 class _PengaturanScreenState extends State<PengaturanScreen> {
   // ── State Pengaturan ───────────────────────────────────────────────────────
-  static const String _userEmail = 'customer@gmail.com';
-  static const String _maskedEmail = 'cus***@gmail.com';
-  bool _orderNotification = true;
-  bool _whatsAppNotification = true;
   bool _passwordRecentlyChanged = false;
-  String get _lastPasswordChanged => _passwordRecentlyChanged
-      ? 'Baru saja diubah'.tr
-      : 'Terakhir diubah 3 bulan lalu'.tr;
+  bool _requesting2faOtp = false;
+
+  String get _userEmail {
+    final raw =
+        AuthSession.user?['email']?.toString().trim() ??
+        _settings.lastAuthEmail?.trim() ??
+        '';
+    return raw.isNotEmpty ? raw : '-';
+  }
+
+  String get _maskedEmail {
+    final e = _userEmail.toLowerCase();
+    if (!e.contains('@')) return e;
+    final parts = e.split('@');
+    final name = parts.first;
+    final domain = parts.sublist(1).join('@');
+    if (name.length <= 2) {
+      return '${name.isEmpty ? '*' : name[0]}***@$domain';
+    }
+    return '${name.substring(0, 3)}***@$domain';
+  }
+
+  String get _lastPasswordChanged {
+    if (_passwordRecentlyChanged) return 'Baru saja diubah'.tr;
+    final hasPassword = AuthSession.user?['has_password'];
+    if (hasPassword == false) {
+      return 'Akun Google • Ketuk untuk buat kata sandi'.tr;
+    }
+    final rawChanged = AuthSession.user?['password_changed_at']?.toString();
+    if (rawChanged != null && rawChanged.isNotEmpty) {
+      final dt = DateTime.tryParse(rawChanged)?.toLocal();
+      if (dt != null) {
+        final diffDays = DateTime.now().difference(dt).inDays;
+        if (diffDays <= 0) return 'Terakhir diubah hari ini'.tr;
+        if (diffDays == 1) return 'Terakhir diubah kemarin'.tr;
+        if (diffDays < 30) return 'Terakhir diubah $diffDays hari lalu'.tr;
+        final months = (diffDays / 30).floor();
+        return 'Terakhir diubah $months bulan lalu'.tr;
+      }
+    }
+    return 'Perbarui kata sandi keamanan akun Anda'.tr;
+  }
 
   @override
   void initState() {
     super.initState();
+    _syncProfileSecurityState();
     // Beri jeda agar animasi transisi navigasi halaman selesai dengan mulus (60/120fps)
     // sebelum melakukan sinkronisasi ukuran cache dan perangkat di background.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -45,15 +83,30 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
     });
   }
 
+  Future<void> _syncProfileSecurityState() async {
+    if (!AuthSession.isLoggedIn) return;
+    try {
+      final res = await ApiClient.get('/auth/profile');
+      if (res['success'] == true && res['data'] is Map<String, dynamic>) {
+        final data = res['data'] as Map<String, dynamic>;
+        await AuthSession.updateUser({
+          ...?AuthSession.user,
+          ...data,
+        }, notify: false);
+        if (mounted) setState(() {});
+      }
+    } catch (_) {}
+  }
+
   /// Sumber kebenaran tema/bahasa/2FA/perangkat/cache ada di AppSettings
   /// agar seluruh aplikasi ikut berubah saat diubah dari sini.
   AppSettings get _settings => AppSettings.instance;
 
   String get _selectedTheme => switch (_settings.themeMode) {
-        AppThemeMode.light => 'Terang (Light Mode)'.tr,
-        AppThemeMode.dark => 'Gelap (Dark Mode)'.tr,
-        AppThemeMode.system => 'Mengikuti Sistem'.tr,
-      };
+    AppThemeMode.light => 'Terang (Light Mode)'.tr,
+    AppThemeMode.dark => 'Gelap (Dark Mode)'.tr,
+    AppThemeMode.system => 'Mengikuti Sistem'.tr,
+  };
 
   String get _selectedLanguage =>
       _settings.locale == 'en' ? 'English' : 'Bahasa Indonesia';
@@ -63,30 +116,16 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
   bool get _isCacheCleaned => _settings.cacheBytes <= 0;
 
   IconData get _currentThemeIcon => switch (_settings.themeMode) {
-        AppThemeMode.light => Icons.light_mode_outlined,
-        AppThemeMode.dark => Icons.dark_mode_outlined,
-        AppThemeMode.system => Icons.brightness_auto_outlined,
-      };
+    AppThemeMode.light => Icons.light_mode_outlined,
+    AppThemeMode.dark => Icons.dark_mode_outlined,
+    AppThemeMode.system => Icons.brightness_auto_outlined,
+  };
 
-  void _showFeedback(String message) {
+  void _showFeedback(String message, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.black,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        content: Text(
-          message,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: AppColors.white,
-          ),
-        ),
-        duration: Duration(seconds: 2),
-      ),
+    AppTopToast.show(
+      message,
+      type: isError ? TopToastType.error : TopToastType.success,
     );
   }
 
@@ -112,7 +151,6 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       });
     }
   }
-
 
   // ── 2. Autentikasi 2 Langkah (2FA) ─────────────────────────────────────────
   Future<void> _toggleTwoFactor() async {
@@ -172,17 +210,33 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       );
 
       if (confirm == true && mounted) {
-        final uri = Uri(
-          path: '/verify-otp',
-          queryParameters: {
-            'from': 'disable_2fa',
-            'email': _userEmail,
-          },
-        );
-        final res = await context.push<bool>(uri.toString());
-        if (res == true && mounted) {
-          setState(() {});
-          _showFeedback('Autentikasi 2 Langkah (2FA) berhasil dinonaktifkan.');
+        if (_requesting2faOtp) return;
+        setState(() => _requesting2faOtp = true);
+        try {
+          final otpRes = await ApiClient.post('/auth/2fa/request-otp', {
+            'action': 'disable',
+          });
+          if (!mounted) return;
+          final sentMsg =
+              (otpRes['message']?.toString().trim().isNotEmpty ?? false)
+              ? otpRes['message'].toString()
+              : 'Kode OTP konfirmasi telah dikirim ke $_maskedEmail.';
+          AppTopToast.info(sentMsg);
+          final uri = Uri(
+            path: '/verify-otp',
+            queryParameters: {'from': 'disable_2fa', 'email': _userEmail},
+          );
+          final res = await context.push<bool>(uri.toString());
+          if (res == true && mounted) {
+            setState(() {});
+          }
+        } catch (e) {
+          if (mounted) {
+            final msg = e.toString().replaceFirst('Exception: ', '');
+            _showFeedback('Gagal mengirim OTP: $msg', isError: true);
+          }
+        } finally {
+          if (mounted) setState(() => _requesting2faOtp = false);
         }
       }
     } else {
@@ -359,19 +413,49 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     child: ElevatedButton(
                       onPressed: () async {
                         Navigator.pop(sheetContext);
-                        final uri = Uri(
-                          path: '/verify-otp',
-                          queryParameters: {
-                            'from': 'enable_2fa',
-                            'email': _userEmail,
-                          },
-                        );
-                        final res = await context.push<bool>(uri.toString());
-                        if (res == true && mounted) {
-                          setState(() {});
-                          _showFeedback(
-                            'Autentikasi 2 Langkah via Email berhasil diaktifkan.',
+                        if (_requesting2faOtp) return;
+                        setState(() => _requesting2faOtp = true);
+                        try {
+                          final otpRes = await ApiClient.post(
+                            '/auth/2fa/request-otp',
+                            {'action': 'enable'},
                           );
+                          if (!mounted) return;
+                          final sentMsg =
+                              (otpRes['message']
+                                      ?.toString()
+                                      .trim()
+                                      .isNotEmpty ??
+                                  false)
+                              ? otpRes['message'].toString()
+                              : 'Kode OTP verifikasi telah dikirim ke $_maskedEmail.';
+                          AppTopToast.info(sentMsg);
+                          final uri = Uri(
+                            path: '/verify-otp',
+                            queryParameters: {
+                              'from': 'enable_2fa',
+                              'email': _userEmail,
+                            },
+                          );
+                          final res = await context.push<bool>(uri.toString());
+                          if (res == true && mounted) {
+                            setState(() {});
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            final msg = e.toString().replaceFirst(
+                              'Exception: ',
+                              '',
+                            );
+                            _showFeedback(
+                              'Gagal mengirim OTP: $msg',
+                              isError: true,
+                            );
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() => _requesting2faOtp = false);
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -525,7 +609,9 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: AppColors.successSurface,
-                                          borderRadius: BorderRadius.circular(999),
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
                                         ),
                                         child: Text(
                                           'Aktif Saat Ini',
@@ -597,7 +683,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         otherList[i].name,
@@ -626,7 +713,9 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                       context: context,
                                       builder: (dlgCtx) => AlertDialog(
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(18),
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
                                         ),
                                         title: Text(
                                           'Hapus Sesi Perangkat?',
@@ -646,19 +735,23 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                         ),
                                         actions: [
                                           TextButton(
-                                            onPressed: () => Navigator.pop(dlgCtx),
+                                            onPressed: () =>
+                                                Navigator.pop(dlgCtx),
                                             child: Text(
                                               'Batal',
-                                              style: GoogleFonts.plusJakartaSans(
-                                                fontWeight: FontWeight.w600,
-                                                color: AppColors.textSecondary,
-                                              ),
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    fontWeight: FontWeight.w600,
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                  ),
                                             ),
                                           ),
                                           ElevatedButton(
                                             onPressed: () {
                                               Navigator.pop(dlgCtx);
-                                              final removed = _settings.removeOtherDevice(i);
+                                              final removed = _settings
+                                                  .removeOtherDevice(i);
                                               setSheetState(() {});
                                               setState(() {});
                                               _showFeedback(
@@ -673,10 +766,11 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                             ),
                                             child: Text(
                                               'Hapus & Logout',
-                                              style: GoogleFonts.plusJakartaSans(
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 13,
-                                              ),
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 13,
+                                                  ),
                                             ),
                                           ),
                                         ],
@@ -688,7 +782,9 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                     side: BorderSide(color: AppColors.danger),
                                     shape: StadiumBorder(),
                                     minimumSize: Size(0, 32),
-                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                    ),
                                   ),
                                   child: Text(
                                     'Keluar',
@@ -789,7 +885,10 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                         ),
                       ] else ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.surfaceSubtle,
                             borderRadius: BorderRadius.circular(14),
@@ -805,7 +904,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Hanya perangkat ini yang aktif mengakses akun Anda. Tidak ada sesi perangkat lain yang terhubung.',
+                                  'Perangkat ini terdaftar sebagai sesi utama Anda. Anda dapat mencabut token sesi di perangkat lain kapan saja.',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     height: 1.4,
@@ -814,6 +913,58 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 46,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              try {
+                                final res = await ApiClient.post(
+                                  '/auth/logout-other-devices',
+                                  {},
+                                );
+                                final newToken = res['data']?['token']
+                                    ?.toString();
+                                final newRefresh = res['data']?['refresh_token']
+                                    ?.toString();
+                                if (newToken != null && newToken.isNotEmpty) {
+                                  await AuthSession.signIn(
+                                    token: newToken,
+                                    refreshToken: newRefresh,
+                                    user: AuthSession.user,
+                                  );
+                                }
+                                _settings.removeAllOtherDevices();
+                                if (sheetContext.mounted) {
+                                  Navigator.pop(sheetContext);
+                                }
+                                _showFeedback(
+                                  'Seluruh sesi di perangkat lain berhasil dikeluarkan.',
+                                );
+                              } catch (e) {
+                                final msg = e.toString().replaceFirst(
+                                  'Exception: ',
+                                  '',
+                                );
+                                _showFeedback('Gagal mencabut sesi: $msg');
+                              }
+                            },
+                            icon: const Icon(Icons.logout_rounded, size: 18),
+                            label: Text(
+                              'Keluar dari Semua Perangkat Lain'.tr,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.danger,
+                              side: BorderSide(color: AppColors.danger),
+                              shape: const StadiumBorder(),
+                            ),
                           ),
                         ),
                       ],
@@ -1011,7 +1162,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     icon: th['icon'] as IconData,
                     title: (th['name'] as String).tr,
                     subtitle: (th['desc'] as String).tr,
-                    isSelected: _settings.themeMode ==
+                    isSelected:
+                        _settings.themeMode ==
                         (switch (th['name'] as String) {
                           'Gelap (Dark Mode)' => AppThemeMode.dark,
                           'Mengikuti Sistem' => AppThemeMode.system,
@@ -1122,32 +1274,27 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         _LegalSection(
           number: '1',
           heading: 'Komitmen Perlindungan Privasi',
-          body:
-              'DinoyoCraft berkomitmen menjaga dan menghormati privasi seluruh pengguna, pembeli, serta mitra perajin keramik di kawasan Dinoyo Malang. Data Anda dikelola secara aman sesuai peraturan perlindungan data yang berlaku di Indonesia.',
+          body: 'DinoyoCraft berkomitmen menjaga dan menghormati privasi seluruh pengguna, pembeli, serta mitra perajin keramik di kawasan Dinoyo Malang. Data Anda dikelola secara aman sesuai peraturan perlindungan data yang berlaku di Indonesia.',
         ),
         _LegalSection(
           number: '2',
           heading: 'Data yang Dikumpulkan',
-          body:
-              'Kami mengumpulkan informasi yang Anda berikan secara sukarela, seperti nama lengkap, nomor WhatsApp, alamat tujuan pengiriman pesanan tembikar, serta riwayat interaksi dan transaksi pesanan.',
+          body: 'Kami mengumpulkan informasi yang Anda berikan secara sukarela, seperti nama lengkap, nomor WhatsApp, alamat tujuan pengiriman pesanan tembikar, serta riwayat interaksi dan transaksi pesanan.',
         ),
         _LegalSection(
           number: '3',
           heading: 'Penggunaan Informasi',
-          body:
-              'Data Anda digunakan secara eksklusif untuk memproses pesanan kerajinan keramik, koordinasi kurir ekspedisi dengan packing aman, pembaruan nomor resi, serta layanan pelanggan.',
+          body: 'Data Anda digunakan secara eksklusif untuk memproses pesanan kerajinan keramik, koordinasi kurir ekspedisi dengan packing aman, pembaruan nomor resi, serta layanan pelanggan.',
         ),
         _LegalSection(
           number: '4',
           heading: 'Keamanan Transaksi & Akun',
-          body:
-              'Semua kata sandi dienkripsi dengan standar hash industri. Kami tidak pernah membagikan atau menjual data pribadi Anda kepada pihak ketiga manapun untuk kepentingan komersial.',
+          body: 'Semua kata sandi dienkripsi dengan standar hash industri. Kami tidak pernah membagikan atau menjual data pribadi Anda kepada pihak ketiga manapun untuk kepentingan komersial.',
         ),
         _LegalSection(
           number: '5',
           heading: 'Hak Pengguna',
-          body:
-              'Anda berhak memperbarui data diri, mengatur preferensi notifikasi, atau meminta penutupan dan penghapusan akun kapan saja melalui menu Kelola Pengaturan.',
+          body: 'Anda berhak memperbarui data diri, mengatur preferensi notifikasi, atau meminta penutupan dan penghapusan akun kapan saja melalui menu Kelola Pengaturan.',
         ),
       ],
     );
@@ -1163,32 +1310,27 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         _LegalSection(
           number: '1',
           heading: 'Ketentuan Akun',
-          body:
-              'Pengguna wajib memberikan informasi yang akurat saat membuat akun dan bertanggung jawab penuh menjaga kerahasiaan kata sandi serta aktivitas yang terjadi pada akun tersebut.',
+          body: 'Pengguna wajib memberikan informasi yang akurat saat membuat akun dan bertanggung jawab penuh menjaga kerahasiaan kata sandi serta aktivitas yang terjadi pada akun tersebut.',
         ),
         _LegalSection(
           number: '2',
           heading: 'Pemesanan & Pembayaran',
-          body:
-              'Seluruh harga tertera dalam mata uang Rupiah (IDR). Pesanan akan diproses oleh pengrajin Dinoyo setelah pembayaran terverifikasi secara resmi melalui metode transfer atau e-wallet yang tersedia.',
+          body: 'Seluruh harga tertera dalam mata uang Rupiah (IDR). Pesanan akan diproses oleh pengrajin Dinoyo setelah pembayaran terverifikasi secara resmi melalui metode transfer atau e-wallet yang tersedia.',
         ),
         _LegalSection(
           number: '3',
           heading: 'Karakteristik Produk Keramik Hand-made',
-          body:
-              'Produk keramik Dinoyo merupakan karya seni kerajinan tangan. Sedikit perbedaan dalam corak glasir, dimensi (toleransi 1-2 cm), atau tekstur adalah ciri khas keaslian tembikar lokal dan bukan cacat produksi.',
+          body: 'Produk keramik Dinoyo merupakan karya seni kerajinan tangan. Sedikit perbedaan dalam corak glasir, dimensi (toleransi 1-2 cm), atau tekstur adalah ciri khas keaslian tembikar lokal dan bukan cacat produksi.',
         ),
         _LegalSection(
           number: '4',
           heading: 'Pengiriman & Pembatalan',
-          body:
-              'Setiap produk dikemas menggunakan standar pengemasan barang pecah belah. Pembatalan pesanan hanya dapat disetujui jika toko perajin belum memulai proses produksi khusus atau pengemasan paket.',
+          body: 'Setiap produk dikemas menggunakan standar pengemasan barang pecah belah. Pembatalan pesanan hanya dapat disetujui jika toko perajin belum memulai proses produksi khusus atau pengemasan paket.',
         ),
         _LegalSection(
           number: '5',
           heading: 'Hak Kekayaan Intelektual',
-          body:
-              'Seluruh foto katalog, logo, identitas merek, dan desain karya kerajinan keramik di platform ini dilindungi oleh hak kekayaan intelektual milik perajin sentra keramik Dinoyo.',
+          body: 'Seluruh foto katalog, logo, identitas merek, dan desain karya kerajinan keramik di platform ini dilindungi oleh hak kekayaan intelektual milik perajin sentra keramik Dinoyo.',
         ),
       ],
     );
@@ -1225,26 +1367,22 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         _LegalSection(
           number: '1',
           heading: 'Jaminan Proteksi 100% Tanpa Risiko',
-          body:
-              'Kami memahami kerentanan barang tembikar dan keramik. Setiap pesanan kerajinan di DinoyoCraft dilindungi garansi penggantian penuh jika terjadi kerusakan atau pecah selama proses pengantaran ekspedisi.',
+          body: 'Kami memahami kerentanan barang tembikar dan keramik. Setiap pesanan kerajinan di DinoyoCraft dilindungi garansi penggantian penuh jika terjadi kerusakan atau pecah selama proses pengantaran ekspedisi.',
         ),
         _LegalSection(
           number: '2',
           heading: 'Syarat Wajib Video Unboxing',
-          body:
-              'Untuk memvalidasi klaim asuransi ekspedisi, pembeli wajib merekam video unboxing secara utuh tanpa jeda (no pause/no edit) sejak paket masih tersegel rapi hingga isi barang diperiksa.',
+          body: 'Untuk memvalidasi klaim asuransi ekspedisi, pembeli wajib merekam video unboxing secara utuh tanpa jeda (no pause/no edit) sejak paket masih tersegel rapi hingga isi barang diperiksa.',
         ),
         _LegalSection(
           number: '3',
           heading: 'Batas Waktu Pengajuan Klaim',
-          body:
-              'Permohonan klaim garansi harus diajukan maksimal 1 x 24 jam setelah status resi menunjukkan paket telah berhasil diterima oleh penerima.',
+          body: 'Permohonan klaim garansi harus diajukan maksimal 1 x 24 jam setelah status resi menunjukkan paket telah berhasil diterima oleh penerima.',
         ),
         _LegalSection(
           number: '4',
           heading: 'Pilihan Solusi Penggantian',
-          body:
-              'Pembeli dapat memilih antara: (a) Pengiriman unit keramik baru secara gratis tanpa biaya ongkir tambahan, ATAU (b) Pengembalian dana penuh (100% refund) sesuai nominal pesanan.',
+          body: 'Pembeli dapat memilih antara: (a) Pengiriman unit keramik baru secara gratis tanpa biaya ongkir tambahan, ATAU (b) Pengembalian dana penuh (100% refund) sesuai nominal pesanan.',
         ),
       ],
     );
@@ -1555,8 +1693,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               decoration: BoxDecoration(
                 color: isSelected
                     ? (isDark
-                        ? Colors.white.withValues(alpha: 0.16)
-                        : AppColors.black)
+                          ? Colors.white.withValues(alpha: 0.16)
+                          : AppColors.black)
                     : AppColors.inputBg,
                 borderRadius: BorderRadius.circular(10),
                 border: isSelected && isDark
@@ -1569,9 +1707,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               child: Icon(
                 icon,
                 size: 19,
-                color: isSelected
-                    ? Colors.white
-                    : AppColors.ink,
+                color: isSelected ? Colors.white : AppColors.ink,
               ),
             ),
             const SizedBox(width: 12),
@@ -1602,22 +1738,19 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             ),
             if (pillText != null) ...[
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? (isDark
-                          ? Colors.white.withValues(alpha: 0.16)
-                          : AppColors.black)
+                            ? Colors.white.withValues(alpha: 0.16)
+                            : AppColors.black)
                       : AppColors.inputBg,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: isSelected
                         ? (isDark
-                            ? Colors.white.withValues(alpha: 0.35)
-                            : AppColors.black)
+                              ? Colors.white.withValues(alpha: 0.35)
+                              : AppColors.black)
                         : AppColors.borderAlt,
                   ),
                 ),
@@ -1664,226 +1797,216 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
                     children: [
                       // 1. AKUN & KEAMANAN
-                      _buildGroup(
-                        'AKUN & KEAMANAN'.tr,
-                        [
-                          _SettingTile(
-                            icon: Icons.lock_outline_rounded,
-                            title: 'Ubah Kata Sandi'.tr,
-                            subtitle: _lastPasswordChanged,
-                            route: '/new-password',
-                            onTap: _navigateToNewPassword,
+                      _buildGroup('AKUN & KEAMANAN'.tr, [
+                        _SettingTile(
+                          icon: Icons.lock_outline_rounded,
+                          title: 'Ubah Kata Sandi'.tr,
+                          subtitle: _lastPasswordChanged,
+                          route: '/new-password',
+                          onTap: _navigateToNewPassword,
+                        ),
+                        _SettingTile(
+                          icon: Icons.verified_user_outlined,
+                          title: 'Autentikasi 2 Langkah (2FA)'.tr,
+                          subtitle: _settings.twoFactorEnabled
+                              ? '${'Aktif via Email'.tr} ($_maskedEmail)'
+                              : 'Tingkatkan keamanan akun via Email OTP'.tr,
+                          onTap: _toggleTwoFactor,
+                          trailing: Switch(
+                            value: _settings.twoFactorEnabled,
+                            activeThumbColor: AppColors.black,
+                            onChanged: (_) => _toggleTwoFactor(),
                           ),
-                          _SettingTile(
-                            icon: Icons.verified_user_outlined,
-                            title: 'Autentikasi 2 Langkah (2FA)'.tr,
-                            subtitle: _settings.twoFactorEnabled
-                                ? '${'Aktif via Email'.tr} ($_maskedEmail)'
-                                : 'Tingkatkan keamanan akun via Email OTP'.tr,
-                            onTap: _toggleTwoFactor,
-                            trailing: Switch(
-                              value: _settings.twoFactorEnabled,
-                              activeThumbColor: AppColors.black,
-                              onChanged: (_) => _toggleTwoFactor(),
-                            ),
-                          ),
-                          _SettingTile(
-                            icon: Icons.devices_outlined,
-                            title: 'Perangkat Terhubung'.tr,
-                            subtitle: _settings.hasOtherDevices
-                                ? '${_settings.otherDevices.length + 1} '
+                        ),
+                        _SettingTile(
+                          icon: Icons.devices_outlined,
+                          title: 'Perangkat Terhubung'.tr,
+                          subtitle: _settings.hasOtherDevices
+                              ? '${_settings.otherDevices.length + 1} '
                                     '${'perangkat aktif saat ini'.tr}'
-                                : '1 perangkat aktif saat ini'.tr,
-                            onTap: _openConnectedDevicesModal,
-                          ),
-                          _SettingTile(
-                            icon: Icons.delete_outline_rounded,
-                            title: 'Hapus Akun'.tr,
-                            subtitle: 'Nonaktifkan akun secara permanen'.tr,
-                            destructive: true,
-                            route: '/hapus-akun',
-                          ),
-                        ],
-                      ),
-                  SizedBox(height: 18),
+                              : '1 perangkat aktif saat ini'.tr,
+                          onTap: _openConnectedDevicesModal,
+                        ),
+                        _SettingTile(
+                          icon: Icons.delete_outline_rounded,
+                          title: 'Hapus Akun'.tr,
+                          subtitle: 'Nonaktifkan akun secara permanen'.tr,
+                          destructive: true,
+                          route: '/hapus-akun',
+                        ),
+                      ]),
+                      SizedBox(height: 18),
 
-                  // 2. NOTIFIKASI
-                  _buildGroup(
-                    'NOTIFIKASI'.tr,
-                    [
-                      _SettingTile(
-                        icon: Icons.local_shipping_outlined,
-                        title: 'Status Pesanan & Pengiriman'.tr,
-                        subtitle: 'Notifikasi status pesanan dan pengiriman'.tr,
-                        onTap: () {
-                          setState(
-                            () => _orderNotification = !_orderNotification,
-                          );
-                          _showFeedback(
-                            _orderNotification
-                                ? 'Notifikasi pesanan & pengiriman diaktifkan.'
-                                : 'Notifikasi pesanan & pengiriman dinonaktifkan.',
-                          );
-                        },
-                        trailing: Switch(
-                          value: _orderNotification,
-                          activeThumbColor: AppColors.black,
-                          onChanged: (v) {
-                            setState(() => _orderNotification = v);
+                      // 2. NOTIFIKASI
+                      _buildGroup('NOTIFIKASI'.tr, [
+                        _SettingTile(
+                          icon: Icons.local_shipping_outlined,
+                          title: 'Status Pesanan & Pengiriman'.tr,
+                          subtitle:
+                              'Notifikasi status pesanan dan pengiriman'.tr,
+                          onTap: () {
+                            final next = !_settings.orderNotification;
+                            _settings.setOrderNotification(next);
+                            setState(() {});
                             _showFeedback(
-                              v
+                              next
                                   ? 'Notifikasi pesanan & pengiriman diaktifkan.'
                                   : 'Notifikasi pesanan & pengiriman dinonaktifkan.',
                             );
                           },
+                          trailing: Switch(
+                            value: _settings.orderNotification,
+                            activeThumbColor: AppColors.black,
+                            onChanged: (v) {
+                              _settings.setOrderNotification(v);
+                              setState(() {});
+                              _showFeedback(
+                                v
+                                    ? 'Notifikasi pesanan & pengiriman diaktifkan.'
+                                    : 'Notifikasi pesanan & pengiriman dinonaktifkan.',
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                      _SettingTile(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        title: 'Notifikasi via WhatsApp'.tr,
-                        subtitle: 'Terima update pesanan melalui WhatsApp'.tr,
-                        onTap: () {
-                          setState(
-                            () =>
-                                _whatsAppNotification = !_whatsAppNotification,
-                          );
-                          _showFeedback(
-                            _whatsAppNotification
-                                ? 'Notifikasi via WhatsApp diaktifkan.'
-                                : 'Notifikasi via WhatsApp dinonaktifkan.',
-                          );
-                        },
-                        trailing: Switch(
-                          value: _whatsAppNotification,
-                          activeThumbColor: AppColors.black,
-                          onChanged: (v) {
-                            setState(() => _whatsAppNotification = v);
+                        _SettingTile(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          title: 'Notifikasi via WhatsApp'.tr,
+                          subtitle: 'Terima update pesanan melalui WhatsApp'.tr,
+                          onTap: () {
+                            final next = !_settings.whatsAppNotification;
+                            _settings.setWhatsAppNotification(next);
+                            setState(() {});
                             _showFeedback(
-                              v
+                              next
                                   ? 'Notifikasi via WhatsApp diaktifkan.'
                                   : 'Notifikasi via WhatsApp dinonaktifkan.',
                             );
                           },
+                          trailing: Switch(
+                            value: _settings.whatsAppNotification,
+                            activeThumbColor: AppColors.black,
+                            onChanged: (v) {
+                              _settings.setWhatsAppNotification(v);
+                              setState(() {});
+                              _showFeedback(
+                                v
+                                    ? 'Notifikasi via WhatsApp diaktifkan.'
+                                    : 'Notifikasi via WhatsApp dinonaktifkan.',
+                              );
+                            },
+                          ),
+                        ),
+                      ]),
+                      SizedBox(height: 18),
+
+                      // 3. PREFERENSI APLIKASI
+                      _buildGroup('PREFERENSI APLIKASI'.tr, [
+                        _SettingTile(
+                          icon: Icons.language_outlined,
+                          title: 'Bahasa Aplikasi'.tr,
+                          subtitle: _selectedLanguage,
+                          trailingPill: _selectedLanguageCode,
+                          onTap: _openLanguageModal,
+                        ),
+                        _SettingTile(
+                          icon: _currentThemeIcon,
+                          title: 'Tema Tampilan'.tr,
+                          subtitle: _selectedTheme,
+                          onTap: _openThemeModal,
+                        ),
+                        _SettingTile(
+                          icon: Icons.cleaning_services_outlined,
+                          title: 'Bersihkan Cache'.tr,
+                          subtitle: _cacheSize,
+                          trailingPillAction: _isCacheCleaned
+                              ? 'Bersih'.tr
+                              : 'Bersihkan'.tr,
+                          onPillAction: _clearCache,
+                          onTap: _clearCache,
+                        ),
+                      ]),
+                      SizedBox(height: 18),
+
+                      // 4. PRIVASI & LEGALITAS
+                      _buildGroup('PRIVASI & LEGALITAS'.tr, [
+                        _SettingTile(
+                          icon: Icons.privacy_tip_outlined,
+                          title: 'Kebijakan Privasi'.tr,
+                          onTap: _openPrivacyPolicyModal,
+                        ),
+                        _SettingTile(
+                          icon: Icons.description_outlined,
+                          title: 'Syarat & Ketentuan Penggunaan'.tr,
+                          onTap: _openTermsModal,
+                        ),
+                        _SettingTile(
+                          icon: Icons.gavel_outlined,
+                          svgPath: AppAssets.iconGaransi,
+                          title: 'Kebijakan Garansi Barang Pecah Belah'.tr,
+                          onTap: _openWarrantyModal,
+                        ),
+                      ]),
+                      SizedBox(height: 24),
+
+                      // 5. Keluar dari Akun
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: OutlinedButton.icon(
+                          onPressed: _confirmLogout,
+                          icon: Icon(
+                            Icons.logout_rounded,
+                            size: 20,
+                            color: AppColors.danger,
+                          ),
+                          label: Text(
+                            'Keluar dari Akun'.tr,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.danger,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: AppColors.danger,
+                              width: 1.5,
+                            ),
+                            shape: StadiumBorder(),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            backgroundColor: AppColors.surface,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          AppInfoService.instance.versionLabel,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Center(
+                        child: Text(
+                          'Sentra Keramik Dinoyo Malang • Jawa Timur'.tr,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 18),
-
-                  // 3. PREFERENSI APLIKASI
-                  _buildGroup(
-                    'PREFERENSI APLIKASI'.tr,
-                    [
-                      _SettingTile(
-                        icon: Icons.language_outlined,
-                        title: 'Bahasa Aplikasi'.tr,
-                        subtitle: _selectedLanguage,
-                        trailingPill: _selectedLanguageCode,
-                        onTap: _openLanguageModal,
-                      ),
-                      _SettingTile(
-                        icon: _currentThemeIcon,
-                        title: 'Tema Tampilan'.tr,
-                        subtitle: _selectedTheme,
-                        onTap: _openThemeModal,
-                      ),
-                      _SettingTile(
-                        icon: Icons.cleaning_services_outlined,
-                        title: 'Bersihkan Cache'.tr,
-                        subtitle: _cacheSize,
-                        trailingPillAction: _isCacheCleaned
-                            ? 'Bersih'.tr
-                            : 'Bersihkan'.tr,
-                        onPillAction: _clearCache,
-                        onTap: _clearCache,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 18),
-
-                  // 4. PRIVASI & LEGALITAS
-                  _buildGroup(
-                    'PRIVASI & LEGALITAS'.tr,
-                    [
-                      _SettingTile(
-                        icon: Icons.privacy_tip_outlined,
-                        title: 'Kebijakan Privasi'.tr,
-                        onTap: _openPrivacyPolicyModal,
-                      ),
-                      _SettingTile(
-                        icon: Icons.description_outlined,
-                        title: 'Syarat & Ketentuan Penggunaan'.tr,
-                        onTap: _openTermsModal,
-                      ),
-                      _SettingTile(
-                        icon: Icons.gavel_outlined,
-                        svgPath: AppAssets.iconGaransi,
-                        title: 'Kebijakan Garansi Barang Pecah Belah'.tr,
-                        onTap: _openWarrantyModal,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 24),
-
-                  // 5. Keluar dari Akun
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: OutlinedButton.icon(
-                      onPressed: _confirmLogout,
-                      icon: Icon(
-                        Icons.logout_rounded,
-                        size: 20,
-                        color: AppColors.danger,
-                      ),
-                      label: Text(
-                        'Keluar dari Akun'.tr,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.danger,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: AppColors.danger,
-                          width: 1.5,
-                        ),
-                        shape: StadiumBorder(),
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        backgroundColor: AppColors.surface,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Center(
-                    child: Text(
-                      AppInfoService.instance.versionLabel,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 3),
-                  Center(
-                    child: Text(
-                      'Sentra Keramik Dinoyo Malang • Jawa Timur'.tr,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        );
       },
     );
   }
@@ -1943,11 +2066,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             children: [
               for (var i = 0; i < tiles.length; i++) ...[
                 if (i > 0)
-                  Divider(
-                    height: 1,
-                    indent: 60,
-                    color: AppColors.divider,
-                  ),
+                  Divider(height: 1, indent: 60, color: AppColors.divider),
                 tiles[i],
               ],
             ],
@@ -2100,11 +2219,7 @@ class _SettingTile extends StatelessWidget {
                 ),
               )
             else
-              Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: AppColors.textMuted,
-              ),
+              Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
           ],
         ),
       ),

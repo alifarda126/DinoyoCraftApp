@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,12 +11,13 @@ import '../../core/network/api_client.dart';
 import '../../core/assets.dart';
 import '../../core/services/auth_session.dart';
 import '../../core/services/fcm_service.dart';
+import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/top_toast.dart';
 
-/// Halaman Verifikasi OTP — disesuaikan dengan desain Verifikasi_Daftar_Akun.png
-/// dan mendukung verifikasi kode OTP untuk registrasi, login, lupa sandi,
-/// serta aktivasi dan penonaktifan Autentikasi 2 Langkah (2FA).
+/// Halaman Verifikasi OTP — terintegrasi penuh ke Backend SMTP untuk:
+/// registrasi pelanggan, login 2FA, lupa kata sandi, serta aktivasi/penonaktifan 2FA.
 class OtpScreen extends StatefulWidget {
   const OtpScreen({
     super.key,
@@ -45,67 +45,18 @@ class _OtpScreenState extends State<OtpScreen> {
 
   Timer? _timer;
   int _seconds = _resendDelay;
-  late String _expectedOtp;
   bool _isLoading = false;
 
-  bool get _isEnable2fa => widget.from == 'enable_2fa';
-  bool get _isDisable2fa => widget.from == 'disable_2fa';
+  bool get _isEnable2fa =>
+      widget.from == 'enable_2fa' || widget.from == '2fa-setup';
+  bool get _isDisable2fa =>
+      widget.from == 'disable_2fa' || widget.from == '2fa-disable';
   bool get _is2fa => _isEnable2fa || _isDisable2fa;
 
   @override
   void initState() {
     super.initState();
-    _expectedOtp = (widget.expectedCode != null &&
-            widget.expectedCode!.trim().isNotEmpty)
-        ? widget.expectedCode!.trim()
-        : _generateOtp();
     _startTimer();
-
-    if (_is2fa) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _showSimulationOtpSnackBar();
-      });
-    }
-  }
-
-  String _generateOtp() {
-    final rnd = Random();
-    return (100000 + rnd.nextInt(900000)).toString();
-  }
-
-  void _showSimulationOtpSnackBar() {
-    final action = _isEnable2fa ? 'aktivasi' : 'penonaktifan';
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.black,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 4),
-        content: Row(
-          children: [
-            const Icon(
-              Icons.mark_email_read_outlined,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Kode OTP $action 2FA Anda: $_expectedOtp',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -123,7 +74,7 @@ class _OtpScreenState extends State<OtpScreen> {
   void _startTimer() {
     _timer?.cancel();
     setState(() => _seconds = _resendDelay);
-    _timer = Timer.periodic(Duration(seconds: 1), (t) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
       if (_seconds <= 1) {
         t.cancel();
@@ -140,84 +91,143 @@ class _OtpScreenState extends State<OtpScreen> {
     return '$m:$s';
   }
 
+  String get _resolvedTargetEmail {
+    final candidates = [
+      widget.email,
+      AuthSession.user?['email']?.toString(),
+      AppSettings.instance.lastAuthEmail,
+      widget.registrationData?['email']?.toString(),
+    ];
+    for (final c in candidates) {
+      final clean = c?.trim() ?? '';
+      if (clean.isNotEmpty && clean.contains('@')) return clean;
+    }
+    return '';
+  }
+
   String get _maskedEmail {
-    final raw = (widget.email?.trim().isNotEmpty ?? false)
-        ? widget.email!.trim()
-        : AppSettings.instance.lastAuthEmail?.trim();
-    if (raw == null || raw.isEmpty || !raw.contains('@')) {
-      return 'm●●●●●@email.com';
+    final raw = _resolvedTargetEmail;
+    if (raw.isEmpty || !raw.contains('@')) {
+      return 'email terdaftar Anda'.tr;
     }
     final e = raw.toLowerCase();
     final parts = e.split('@');
     final name = parts.first;
     final domain = parts.sublist(1).join('@');
-    final first = name.isEmpty ? 'm' : name[0];
-    return '$first●●●●●@$domain';
+    if (name.length <= 2) {
+      return '${name.isEmpty ? '*' : name[0]}***@$domain';
+    }
+    return '${name.substring(0, 2)}●●●●●@$domain';
   }
 
   bool get _complete => _controllers.every((c) => c.text.trim().isNotEmpty);
 
   Future<void> _continue() async {
     if (!_complete) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lengkapi 6 digit kode verifikasi'.tr)),
-      );
+      AppTopToast.error('Lengkapi 6 digit kode verifikasi'.tr);
       return;
     }
 
     final enteredCode = _controllers.map((c) => c.text.trim()).join();
 
-    if (_isEnable2fa) {
-      if (enteredCode != _expectedOtp && enteredCode != '123456') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: AppColors.danger,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            content: Text(
-              'Kode OTP salah. Silakan coba lagi.',
-              style: GoogleFonts.plusJakartaSans(color: Colors.white),
-            ),
-          ),
-        );
-        return;
-      }
-      AppSettings.instance.setTwoFactor(true);
-      if (context.canPop()) {
-        context.pop(true);
-      } else {
-        context.go('/pengaturan');
-      }
-      return;
-    }
+    if (_is2fa) {
+      setState(() => _isLoading = true);
+      try {
+        final action = _isEnable2fa ? 'enable' : 'disable';
+        final response = await ApiClient.post('/auth/2fa/verify-otp', {
+          'action': action,
+          'otp': enteredCode,
+        });
+        if (response['success'] == true) {
+          final enabled = _isEnable2fa;
+          if (AuthSession.user != null) {
+            await LocalStorage.saveUser({
+              ...AuthSession.user!,
+              'two_factor_enabled': enabled,
+            });
+          }
+          if (!mounted) return;
+          setState(() => _isLoading = false);
 
-    if (_isDisable2fa) {
-      if (enteredCode != _expectedOtp && enteredCode != '123456') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: AppColors.danger,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            content: Text(
-              'Kode OTP salah. Silakan coba lagi.',
-              style: GoogleFonts.plusJakartaSans(color: Colors.white),
-            ),
-          ),
-        );
-        return;
-      }
-      AppSettings.instance.setTwoFactor(false);
-      if (context.canPop()) {
-        context.pop(true);
-      } else {
-        context.go('/pengaturan');
+          final router = GoRouter.of(context);
+          if (router.canPop()) {
+            router.pop(true);
+          } else {
+            router.go('/settings');
+          }
+
+          AppSettings.instance.setTwoFactor(enabled);
+          AppTopToast.success(
+            enabled
+                ? 'Autentikasi 2 Langkah via Email berhasil diaktifkan.'.tr
+                : 'Autentikasi 2 Langkah (2FA) berhasil dinonaktifkan.'.tr,
+          );
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (router.routerDelegate.currentConfiguration.uri.path ==
+                '/verify-otp') {
+              router.go('/settings');
+            }
+          });
+          return;
+        } else {
+          if (mounted) {
+            AppTopToast.error(
+              response['message']?.toString() ?? 'Kode OTP salah.'.tr,
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          AppTopToast.error(msg);
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
       }
       return;
     }
 
     if (widget.from == 'login') {
-      AppSettings.instance.consumeOtpRequirement();
-      context.go('/home');
+      setState(() => _isLoading = true);
+      try {
+        final response = await ApiClient.post('/auth/verify-login-otp', {
+          'email': _resolvedTargetEmail,
+          'otp': enteredCode,
+        });
+        if (response['success'] == true) {
+          final data = response['data'] as Map<String, dynamic>?;
+          final token = data?['token']?.toString() ?? '';
+          if (token.isNotEmpty) {
+            await AuthSession.signIn(
+              token: token,
+              refreshToken: data?['refresh_token']?.toString(),
+              user: data,
+            );
+            unawaited(FcmService.instance.syncTokenWithBackend());
+          }
+          AppSettings.instance.consumeOtpRequirement();
+          if (mounted) {
+            AppTopToast.success(
+              'Verifikasi berhasil! Selamat datang kembali.'.tr,
+            );
+            context.go('/home');
+          }
+        } else {
+          if (mounted) {
+            AppTopToast.error(
+              response['message']?.toString() ?? 'Kode OTP salah'.tr,
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          AppTopToast.error(msg);
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
     } else if (widget.from == 'forgot') {
       setState(() => _isLoading = true);
       try {
@@ -231,6 +241,9 @@ class _OtpScreenState extends State<OtpScreen> {
 
         if (response['success'] == true) {
           if (mounted) {
+            AppTopToast.success(
+              'Kode OTP terverifikasi. Silakan buat kata sandi baru.'.tr,
+            );
             context.go(
               '/new-password',
               extra: {'email': targetEmail, 'otp': enteredCode},
@@ -238,23 +251,15 @@ class _OtpScreenState extends State<OtpScreen> {
           }
         } else {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(response['message']?.toString() ?? 'Kode OTP salah'.tr),
-                backgroundColor: Colors.red,
-              ),
+            AppTopToast.error(
+              response['message']?.toString() ?? 'Kode OTP salah'.tr,
             );
           }
         }
       } catch (e) {
         if (mounted) {
           final msg = e.toString().replaceFirst('Exception: ', '');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal verifikasi OTP: $msg'.tr),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppTopToast.error('Gagal verifikasi OTP: $msg'.tr);
         }
       } finally {
         if (mounted) {
@@ -275,12 +280,16 @@ class _OtpScreenState extends State<OtpScreen> {
           if (widget.registrationData != null) ...widget.registrationData!,
         };
 
-        final response = await ApiClient.post('/auth/verify-register-otp', payload);
+        final response = await ApiClient.post(
+          '/auth/verify-register-otp',
+          payload,
+        );
 
         if (response['success'] == true) {
           // Auto-login: simpan token + data user dari backend, langsung ke Home.
           final data = response['data'];
-          if (data is Map<String, dynamic> && (data['token'] ?? '').toString().isNotEmpty) {
+          if (data is Map<String, dynamic> &&
+              (data['token'] ?? '').toString().isNotEmpty) {
             await AuthSession.signIn(
               token: data['token'].toString(),
               refreshToken: data['refresh_token']?.toString(),
@@ -289,36 +298,23 @@ class _OtpScreenState extends State<OtpScreen> {
             unawaited(FcmService.instance.syncTokenWithBackend());
           }
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  response['message']?.toString() ?? 'Pendaftaran berhasil! Selamat datang di DinoyoCraft.'.tr,
-                ),
-                backgroundColor: AppColors.ink,
-                duration: const Duration(seconds: 3),
-              ),
+            AppTopToast.success(
+              response['message']?.toString() ??
+                  'Pendaftaran berhasil! Selamat datang di DinoyoCraft.'.tr,
             );
             context.go('/home');
           }
         } else {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(response['message']?.toString() ?? 'Kode OTP salah'.tr),
-                backgroundColor: Colors.red,
-              ),
+            AppTopToast.error(
+              response['message']?.toString() ?? 'Kode OTP salah'.tr,
             );
           }
         }
       } catch (e) {
         if (mounted) {
           final msg = e.toString().replaceFirst('Exception: ', '');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal verifikasi OTP: $msg'.tr),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppTopToast.error('Gagal verifikasi OTP: $msg'.tr);
         }
       } finally {
         if (mounted) {
@@ -338,13 +334,43 @@ class _OtpScreenState extends State<OtpScreen> {
     }
 
     if (_is2fa) {
-      _expectedOtp = _generateOtp();
-      _showSimulationOtpSnackBar();
+      try {
+        final action = _isEnable2fa ? 'enable' : 'disable';
+        final response = await ApiClient.post('/auth/2fa/request-otp', {
+          'action': action,
+        });
+        if (mounted) {
+          AppTopToast.info(
+            response['message']?.toString() ??
+                'Kode OTP baru telah dikirim ke email terdaftar Anda'.tr,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          AppTopToast.error('Gagal mengirim ulang OTP: $msg'.tr);
+        }
+      }
+    } else if (widget.from == 'login') {
+      try {
+        final response = await ApiClient.post('/auth/resend-login-otp', {
+          'email': _resolvedTargetEmail,
+        });
+        if (mounted) {
+          AppTopToast.info(
+            response['message']?.toString() ??
+                'Kode OTP login baru telah dikirim ke email Anda'.tr,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceFirst('Exception: ', '');
+          AppTopToast.error('Gagal mengirim ulang OTP: $msg'.tr);
+        }
+      }
     } else if (widget.from == 'register') {
       try {
-        final targetEmail = (widget.email?.trim().isNotEmpty ?? false)
-            ? widget.email!.trim()
-            : widget.registrationData?['email']?.toString() ?? '';
+        final targetEmail = _resolvedTargetEmail;
 
         final response = await ApiClient.post('/auth/resend-register-otp', {
           'email': targetEmail,
@@ -352,60 +378,37 @@ class _OtpScreenState extends State<OtpScreen> {
         });
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response['message']?.toString() ?? 'Kode OTP baru telah dikirim ke email kamu'.tr),
-              backgroundColor: AppColors.ink,
-            ),
+          AppTopToast.info(
+            response['message']?.toString() ??
+                'Kode OTP baru telah dikirim ke email kamu'.tr,
           );
         }
       } catch (e) {
         if (mounted) {
           final msg = e.toString().replaceFirst('Exception: ', '');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal mengirim ulang OTP: $msg'.tr),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppTopToast.error('Gagal mengirim ulang OTP: $msg'.tr);
         }
       }
     } else if (widget.from == 'forgot') {
       try {
-        final targetEmail = (widget.email?.trim().isNotEmpty ?? false)
-            ? widget.email!.trim()
-            : AppSettings.instance.lastAuthEmail ?? '';
+        final targetEmail = _resolvedTargetEmail;
 
         final response = await ApiClient.post('/auth/forgot-password', {
           'email': targetEmail,
         });
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                response['message']?.toString() ?? 'Kode OTP baru telah dikirim ke email kamu'.tr,
-              ),
-              backgroundColor: AppColors.ink,
-            ),
+          AppTopToast.info(
+            response['message']?.toString() ??
+                'Kode OTP baru telah dikirim ke email kamu'.tr,
           );
         }
       } catch (e) {
         if (mounted) {
           final msg = e.toString().replaceFirst('Exception: ', '');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal mengirim ulang OTP: $msg'.tr),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppTopToast.error('Gagal mengirim ulang OTP: $msg'.tr);
         }
       }
-    } else {
-      _expectedOtp = _generateOtp();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kode baru telah dikirim'.tr)),
-      );
     }
   }
 
@@ -414,7 +417,7 @@ class _OtpScreenState extends State<OtpScreen> {
       context.pop(false);
     } else {
       if (_is2fa) {
-        context.go('/pengaturan');
+        context.go('/settings');
       } else if (widget.from == 'login') {
         context.go('/login');
       } else if (widget.from == 'forgot') {
@@ -561,12 +564,12 @@ class _OtpScreenState extends State<OtpScreen> {
                   _isEnable2fa
                       ? 'Aktivasi 2FA'
                       : _isDisable2fa
-                          ? 'Nonaktifkan 2FA'
-                          : isLogin
-                              ? 'Verifikasi Keamanan'
-                              : isForgot
-                                  ? 'Verifikasi Lupa Password'
-                                  : 'Verifikasi Akun',
+                      ? 'Nonaktifkan 2FA'
+                      : isLogin
+                      ? 'Verifikasi Keamanan'
+                      : isForgot
+                      ? 'Verifikasi Lupa Password'
+                      : 'Verifikasi Akun',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 22,
@@ -588,8 +591,8 @@ class _OtpScreenState extends State<OtpScreen> {
                         text: _isEnable2fa
                             ? 'Masukkan kode verifikasi 6 digit yang telah kami kirimkan ke email untuk mengaktifkan 2FA:\n'
                             : _isDisable2fa
-                                ? 'Masukkan kode verifikasi 6 digit yang telah kami kirimkan ke email untuk konfirmasi nonaktifkan 2FA:\n'
-                                : 'Masukkan kode verifikasi 6 digit yang telah kami\nkirimkan ke email ',
+                            ? 'Masukkan kode verifikasi 6 digit yang telah kami kirimkan ke email untuk konfirmasi nonaktifkan 2FA:\n'
+                            : 'Masukkan kode verifikasi 6 digit yang telah kami\nkirimkan ke email ',
                       ),
                       WidgetSpan(
                         alignment: PlaceholderAlignment.middle,
@@ -706,8 +709,8 @@ class _OtpScreenState extends State<OtpScreen> {
                               _isEnable2fa
                                   ? 'Verifikasi & Aktifkan'.tr
                                   : _isDisable2fa
-                                      ? 'Konfirmasi Nonaktifkan'.tr
-                                      : 'Konfirmasi'.tr,
+                                  ? 'Konfirmasi Nonaktifkan'.tr
+                                  : 'Konfirmasi'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,

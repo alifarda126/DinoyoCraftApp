@@ -5,11 +5,13 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_settings.dart';
 import '../../core/assets.dart';
 import '../../core/network/api_client.dart';
+import '../../core/services/auth_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_text_field.dart';
+import '../../core/widgets/top_toast.dart';
 
-/// Halaman Buat Kata Sandi Baru
+/// Halaman Buat / Ubah Kata Sandi Baru (mendukung Lupa Sandi via OTP maupun Ubah Sandi dari Pengaturan)
 class NewPasswordScreen extends StatefulWidget {
   const NewPasswordScreen({super.key, this.email, this.otp});
 
@@ -24,6 +26,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   static const String _illustration = AppAssets.iconLupaPassword;
 
   final _formKey = GlobalKey<FormState>();
+  final _currentPassword = TextEditingController();
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
 
@@ -31,6 +34,14 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   bool _hasUpperAndNumber = false;
   bool _isMatch = false;
   bool _isLoading = false;
+
+  bool get _isAuthenticatedChangePassword =>
+      AuthSession.isLoggedIn &&
+      (widget.otp == null || widget.otp!.trim().isEmpty);
+
+  bool get _requiresCurrentPassword =>
+      _isAuthenticatedChangePassword &&
+      (AuthSession.user?['has_password'] != false);
 
   @override
   void initState() {
@@ -43,6 +54,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   void dispose() {
     _password.removeListener(_validateCriteria);
     _confirmPassword.removeListener(_validateCriteria);
+    _currentPassword.dispose();
     _password.dispose();
     _confirmPassword.dispose();
     super.dispose();
@@ -51,10 +63,11 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   void _validateCriteria() {
     final pass = _password.text;
     final confirm = _confirmPassword.text;
-    
+
     setState(() {
       _isMinLength = pass.length >= 8;
-      _hasUpperAndNumber = pass.contains(RegExp(r'[A-Z]')) && pass.contains(RegExp(r'[0-9]'));
+      _hasUpperAndNumber =
+          pass.contains(RegExp(r'[A-Z]')) && pass.contains(RegExp(r'[0-9]'));
       _isMatch = pass.isNotEmpty && pass == confirm;
     });
   }
@@ -63,9 +76,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
   void _back() {
     if (context.canPop()) {
-      context.pop();
+      context.pop(false);
     } else {
-      context.go('/login');
+      context.go(_isAuthenticatedChangePassword ? '/settings' : '/login');
     }
   }
 
@@ -74,6 +87,35 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
       if (_isCriteriaMet) {
         setState(() => _isLoading = true);
         try {
+          if (_isAuthenticatedChangePassword) {
+            final response = await ApiClient.put('/auth/change-password', {
+              if (_requiresCurrentPassword)
+                'currentPassword': _currentPassword.text,
+              'newPassword': _password.text,
+            });
+            if (AuthSession.user != null) {
+              await AuthSession.updateUser({
+                ...AuthSession.user!,
+                'password_changed_at':
+                    response['data']?['password_changed_at'] ??
+                    DateTime.now().toIso8601String(),
+                'has_password': true,
+              }, notify: false);
+            }
+            if (mounted) {
+              if (context.canPop()) {
+                context.pop(true);
+              } else {
+                context.go('/settings');
+              }
+              AppTopToast.success(
+                response['message']?.toString() ??
+                    'Kata sandi berhasil diperbarui!',
+              );
+            }
+            return;
+          }
+
           final targetEmail = (widget.email?.trim().isNotEmpty ?? false)
               ? widget.email!.trim()
               : AppSettings.instance.lastAuthEmail ?? '';
@@ -85,25 +127,16 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
           });
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  response['message']?.toString() ?? 'Kata sandi berhasil diubah. Silakan masuk kembali.',
-                ),
-                backgroundColor: AppColors.ink,
-              ),
+            AppTopToast.success(
+              response['message']?.toString() ??
+                  'Kata sandi berhasil diubah. Silakan masuk kembali.',
             );
             context.go('/login');
           }
         } catch (e) {
           if (mounted) {
             final msg = e.toString().replaceFirst('Exception: ', '');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Gagal mengubah kata sandi: $msg'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            AppTopToast.error('Gagal mengubah kata sandi: $msg');
           }
         } finally {
           if (mounted) {
@@ -111,9 +144,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
           }
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Harap penuhi kriteria kata sandi')),
-        );
+        AppTopToast.error('Harap penuhi kriteria kata sandi');
       }
     }
   }
@@ -196,207 +227,241 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bg,
         appBar: _buildHeader(),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(22, 16, 22, 24),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 40,
-                ),
-                child: IntrinsicHeight(
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // ── Ilustrasi ──
-                        Center(
-                          child: Image.asset(
-                            _illustration,
-                            height: 156,
-                            fit: BoxFit.contain,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(22, 16, 22, 24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 40,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // ── Ilustrasi ──
+                          Center(
+                            child: Image.asset(
+                              _illustration,
+                              height: 156,
+                              fit: BoxFit.contain,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 14),
+                          SizedBox(height: 14),
 
-                        // ── Judul ──
-                        Text(
-                          'Buat Kata Sandi Baru',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
-                            color: AppColors.ink,
+                          // ── Judul ──
+                          Text(
+                            _isAuthenticatedChangePassword
+                                ? 'Ubah Kata Sandi'
+                                : 'Buat Kata Sandi Baru',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                              color: AppColors.ink,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 10),
+                          SizedBox(height: 10),
 
-                        // ── Deskripsi ──
-                        Text(
-                          'Buat kata sandi baru yang kuat dan mudah diingat '
-                          'untuk mengamankan akun DinoyoCraft Anda.',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            height: 1.6,
-                            color: AppColors.textSecondary,
+                          // ── Deskripsi ──
+                          Text(
+                            _requiresCurrentPassword
+                                ? 'Masukkan kata sandi saat ini terlebih dahulu, lalu buat kata sandi baru yang kuat untuk akun Anda.'
+                                : 'Buat kata sandi baru yang kuat dan mudah diingat '
+                                      'untuk mengamankan akun DinoyoCraft Anda.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              height: 1.6,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 24),
+                          SizedBox(height: 24),
 
-                        // ── Field Kata Sandi Baru ──
-                        DcTextField(
-                          label: 'Kata Sandi Baru',
-                          hint: 'Masukkan kata sandi baru',
-                          controller: _password,
-                          leadingIconPath: AppAssets.iconLock,
-                          obscureText: true,
-                          validator: (v) => (v == null || v.isEmpty)
-                              ? 'Kata sandi wajib diisi'
-                              : null,
-                        ),
-                        SizedBox(height: 16),
-                        
-                        // ── Field Konfirmasi Kata Sandi ──
-                        DcTextField(
-                          label: 'Konfirmasi Kata Sandi Baru',
-                          hint: 'Ulangi kata sandi baru',
-                          controller: _confirmPassword,
-                          leadingIconPath: AppAssets.iconLock,
-                          obscureText: true,
-                          validator: (v) => (v == null || v.isEmpty)
-                              ? 'Konfirmasi kata sandi wajib diisi'
-                              : null,
-                        ),
-                        SizedBox(height: 20),
+                          if (_requiresCurrentPassword) ...[
+                            DcTextField(
+                              label: 'Kata Sandi Saat Ini',
+                              hint: 'Masukkan kata sandi saat ini',
+                              controller: _currentPassword,
+                              leadingIconPath: AppAssets.iconLock,
+                              obscureText: true,
+                              validator: (v) => (v == null || v.isEmpty)
+                                  ? 'Kata sandi saat ini wajib diisi'
+                                  : null,
+                            ),
+                            SizedBox(height: 16),
+                          ],
 
-                        // ── Kriteria Kata Sandi ──
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.border),
-                            borderRadius: BorderRadius.circular(12),
-                            color: AppColors.surface,
+                          // ── Field Kata Sandi Baru ──
+                          DcTextField(
+                            label: 'Kata Sandi Baru',
+                            hint: 'Masukkan kata sandi baru',
+                            controller: _password,
+                            leadingIconPath: AppAssets.iconLock,
+                            obscureText: true,
+                            validator: (v) => (v == null || v.isEmpty)
+                                ? 'Kata sandi wajib diisi'
+                                : null,
                           ),
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      'KRITERIA KATA SANDI:',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.ink,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text(
-                                    _isCriteriaMet ? 'Terpenuhi' : 'Belum Terpenuhi',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 12,
-                                      color: _isCriteriaMet ? AppColors.successText : AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 12),
-                              _buildCriterion('Minimal 8 karakter', _isMinLength),
-                              _buildCriterion('Mengandung huruf besar dan angka', _hasUpperAndNumber),
-                              _buildCriterion('Cocok dengan konfirmasi kata sandi', _isMatch),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 24),
+                          SizedBox(height: 16),
 
-                        // ── Tombol Simpan ──
-                        SizedBox(
-                          height: 52,
-                          child: Container(
+                          // ── Field Konfirmasi Kata Sandi ──
+                          DcTextField(
+                            label: 'Konfirmasi Kata Sandi Baru',
+                            hint: 'Ulangi kata sandi baru',
+                            controller: _confirmPassword,
+                            leadingIconPath: AppAssets.iconLock,
+                            obscureText: true,
+                            validator: (v) => (v == null || v.isEmpty)
+                                ? 'Konfirmasi kata sandi wajib diisi'
+                                : null,
+                          ),
+                          SizedBox(height: 20),
+
+                          // ── Kriteria Kata Sandi ──
+                          Container(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(999),
-                              boxShadow: AppColors.darkButtonShadow,
+                              border: Border.all(color: AppColors.border),
+                              borderRadius: BorderRadius.circular(12),
+                              color: AppColors.surface,
                             ),
-                            child: FilledButton(
-                              onPressed: (_isCriteriaMet && !_isLoading) ? _submit : null,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.black,
-                                foregroundColor: AppColors.white,
-                                shape: AppColors.stadiumButtonShape,
-                                elevation: 0,
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : Text(
-                                      'Simpan Kata Sandi Baru',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.white,
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        'KRITERIA KATA SANDI:',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.ink,
+                                        ),
                                       ),
                                     ),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      _isCriteriaMet
+                                          ? 'Terpenuhi'
+                                          : 'Belum Terpenuhi',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12,
+                                        color: _isCriteriaMet
+                                            ? AppColors.successText
+                                            : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 12),
+                                _buildCriterion(
+                                  'Minimal 8 karakter',
+                                  _isMinLength,
+                                ),
+                                _buildCriterion(
+                                  'Mengandung huruf besar dan angka',
+                                  _hasUpperAndNumber,
+                                ),
+                                _buildCriterion(
+                                  'Cocok dengan konfirmasi kata sandi',
+                                  _isMatch,
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        
-                        Spacer(),
-                        SizedBox(height: 32),
+                          SizedBox(height: 24),
 
-                        // ── Butuh Bantuan? ──
-                        Center(
-                          child: Column(
-                            children: [
-                              Text(
-                                'Butuh bantuan lebih lanjut?',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  color: AppColors.textMuted,
-                                ),
+                          // ── Tombol Simpan ──
+                          SizedBox(
+                            height: 52,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(999),
+                                boxShadow: AppColors.darkButtonShadow,
                               ),
-                              SizedBox(height: 4),
-                              GestureDetector(
-                                onTap: () => context.push('/help'),
-                                behavior: HitTestBehavior.opaque,
-                                child: Text(
-                                  'Hubungi kami',
+                              child: FilledButton(
+                                onPressed: (_isCriteriaMet && !_isLoading)
+                                    ? _submit
+                                    : null,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.black,
+                                  foregroundColor: AppColors.white,
+                                  shape: AppColors.stadiumButtonShape,
+                                  elevation: 0,
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : Text(
+                                        'Simpan Kata Sandi Baru',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.white,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+
+                          Spacer(),
+                          SizedBox(height: 32),
+
+                          // ── Butuh Bantuan? ──
+                          Center(
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Butuh bantuan lebih lanjut?',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.ink,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: AppColors.ink,
+                                    color: AppColors.textMuted,
                                   ),
                                 ),
-                              ),
-                            ],
+                                SizedBox(height: 4),
+                                GestureDetector(
+                                  onTap: () => context.push('/help'),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Text(
+                                    'Hubungi kami',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.ink,
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: AppColors.ink,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

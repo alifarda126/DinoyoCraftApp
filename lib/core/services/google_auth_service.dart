@@ -28,7 +28,9 @@ class GoogleAuthService {
   }
 
   /// Menjalankan alur login Google yang kompatibel di Android, iOS, maupun Web
-  static Future<Map<String, dynamic>?> signIn({String role = 'pengunjung'}) async {
+  static Future<Map<String, dynamic>?> signIn({
+    String role = 'pengunjung',
+  }) async {
     await ensureInitialized();
 
     try {
@@ -40,7 +42,8 @@ class GoogleAuthService {
         // 1. Coba Google One-Tap (lightweight) jika browser memiliki sesi Google aktif
         GoogleSignInAccount? account;
         try {
-          account = await GoogleSignIn.instance.attemptLightweightAuthentication();
+          account = await GoogleSignIn.instance
+              .attemptLightweightAuthentication();
         } catch (e) {
           debugPrint('[GoogleAuthService] Web lightweight attempt: $e');
         }
@@ -54,13 +57,9 @@ class GoogleAuthService {
             'id': account.id,
           };
         } else {
-          // 2. Fallback Web Preview: gunakan Google Profile Payload agar pengujian di Chrome tetap berjalan mulus
-          debugPrint('[GoogleAuthService] Web fallback: menggunakan Google User profil untuk web preview.');
-          userInfo = {
-            'email': 'alifarda126@gmail.com',
-            'name': 'Ali Farda (Google User)',
-            'id': 'google_web_117542459585763900953',
-          };
+          throw Exception(
+            'Sesi Google di browser belum aktif. Silakan masuk menggunakan email & kata sandi atau aktifkan login Google di browser Anda.',
+          );
         }
       } else {
         // Pada HP Asli & Emulator Android: gunakan Google Play Services Native
@@ -74,7 +73,9 @@ class GoogleAuthService {
         };
       }
 
-      debugPrint('[GoogleAuthService] Logging in with email: ${userInfo['email']}, idToken present: ${idToken != null}');
+      debugPrint(
+        '[GoogleAuthService] Logging in with email: ${userInfo['email']}, idToken present: ${idToken != null}',
+      );
 
       // Kirim data otentikasi ke backend DinoyoCraft (dengan is_register: false untuk alur Login)
       final payload = <String, dynamic>{
@@ -88,8 +89,14 @@ class GoogleAuthService {
       try {
         final response = await ApiClient.post('/auth/google-login', payload);
 
+        if (response['requires_2fa'] == true ||
+            response['data']?['requires_2fa'] == true) {
+          return response;
+        }
+
         if (response['success'] == true || response['token'] != null) {
-          final token = (response['token'] ?? response['data']?['token']) as String?;
+          final token =
+              (response['token'] ?? response['data']?['token']) as String?;
           if (token != null && token.isNotEmpty) {
             final userMap = response['data'] is Map<String, dynamic>
                 ? response['data'] as Map<String, dynamic>
@@ -104,14 +111,19 @@ class GoogleAuthService {
             // Daftarkan FCM token otomatis ke backend jika tersedia
             final fcmToken = LocalStorage.getFcmToken();
             if (fcmToken != null && fcmToken.isNotEmpty) {
-              ApiClient.post('/user/fcm-token', {'fcm_token': fcmToken}).catchError((_) => <String, dynamic>{});
+              ApiClient.post('/user/fcm-token', {
+                'fcm_token': fcmToken,
+              }).catchError((_) => <String, dynamic>{});
             }
 
             return response;
           }
         }
 
-        throw Exception(response['message'] ?? 'Gagal memproses otentikasi dengan server DinoyoCraft');
+        throw Exception(
+          response['message'] ??
+              'Gagal memproses otentikasi dengan server DinoyoCraft',
+        );
       } on ApiException catch (apiErr) {
         if (apiErr.isNotRegistered) {
           // Akun Google belum terdaftar di backend
@@ -129,7 +141,9 @@ class GoogleAuthService {
     } on GoogleSignInException catch (gse) {
       debugPrint('[GoogleAuthService] Sign-in failed: $gse');
       final str = gse.toString().toLowerCase();
-      if (str.contains('reauth failed') || str.contains('[16]') || str.contains('code 16')) {
+      if (str.contains('reauth failed') ||
+          str.contains('[16]') ||
+          str.contains('code 16')) {
         throw const GoogleAuthReauthFailedException();
       }
       if (gse.code == GoogleSignInExceptionCode.canceled) {
@@ -153,7 +167,8 @@ class GoogleAuthService {
       if (kIsWeb) {
         GoogleSignInAccount? account;
         try {
-          account = await GoogleSignIn.instance.attemptLightweightAuthentication();
+          account = await GoogleSignIn.instance
+              .attemptLightweightAuthentication();
         } catch (e) {
           debugPrint('[GoogleAuthService] Web registration attempt: $e');
         }
@@ -167,11 +182,9 @@ class GoogleAuthService {
             'id': account.id,
           };
         } else {
-          userInfo = {
-            'email': 'alifarda126@gmail.com',
-            'name': 'Ali Farda',
-            'id': 'google_web_117542459585763900953',
-          };
+          throw Exception(
+            'Sesi Google di browser belum aktif. Silakan daftar menggunakan formulir email atau login ke akun Google di browser Anda.',
+          );
         }
       } else {
         final account = await GoogleSignIn.instance.authenticate();
@@ -193,9 +206,13 @@ class GoogleAuthService {
         'avatarUrl': userInfo['picture'],
       };
     } on GoogleSignInException catch (gse) {
-      debugPrint('[GoogleAuthService] getGoogleAccountForRegistration error: $gse');
+      debugPrint(
+        '[GoogleAuthService] getGoogleAccountForRegistration error: $gse',
+      );
       final str = gse.toString().toLowerCase();
-      if (str.contains('reauth failed') || str.contains('[16]') || str.contains('code 16')) {
+      if (str.contains('reauth failed') ||
+          str.contains('[16]') ||
+          str.contains('code 16')) {
         throw const GoogleAuthReauthFailedException();
       }
       if (gse.code == GoogleSignInExceptionCode.canceled) {
@@ -204,7 +221,9 @@ class GoogleAuthService {
       }
       rethrow;
     } catch (e) {
-      debugPrint('[GoogleAuthService] getGoogleAccountForRegistration error: $e');
+      debugPrint(
+        '[GoogleAuthService] getGoogleAccountForRegistration error: $e',
+      );
       rethrow;
     }
   }
@@ -248,8 +267,7 @@ class GoogleAccountNotRegisteredException implements Exception {
 class GoogleAuthReauthFailedException implements Exception {
   final String message;
   const GoogleAuthReauthFailedException([
-    this.message =
-        'Otentikasi Google ditolak. Pastikan email akun Google telah terdaftar di daftar Test Users Google Cloud Console atau cek sesi akun Google di perangkat Anda.',
+    this.message = 'Otentikasi Google ditolak. Pastikan email akun Google telah terdaftar di daftar Test Users Google Cloud Console atau cek sesi akun Google di perangkat Anda.',
   ]);
 
   @override

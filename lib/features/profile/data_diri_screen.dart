@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -11,10 +12,11 @@ import '../../core/network/api_client.dart';
 import '../../core/services/auth_session.dart';
 import '../../core/services/photo_picker_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/dc_cached_image.dart';
 import '../../data/mock_data.dart';
 
 class DataDiriScreen extends StatefulWidget {
-const   DataDiriScreen({super.key});
+  const DataDiriScreen({super.key});
 
   @override
   State<DataDiriScreen> createState() => _DataDiriScreenState();
@@ -23,20 +25,66 @@ const   DataDiriScreen({super.key});
 class _DataDiriScreenState extends State<DataDiriScreen> {
   // Diisi dari akun asli (AuthSession + GET /auth/profile) di initState.
   late final TextEditingController _nameController = TextEditingController();
-  late final TextEditingController _usernameController = TextEditingController();
+  late final TextEditingController _usernameController =
+      TextEditingController();
   late final TextEditingController _emailController = TextEditingController();
   late final TextEditingController _phoneController = TextEditingController();
   late final TextEditingController _birthController = TextEditingController();
 
   bool _isMale = true;
   bool _saving = false;
+  dynamic _accountId;
+  String? _serverAvatarUrl;
+  String? _pendingPhotoPath;
+  String _initialUsername = '';
+  bool _checkingUsername = false;
+  bool? _usernameAvailable;
+  Timer? _usernameTimer;
 
   String? _birthDateIso; // yyyy-MM-dd untuk dikirim ke backend
 
   @override
   void initState() {
     super.initState();
+    _usernameController.addListener(_onUsernameChanged);
     _loadAccountData();
+  }
+
+  void _onUsernameChanged() {
+    final val = _usernameController.text.trim().toLowerCase();
+    _usernameTimer?.cancel();
+    if (val.isEmpty || val == _initialUsername) {
+      if (_usernameAvailable != null || _checkingUsername) {
+        setState(() {
+          _checkingUsername = false;
+          _usernameAvailable = true;
+        });
+      }
+      return;
+    }
+    if (val.length < 3 || !RegExp(r'^[a-z0-9_]+$').hasMatch(val)) {
+      setState(() {
+        _checkingUsername = false;
+        _usernameAvailable = false;
+      });
+      return;
+    }
+    setState(() => _checkingUsername = true);
+    _usernameTimer = Timer(const Duration(milliseconds: 450), () async {
+      try {
+        final res = await ApiClient.get(
+          '/auth/check-username?username=${Uri.encodeComponent(val)}',
+        );
+        if (!mounted) return;
+        setState(() {
+          _checkingUsername = false;
+          _usernameAvailable = res['available'] == true;
+        });
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _checkingUsername = false);
+      }
+    });
   }
 
   /// Isi form dari data akun: cache sesi dulu (instan), lalu segarkan dari
@@ -62,8 +110,13 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
 
   void _applyProfile(Map<String, dynamic> u, {bool fallbackAddress = false}) {
     if (!mounted) return;
+    _accountId = u['id'] ?? u['userId'] ?? _accountId;
+    _serverAvatarUrl = u['avatar_url']?.toString();
     _nameController.text = (u['name'] ?? '').toString();
-    _usernameController.text = (u['username'] ?? '').toString();
+    final uname = (u['username'] ?? '').toString().trim();
+    _initialUsername = uname.toLowerCase();
+    _usernameController.text = uname;
+    _usernameAvailable = true;
     _emailController.text = (u['email'] ?? '').toString();
     _phoneController.text = (u['phone'] ?? '').toString();
     final gender = (u['gender'] ?? '').toString();
@@ -71,18 +124,14 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
 
     final bd = (u['birth_date'] ?? '').toString();
     if (bd.isNotEmpty) {
-      _birthDateIso = bd;
-      final d = DateTime.tryParse(bd);
+      _birthDateIso = bd.length >= 10 ? bd.substring(0, 10) : bd;
+      final d = DateTime.tryParse(_birthDateIso!);
       if (d != null) {
-        _birthController.text =
-            '${d.day} ${_monthName(d.month)} ${d.year}';
+        _birthController.text = '${d.day} ${_monthName(d.month)} ${d.year}';
       }
     }
 
-    if (fallbackAddress &&
-        _phoneController.text.isEmpty &&
-        _usernameController.text.isEmpty) {
-      // Telepon dari registrasi tersimpan di alamat default.
+    if (fallbackAddress && _phoneController.text.isEmpty) {
       _fillPhoneFromAddress();
     }
     if (mounted) setState(() {});
@@ -91,7 +140,9 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
   Future<void> _fillPhoneFromAddress() async {
     try {
       final res = await ApiClient.get('/addresses');
-      final list = (res['data'] as List?)?.whereType<Map<String, dynamic>>().toList() ?? [];
+      final list =
+          (res['data'] as List?)?.whereType<Map<String, dynamic>>().toList() ??
+          [];
       if (list.isEmpty) return;
       final def = list.firstWhere(
         (a) => a['is_default'] == 1 || a['is_default'] == true,
@@ -105,28 +156,82 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
   }
 
   static String _monthName(int m) => const [
-        'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-        'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-      ][m - 1];
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ][m - 1];
 
-  /// Simpan ke backend (PUT /auth/profile) lalu perbarui sesi lokal.
+  /// Simpan ke backend (PUT /auth/profile, termasuk multipart avatar jika foto diubah) lalu perbarui sesi lokal.
   Future<void> _saveProfile() async {
     if (_saving) return;
+    final cleanUsername = _usernameController.text.trim().toLowerCase();
+    if (cleanUsername.isNotEmpty &&
+        cleanUsername != _initialUsername &&
+        _usernameAvailable == false) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.redAccent,
+          content: Text(
+            'Username tidak tersedia atau format tidak valid.'.tr,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() => _saving = true);
     try {
-      final res = await ApiClient.put('/auth/profile', {
-        if (_nameController.text.trim().isNotEmpty)
-          'ownerName': _nameController.text.trim(),
-        if (_phoneController.text.trim().isNotEmpty)
-          'phone': _phoneController.text.trim(),
-        if (_birthDateIso != null) 'birthDate': _birthDateIso,
-        'gender': _isMale ? 'L' : 'P',
-      });
+      final Map<String, dynamic> res;
+      if (_pendingPhotoPath != null && _pendingPhotoPath!.isNotEmpty) {
+        res = await ApiClient.putMultipart(
+          '/auth/profile',
+          fileField: 'avatar',
+          filePath: _pendingPhotoPath,
+          fields: {
+            if (_nameController.text.trim().isNotEmpty)
+              'ownerName': _nameController.text.trim(),
+            if (cleanUsername.isNotEmpty) 'username': cleanUsername,
+            if (_phoneController.text.trim().isNotEmpty)
+              'phone': _phoneController.text.trim(),
+            'birthDate': ?_birthDateIso,
+            'gender': _isMale ? 'L' : 'P',
+          },
+        );
+      } else {
+        res = await ApiClient.put('/auth/profile', {
+          if (_nameController.text.trim().isNotEmpty)
+            'ownerName': _nameController.text.trim(),
+          if (cleanUsername.isNotEmpty) 'username': cleanUsername,
+          if (_phoneController.text.trim().isNotEmpty)
+            'phone': _phoneController.text.trim(),
+          if (_birthDateIso != null) 'birthDate': _birthDateIso,
+          'gender': _isMale ? 'L' : 'P',
+        });
+      }
       if (!mounted) return;
       if (res['success'] == true) {
         final data = res['data'];
         if (data is Map<String, dynamic>) {
           await AuthSession.updateUser({...?AuthSession.user, ...data});
+          if (data['avatar_url'] != null &&
+              data['avatar_url'].toString().isNotEmpty) {
+            MockData.userProfilePhotoPath = null;
+            MockData.userProfilePhotoBytes = null;
+          }
         }
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -136,7 +241,9 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             content: Text(
               'Perubahan data diri disimpan.'.tr,
               style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13, color: Colors.white),
+                fontSize: 13,
+                color: Colors.white,
+              ),
             ),
           ),
         );
@@ -154,7 +261,9 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
           content: Text(
             'Gagal menyimpan: $msg'.tr,
             style: GoogleFonts.plusJakartaSans(
-                fontSize: 13, color: Colors.white),
+              fontSize: 13,
+              color: Colors.white,
+            ),
           ),
         ),
       );
@@ -167,6 +276,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
 
   @override
   void dispose() {
+    _usernameTimer?.cancel();
     _emailFocus.dispose();
     _phoneFocus.dispose();
     for (final c in [
@@ -211,17 +321,28 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                   const SizedBox(height: 14),
                   _buildLabelRow(
                     'Username'.tr,
-                    badge: 'Tersedia'.tr,
+                    badge: _checkingUsername
+                        ? 'Mengecek...'.tr
+                        : (_usernameAvailable == false
+                              ? 'Tidak Tersedia'.tr
+                              : 'Tersedia'.tr),
                   ),
                   _buildField(
                     controller: _usernameController,
                     icon: Icons.alternate_email_rounded,
                     prefixText: '@',
-                    readOnly: true,
                   ),
                   const SizedBox(height: 6),
-                  _buildHelper(
-                    'Username profil dinoyocraft.id/@customer. Ubah 30 hari sekali.'.tr,
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _usernameController,
+                    builder: (context, val, _) {
+                      final handle = val.text.trim().isEmpty
+                          ? 'pengguna'
+                          : val.text.trim().toLowerCase();
+                      return _buildHelper(
+                        'Username profil dinoyocraft.id/@$handle'.tr,
+                      );
+                    },
                   ),
                   const SizedBox(height: 14),
                   _buildLabelRow('Alamat Email'.tr),
@@ -287,6 +408,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
     final bytes = await file.readAsBytes();
     if (!mounted) return;
     setState(() {
+      _pendingPhotoPath = file.path;
       MockData.userProfilePhotoPath = file.path;
       MockData.userProfilePhotoBytes = bytes;
     });
@@ -295,7 +417,8 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.black,
         content: Text(
-          'Foto profil berhasil diperbarui.'.tr,
+          'Foto profil dipilih. Tekan Simpan Perubahan untuk mengunggah ke akun.'
+              .tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 13,
             color: AppColors.white,
@@ -395,7 +518,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               ),
               SizedBox(height: 4),
               Text(
-                'Kelola informasi akun dan profil pengrajin Anda'.tr,
+                'Kelola informasi akun dan profil pelanggan Anda'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   color: AppColors.textSecondary,
@@ -412,7 +535,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             border: Border.all(color: AppColors.borderAlt),
           ),
           child: Text(
-            'ID #8821',
+            'ID ${AuthSession.formatCustomerId(_accountId)}',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -443,15 +566,22 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
         errorBuilder: (_, _, _) => _avatarPlaceholder(),
       );
     }
+    final remoteAvatar =
+        _serverAvatarUrl ?? AuthSession.user?['avatar_url']?.toString();
+    if (remoteAvatar != null && remoteAvatar.trim().isNotEmpty) {
+      return DcCachedImage(
+        imageUrl: ApiClient.resolveImageUrl(remoteAvatar),
+        width: 96,
+        height: 96,
+        fit: BoxFit.cover,
+        errorWidget: _avatarPlaceholder(),
+      );
+    }
     return _avatarPlaceholder();
   }
 
   Widget _avatarPlaceholder() {
-    return Icon(
-      Icons.person_outline_rounded,
-      size: 44,
-      color: AppColors.ink,
-    );
+    return Icon(Icons.person_outline_rounded, size: 44, color: AppColors.ink);
   }
 
   Widget _buildAvatarSection() {
@@ -527,11 +657,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
     );
   }
 
-  Widget _buildLabelRow(
-    String label, {
-    String? hint,
-    String? badge,
-  }) {
+  Widget _buildLabelRow(String label, {String? hint, String? badge}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -598,11 +724,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.check_rounded,
-                  size: 11,
-                  color: AppColors.ink,
-                ),
+                Icon(Icons.check_rounded, size: 11, color: AppColors.ink),
                 const SizedBox(width: 3),
                 Text(
                   'Verif'.tr,
@@ -649,10 +771,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
       readOnly: readOnly,
       onTap: onTap,
       onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-      style: GoogleFonts.plusJakartaSans(
-        fontSize: 14,
-        color: AppColors.ink,
-      ),
+      style: GoogleFonts.plusJakartaSans(fontSize: 14, color: AppColors.ink),
       decoration: InputDecoration(
         prefixIcon: Icon(icon, size: 18, color: AppColors.textSecondary),
         prefixText: prefixText,
@@ -772,10 +891,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
               width: 14,
               height: 14,
               fit: BoxFit.contain,
-              colorFilter: ColorFilter.mode(
-                contentColor,
-                BlendMode.srcIn,
-              ),
+              colorFilter: ColorFilter.mode(contentColor, BlendMode.srcIn),
             ),
             const SizedBox(width: 8),
             // Flexible + ellipsis: tombol gender bisa meluap saat layar
@@ -817,8 +933,9 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
           Expanded(
             child: Text(
               'Pastikan data diri sesuai dengan identitas resmi untuk '
-              'kemudahan verifikasi pesanan dan pengiriman keramik di '
-              'Aplikasi DinoyoCraft.'.tr,
+                      'kemudahan verifikasi pesanan dan pengiriman keramik di '
+                      'Aplikasi DinoyoCraft.'
+                  .tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12,
                 height: 1.5,
