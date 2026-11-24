@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/app_settings.dart';
 import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/network/api_client.dart';
@@ -19,6 +20,8 @@ import '../../core/widgets/image_preview_dialog.dart';
 import '../../core/widgets/sticker_picker_sheet.dart';
 import '../../data/mock_data.dart';
 import '../product/presentation/modal_pilih_variasi.dart';
+import '../profile/tracking_sheet.dart';
+import 'models/chat_context_preview.dart';
 
 class ChatRoomScreen extends StatefulWidget {
   const ChatRoomScreen({
@@ -26,11 +29,17 @@ class ChatRoomScreen extends StatefulWidget {
     this.storeName = 'Dinoyo Ceramic Studio',
     this.productId,
     this.targetUserId,
+    this.initialOrderPreview,
+    this.isCustomerService = false,
+    this.initialDirectConnect = false,
   });
 
   final String storeName;
   final String? productId;
   final String? targetUserId;
+  final OrderChatPreview? initialOrderPreview;
+  final bool isCustomerService;
+  final bool initialDirectConnect;
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -48,6 +57,7 @@ class _ChatMessage {
     this.isFileImage = false,
     this.isSticker = false,
     this.product,
+    this.orderPreview,
     this.senderType = _SenderType.store,
   });
 
@@ -62,6 +72,7 @@ class _ChatMessage {
   final bool isFileImage;
   final bool isSticker;
   final Product? product;
+  final OrderChatPreview? orderPreview;
   final _SenderType senderType;
 
   _ChatMessage copyWith({
@@ -73,6 +84,7 @@ class _ChatMessage {
     bool? isFileImage,
     bool? isSticker,
     Product? product,
+    OrderChatPreview? orderPreview,
     _SenderType? senderType,
   }) {
     return _ChatMessage(
@@ -84,6 +96,7 @@ class _ChatMessage {
       isFileImage: isFileImage ?? this.isFileImage,
       isSticker: isSticker ?? this.isSticker,
       product: product ?? this.product,
+      orderPreview: orderPreview ?? this.orderPreview,
       senderType: senderType ?? this.senderType,
     );
   }
@@ -95,6 +108,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   Product? _productPreview;
+  OrderChatPreview? _orderPreview;
+  Product? _pendingBotProduct;
+  String? _pendingBotProductTempId;
+  OrderChatPreview? _pendingBotOrder;
+  String? _pendingBotOrderTempId;
   bool _isSellerConnected = false;
   bool _isConnectingSeller = false;
   bool _loadingHistory = false;
@@ -102,6 +120,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isSyncing = false;
   bool _isPartnerOnline = false;
   String? _partnerLastSeen;
+  String? _targetRole;
   String? _resolvedTargetUserId;
   String? _activeChatChannel;
   String? _activeUserChannel;
@@ -114,6 +133,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   late final String _storeChannel =
       'chat.store.${widget.storeName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
 
+  bool get _isCustomerServiceRoom {
+    if (widget.isCustomerService || _targetRole == 'admin') return true;
+    final lower = widget.storeName.trim().toLowerCase();
+    return lower == 'customer service' ||
+        lower == 'cs dinoyocraft' ||
+        lower == 'super admin';
+  }
+
+  String get _displayPartnerName =>
+      _isCustomerServiceRoom ? 'Customer Service'.tr : widget.storeName;
+
+  String get _trackingStoreKey =>
+      _isCustomerServiceRoom ? 'Customer Service' : widget.storeName;
+
   bool get _useBackendChat =>
       AuthSession.isLoggedIn &&
       _resolvedTargetUserId != null &&
@@ -122,9 +155,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   @override
   void initState() {
     super.initState();
-    MockData.activeChatStoreName = widget.storeName;
+    _isSellerConnected = widget.initialDirectConnect;
+    MockData.activeChatStoreName = _trackingStoreKey;
     MockData.activeChatUserId = widget.targetUserId;
-    MockData.markChatAsRead(widget.storeName);
+    MockData.markChatAsRead(_trackingStoreKey);
+    if (widget.storeName != _trackingStoreKey) {
+      MockData.markChatAsRead(widget.storeName);
+    }
     _subscribePusher();
 
     if (AuthSession.isLoggedIn) {
@@ -137,15 +174,40 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       _processIncomingPusherMessage,
     );
 
-    if (widget.productId != null) {
+    _orderPreview = widget.initialOrderPreview;
+
+    if (widget.productId != null && widget.productId!.trim().isNotEmpty) {
       try {
         _productPreview = MockData.products.firstWhere(
           (p) => p.id == widget.productId,
         );
       } catch (_) {
         _productPreview = null;
+        _loadMissingProductPreview(widget.productId!.trim());
       }
     }
+  }
+
+  Future<void> _loadMissingProductPreview(String prodId) async {
+    try {
+      final res = await ApiClient.get('/products/$prodId/public');
+      if (res['success'] == true && res['data'] is Map<String, dynamic>) {
+        final p = Product.fromJson(res['data'] as Map<String, dynamic>);
+        MockData.upsertProduct(p);
+        if (mounted && _productPreview == null) {
+          setState(() => _productPreview = p);
+        }
+      }
+    } catch (_) {}
+  }
+
+  (Product?, OrderChatPreview?) _parseRowMetadata(dynamic rawMeta) {
+    final meta = ChatContextHelper.parseMetadata(rawMeta);
+    if (meta == null) return (null, null);
+    return (
+      ChatContextHelper.productFromMetadata(meta),
+      ChatContextHelper.orderFromMetadata(meta),
+    );
   }
 
   void _processIncomingPusherMessage(PusherChatMessage msg) {
@@ -155,7 +217,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     // Verifikasi pesan ditujukan untuk room obrolan aktif ini:
     // 1) senderId cocok dengan partnerId toko/mitra
     // 2) ATAU channel pesan sama dengan channel bilateral (_activeChatChannel)
-    final matchesTarget = (targetId != null &&
+    final matchesTarget =
+        (targetId != null &&
             targetId.isNotEmpty &&
             msg.senderId.trim() == targetId) ||
         (_activeChatChannel != null && msg.channel == _activeChatChannel);
@@ -164,12 +227,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (msg.id.isNotEmpty && _seenMessageIds.contains(msg.id)) return;
     if (msg.id.isNotEmpty) _seenMessageIds.add(msg.id);
 
-    final isSticker = (msg.imagePath != null &&
+    final isSticker =
+        (msg.imagePath != null &&
             (msg.imagePath!.contains('sticker') ||
                 msg.imagePath!.contains('/stickers/'))) ||
         msg.type == 'sticker';
+    final (metaProd, metaOrder) = _parseRowMetadata(msg.metadata);
 
     setState(() {
+      _isSellerConnected = true;
       _messages.add(
         _ChatMessage(
           id: msg.id,
@@ -178,12 +244,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           text: msg.text,
           imagePath: msg.imagePath,
           isSticker: isSticker,
+          product: metaProd,
+          orderPreview: metaOrder,
           senderType: _SenderType.seller,
         ),
       );
     });
     _scrollToBottom();
-    MockData.markChatAsRead(widget.storeName);
+    MockData.markChatAsRead(_trackingStoreKey);
     if (AuthSession.isLoggedIn && targetId != null && targetId.isNotEmpty) {
       ApiClient.patch('/chat/messages/$targetId/read')
           .then((_) => MockData.refreshUnreadCounts())
@@ -195,6 +263,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     String? targetId = widget.targetUserId?.trim();
     if (targetId != null && (targetId.isEmpty || targetId == 'null')) {
       targetId = null;
+    }
+
+    if (targetId == null && _isCustomerServiceRoom) {
+      try {
+        final csRes = await ApiClient.get('/chat/cs-agent');
+        final csId = csRes['data']?['id']?.toString().trim();
+        if (csId != null && csId.isNotEmpty) {
+          targetId = csId;
+        }
+      } catch (_) {}
     }
 
     if (targetId == null) {
@@ -209,7 +287,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       }
     }
 
-    if (targetId == null && _productPreview != null && _productPreview!.mitraId > 0) {
+    if (targetId == null &&
+        _productPreview?.mitraUserId != null &&
+        _productPreview!.mitraUserId! > 0) {
+      targetId = _productPreview!.mitraUserId.toString();
+    }
+
+    if (targetId == null &&
+        _productPreview != null &&
+        _productPreview!.mitraId > 0) {
       final storeMatch = MockData.stores.cast<Store?>().firstWhere(
         (s) => s?.id == _productPreview!.mitraId,
         orElse: () => null,
@@ -249,11 +335,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         if (mitraRes['success'] == true && mitraRes['data'] is List) {
           final targetLower = widget.storeName.trim().toLowerCase();
           for (final item in (mitraRes['data'] as List).whereType<Map>()) {
-            final sName = (item['store_name'] ?? item['name'] ?? '').toString().trim().toLowerCase();
+            final sName = (item['store_name'] ?? item['name'] ?? '')
+                .toString()
+                .trim()
+                .toLowerCase();
             if (sName == targetLower ||
                 (targetLower.isNotEmpty && sName.contains(targetLower)) ||
                 (sName.isNotEmpty && targetLower.contains(sName))) {
-              targetId = (item['user_id'] ?? item['userId'] ?? item['id'])?.toString();
+              targetId = (item['user_id'] ?? item['userId'] ?? item['id'])
+                  ?.toString();
               break;
             }
           }
@@ -284,10 +374,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           final isMine =
               currentId != null && row['sender_id']?.toString() == currentId;
           final imgUrl = row['image_url']?.toString();
-          final isSticker = (imgUrl != null &&
+          final isSticker =
+              (imgUrl != null &&
                   (imgUrl.contains('sticker') ||
                       imgUrl.contains('/stickers/'))) ||
               row['type'] == 'sticker';
+          final (metaProd, metaOrder) = _parseRowMetadata(row['metadata']);
           loaded.add(
             _ChatMessage(
               id: idStr,
@@ -299,6 +391,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ? imgUrl
                   : null,
               isSticker: isSticker,
+              product: metaProd,
+              orderPreview: metaOrder,
               senderType: isMine ? _SenderType.user : _SenderType.seller,
             ),
           );
@@ -306,29 +400,52 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       }
 
       if (!mounted) return;
-      final isOnline = res['is_online'] == true ||
-          res['target_user']?['is_online'] == true;
-      final lastSeen = res['last_seen_at']?.toString() ??
+      final isOnline =
+          res['is_online'] == true || res['target_user']?['is_online'] == true;
+      final lastSeen =
+          res['last_seen_at']?.toString() ??
           res['target_user']?['last_seen_at']?.toString();
+      final partnerRole = res['target_user']?['role']
+          ?.toString()
+          .trim()
+          .toLowerCase();
 
       setState(() {
-        _isSellerConnected = true;
+        if (partnerRole != null && partnerRole.isNotEmpty) {
+          _targetRole = partnerRole;
+        }
         _isPartnerOnline = isOnline;
         _partnerLastSeen = lastSeen;
         _loadingHistory = false;
         _messages
           ..clear()
           ..addAll(loaded);
+        if (_messages.isEmpty && !_isSellerConnected) {
+          _messages.add(
+            _ChatMessage(
+              isMine: false,
+              time: _nowLabel(),
+              text: _isCustomerServiceRoom
+                  ? 'Halo Kak! Saya Asisten Bot Customer Service DinoyoCraft. Sebelum terhubung ke tim CS, ada yang bisa saya bantu seputar pesanan, pembayaran, akun, atau pengiriman? 😊'
+                        .tr
+                  : 'Halo Kak! Selamat datang di $_displayPartnerName. Saya Asisten Bot Toko siap membantu pertanyaan seputar produk keramik atau pengiriman sebelum terhubung dengan Penjual! 😊'
+                        .tr,
+              senderType: _SenderType.storeBot,
+            ),
+          );
+        }
       });
       _scrollToBottom();
-      MockData.markChatAsRead(widget.storeName);
+      MockData.markChatAsRead(_trackingStoreKey);
+      if (widget.storeName != _trackingStoreKey) {
+        MockData.markChatAsRead(widget.storeName);
+      }
       unawaited(MockData.refreshUnreadCounts());
       _startPolling();
       return;
     } catch (_) {
       if (mounted) {
         setState(() {
-          _isSellerConnected = true;
           _loadingHistory = false;
         });
         _startPolling();
@@ -371,8 +488,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     try {
       final res = await ApiClient.get('/chat/messages/$targetId');
       final rawList = res['data'];
-      final currentId =
-          (res['current_user_id'] ?? AuthSession.user?['id'])?.toString();
+      final currentId = (res['current_user_id'] ?? AuthSession.user?['id'])
+          ?.toString();
       if (rawList is! List) return;
 
       bool hasNewMessage = false;
@@ -390,26 +507,39 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             currentId != null && row['sender_id']?.toString() == currentId;
         final imgUrl = row['image_url']?.toString();
         final rowText = row['message']?.toString() ?? '';
-        final isSticker = (imgUrl != null &&
+        final isSticker =
+            (imgUrl != null &&
                 (imgUrl.contains('sticker') ||
                     imgUrl.contains('/stickers/'))) ||
             row['type'] == 'sticker';
+        final (metaProd, metaOrder) = _parseRowMetadata(row['metadata']);
 
         // Rekonsiliasi pesan optimis lokal (temp_*) agar tidak double bubble
         if (isMine) {
-          final pendingIdx = _messages.indexWhere((m) =>
-              m.id != null &&
-              m.id!.startsWith('temp_') &&
-              ((m.isSticker && isSticker) ||
-                  (!isSticker &&
-                      m.imagePath != null &&
-                      imgUrl != null &&
-                      imgUrl.isNotEmpty &&
-                      imgUrl != 'null' &&
-                      (m.isFileImage ||
-                          m.imagePath == imgUrl ||
-                          m.imagePath!.endsWith(imgUrl.split('/').last))) ||
-                  (m.text.isNotEmpty && m.text == rowText)));
+          final pendingIdx = _messages.indexWhere(
+            (m) =>
+                m.id != null &&
+                m.id!.startsWith('temp_') &&
+                ((m.isSticker && isSticker) ||
+                    (m.product != null &&
+                        metaProd != null &&
+                        m.product!.id == metaProd.id) ||
+                    (m.orderPreview != null &&
+                        metaOrder != null &&
+                        m.orderPreview!.orderId == metaOrder.orderId) ||
+                    (!isSticker &&
+                        m.imagePath != null &&
+                        imgUrl != null &&
+                        imgUrl.isNotEmpty &&
+                        imgUrl != 'null' &&
+                        (m.isFileImage ||
+                            m.imagePath == imgUrl ||
+                            m.imagePath!.endsWith(imgUrl.split('/').last))) ||
+                    (m.text.isNotEmpty &&
+                        m.product == null &&
+                        m.orderPreview == null &&
+                        m.text == rowText)),
+          );
 
           if (pendingIdx != -1) {
             _seenMessageIds.add(idStr);
@@ -419,9 +549,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               imagePath: keepLocalFile
                   ? _messages[pendingIdx].imagePath
                   : ((imgUrl != null && imgUrl.isNotEmpty && imgUrl != 'null')
-                      ? imgUrl
-                      : _messages[pendingIdx].imagePath),
+                        ? imgUrl
+                        : _messages[pendingIdx].imagePath),
               isSticker: isSticker || _messages[pendingIdx].isSticker,
+              product: metaProd ?? _messages[pendingIdx].product,
+              orderPreview: metaOrder ?? _messages[pendingIdx].orderPreview,
             );
             continue;
           }
@@ -435,37 +567,56 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             isMine: isMine,
             time: _formatMessageTime(row['created_at']?.toString() ?? ''),
             text: rowText,
-            imagePath:
-                (imgUrl != null && imgUrl.isNotEmpty && imgUrl != 'null')
+            imagePath: (imgUrl != null && imgUrl.isNotEmpty && imgUrl != 'null')
                 ? imgUrl
                 : null,
             isSticker: isSticker,
+            product: metaProd,
+            orderPreview: metaOrder,
             senderType: isMine ? _SenderType.user : _SenderType.seller,
           ),
         );
       }
 
-      final isOnline = res['is_online'] == true ||
-          res['target_user']?['is_online'] == true;
-      final lastSeen = res['last_seen_at']?.toString() ??
+      final isOnline =
+          res['is_online'] == true || res['target_user']?['is_online'] == true;
+      final lastSeen =
+          res['last_seen_at']?.toString() ??
           res['target_user']?['last_seen_at']?.toString();
+      final partnerRole = res['target_user']?['role']
+          ?.toString()
+          .trim()
+          .toLowerCase();
 
       if (mounted &&
-          (_isPartnerOnline != isOnline || _partnerLastSeen != lastSeen)) {
+          (_isPartnerOnline != isOnline ||
+              _partnerLastSeen != lastSeen ||
+              (_targetRole == null &&
+                  partnerRole != null &&
+                  partnerRole.isNotEmpty))) {
         setState(() {
           _isPartnerOnline = isOnline;
           _partnerLastSeen = lastSeen;
+          if (_targetRole == null &&
+              partnerRole != null &&
+              partnerRole.isNotEmpty) {
+            _targetRole = partnerRole;
+          }
         });
       }
 
       if (hasNewMessage && mounted) {
+        final hasPartnerReply = newMessages.any((m) => !m.isMine);
         setState(() {
-          _isSellerConnected = true;
+          if (hasPartnerReply) {
+            _isSellerConnected = true;
+          }
           _messages.addAll(newMessages);
         });
         _scrollToBottom();
-        MockData.markChatAsRead(widget.storeName);
-        ApiClient.patch('/chat/messages/$targetId/read').catchError((_) => <String, dynamic>{});
+        MockData.markChatAsRead(_trackingStoreKey);
+        ApiClient.patch('/chat/messages/$targetId/read')
+            .catchError((_) => <String, dynamic>{});
         unawaited(MockData.refreshUnreadCounts());
       }
     } catch (_) {
@@ -495,21 +646,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       final timeStr = _formatMessageTime(_partnerLastSeen!);
       return 'Terakhir dilihat $timeStr'.tr;
     }
-    return _isSellerConnected ? 'Offline'.tr : 'Asisten Toko Siaga • Dibalas otomatis'.tr;
+    return _isSellerConnected
+        ? 'Offline'.tr
+        : (_isCustomerServiceRoom
+              ? 'Asisten CS Siaga • Dibalas otomatis'.tr
+              : 'Asisten Toko Siaga • Dibalas otomatis'.tr);
   }
 
   Color _getPartnerStatusColor() {
     if (_isPartnerOnline) return _onlineGreen;
-    if (_isSellerConnected || (_partnerLastSeen != null && _partnerLastSeen!.isNotEmpty)) {
+    if (_isSellerConnected ||
+        (_partnerLastSeen != null && _partnerLastSeen!.isNotEmpty)) {
       return AppColors.textMuted;
     }
     return const Color(0xFF3B82F6);
   }
 
   void _subscribePusher() {
-    final myIdStr = (AuthSession.user?['id'] ?? AuthSession.user?['userId'])?.toString();
+    final myIdStr = (AuthSession.user?['id'] ?? AuthSession.user?['userId'])
+        ?.toString();
     final myId = int.tryParse(myIdStr ?? '');
-    final targetId = int.tryParse(_resolvedTargetUserId ?? widget.targetUserId ?? '');
+    final targetId = int.tryParse(
+      _resolvedTargetUserId ?? widget.targetUserId ?? '',
+    );
 
     // 1. Subscribe ke channel percakapan bilateral: chat-{minId}-{maxId}
     if (myId != null && targetId != null && myId > 0 && targetId > 0) {
@@ -520,7 +679,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           PusherService.instance.unsubscribe(_activeChatChannel!);
         }
         _activeChatChannel = channelName;
-        debugPrint('[ChatRoomScreen] Subscribing ke channel Pusher: $channelName');
+        debugPrint(
+          '[ChatRoomScreen] Subscribing ke channel Pusher: $channelName',
+        );
         PusherService.instance.subscribeToChat(channelName: channelName);
       }
     }
@@ -530,7 +691,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       final userChan = 'user-$myId';
       if (_activeUserChannel != userChan) {
         _activeUserChannel = userChan;
-        debugPrint('[ChatRoomScreen] Subscribing ke channel Pusher pribadi: $userChan');
+        debugPrint(
+          '[ChatRoomScreen] Subscribing ke channel Pusher pribadi: $userChan',
+        );
         PusherService.instance.subscribeToChat(channelName: userChan);
       }
     }
@@ -590,18 +753,39 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void _send([String? customText]) {
     if (_isSending) return;
     final text = customText ?? _inputController.text.trim();
-    if (text.isEmpty && _productPreview == null) return;
+    if (text.isEmpty && _productPreview == null && _orderPreview == null) {
+      return;
+    }
     final sentProduct = _productPreview;
+    final sentOrder = _orderPreview;
 
-    final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
-    _seenMessageIds.add(tempId);
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final tempOrdId = 'temp_ord_$nowMs';
+    final tempProdId = 'temp_prod_${nowMs + 1}';
+    final tempId = 'temp_${nowMs + 2}';
+    if (sentOrder != null) _seenMessageIds.add(tempOrdId);
+    if (sentProduct != null) _seenMessageIds.add(tempProdId);
+    if (text.isNotEmpty) _seenMessageIds.add(tempId);
 
     setState(() {
       _isSending = true;
+      if (sentOrder != null) {
+        _messages.add(
+          _ChatMessage(
+            id: tempOrdId,
+            isMine: true,
+            time: _nowLabel(),
+            text: '',
+            orderPreview: sentOrder,
+            senderType: _SenderType.user,
+          ),
+        );
+        _orderPreview = null;
+      }
       if (sentProduct != null) {
         _messages.add(
           _ChatMessage(
-            id: 'temp_prod_${DateTime.now().millisecondsSinceEpoch}',
+            id: tempProdId,
             isMine: true,
             time: _nowLabel(),
             text: '',
@@ -628,76 +812,230 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     });
     _scrollToBottom();
 
-    if (_useBackendChat && _resolvedTargetUserId != null) {
-      if (text.isNotEmpty) {
-        ApiClient.post('/chat/send/${_resolvedTargetUserId!}', {
-          'message': text,
-        }).then((res) {
-          _applyServerMessageId(tempId, res['data']?['id']?.toString());
-          _syncMessagesSilently();
-        }).catchError((err) {
-          debugPrint('[Chat] Gagal kirim pesan: $err');
-        }).whenComplete(() {
-          if (mounted) setState(() => _isSending = false);
-        });
-      } else if (sentProduct != null) {
-        ApiClient.post('/chat/send/${_resolvedTargetUserId!}', {
-          'message': 'Menanyakan produk: ${sentProduct.name}',
-        }).then((_) {
-          _syncMessagesSilently();
-        }).catchError((err) {
-          debugPrint('[Chat] Gagal kirim pesan produk: $err');
-        }).whenComplete(() {
-          if (mounted) setState(() => _isSending = false);
-        });
-      }
+    if (AuthSession.isLoggedIn && _isSellerConnected) {
+      unawaited(
+        _dispatchBackendMessages(
+          text: text,
+          sentProduct: sentProduct,
+          sentOrder: sentOrder,
+          tempTextId: tempId,
+          tempProdId: tempProdId,
+          tempOrdId: tempOrdId,
+        ),
+      );
       return;
+    }
+
+    if (sentOrder != null) {
+      _pendingBotOrder = sentOrder;
+      _pendingBotOrderTempId = tempOrdId;
+    }
+    if (sentProduct != null) {
+      _pendingBotProduct = sentProduct;
+      _pendingBotProductTempId = tempProdId;
     }
 
     setState(() => _isSending = false);
     if (!_isSellerConnected && !_isConnectingSeller) {
-      _triggerStoreBotResponse(text, sentProduct);
+      unawaited(_triggerStoreBotResponse(text, sentProduct, order: sentOrder));
     } else if (_isSellerConnected) {
       _triggerSellerResponse(text);
     }
   }
 
-  void _triggerStoreBotResponse(
+  Future<void> _dispatchBackendMessages({
+    required String text,
+    required Product? sentProduct,
+    required OrderChatPreview? sentOrder,
+    required String tempTextId,
+    required String tempProdId,
+    required String tempOrdId,
+  }) async {
+    try {
+      if ((_resolvedTargetUserId == null || _resolvedTargetUserId!.isEmpty) &&
+          AuthSession.isLoggedIn) {
+        await _initRealChat();
+      }
+      final targetId = _resolvedTargetUserId;
+      if (targetId == null || targetId.isEmpty) {
+        return;
+      }
+
+      if (sentOrder != null) {
+        final ordRes = await ApiClient.post('/chat/send/$targetId', {
+          'message': '',
+          'metadata': sentOrder.toJson(),
+        });
+        _applyServerMessageId(tempOrdId, ordRes['data']?['id']?.toString());
+      }
+
+      if (sentProduct != null) {
+        final prodRes = await ApiClient.post('/chat/send/$targetId', {
+          'message': '',
+          'metadata': ChatContextHelper.productToMetadata(
+            sentProduct,
+            storeFallback: widget.storeName,
+          ),
+        });
+        _applyServerMessageId(tempProdId, prodRes['data']?['id']?.toString());
+      }
+
+      if (text.isNotEmpty) {
+        final txtRes = await ApiClient.post('/chat/send/$targetId', {
+          'message': text,
+        });
+        _applyServerMessageId(tempTextId, txtRes['data']?['id']?.toString());
+      }
+
+      unawaited(_syncMessagesSilently());
+    } catch (err) {
+      debugPrint('[Chat] Gagal kirim pesan ke backend: $err');
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  Future<void> _triggerStoreBotResponse(
     String text,
     Product? product, {
+    OrderChatPreview? order,
     bool isMedia = false,
     bool isSticker = false,
-  }) {
-    final lower = text.toLowerCase();
+  }) async {
+    final trimmed = text.trim();
+    final lower = trimmed.toLowerCase();
 
-    // Jika customer ingin bicara langsung dengan manusia/penjual
-    if (lower.contains('penjual') ||
-        lower.contains('owner') ||
-        lower.contains('manusia') ||
-        lower.contains('cs') ||
-        lower.contains('admin') ||
-        lower.contains('bicara langsung')) {
+    // Jika customer secara eksplisit meminta terhubung langsung dengan manusia (Penjual / CS)
+    if (!isMedia &&
+        !isSticker &&
+        (lower.contains('chat penjual') ||
+            lower.contains('hubungi penjual') ||
+            lower.contains('chat dengan penjual') ||
+            lower.contains('pemilik toko') ||
+            lower.contains('bicara langsung') ||
+            lower.contains('chat cs') ||
+            lower.contains('hubungi cs') ||
+            lower.contains('cs langsung') ||
+            lower.contains('customer service langsung') ||
+            lower.contains('chat dengan cs') ||
+            lower.contains('chat dengan customer service') ||
+            lower.contains('agen manusia') ||
+            lower.contains('bantuan manusia') ||
+            lower.contains('chat admin') ||
+            lower.contains('bicara dengan admin'))) {
       _connectToSeller();
       return;
     }
 
+    final isCs = _isCustomerServiceRoom;
+
+    // Gunakan backend AI (/api/ai/chat) agar mengikuti konfigurasi Admin dan guardrail DinoyoCraft.
+    if (!isMedia &&
+        !isSticker &&
+        (trimmed.isNotEmpty || product != null || order != null)) {
+      String aiQuery;
+      if (trimmed.isNotEmpty) {
+        if (order != null) {
+          aiQuery =
+              'Terkait pesanan ${order.orderCode} (${order.productName}, status: ${order.sectionLabel}): $trimmed';
+        } else if (product != null) {
+          aiQuery = 'Terkait produk ${product.name}: $trimmed';
+        } else {
+          aiQuery = trimmed;
+        }
+      } else if (order != null) {
+        aiQuery =
+            'Halo, saya ingin menanyakan informasi dan status pesanan ${order.orderCode} (${order.productName}, status: ${order.sectionLabel}).';
+      } else {
+        aiQuery =
+            'Halo, saya ingin menanyakan detail, harga, dan stok produk ${product?.name ?? 'keramik'}.';
+      }
+
+      final historyPayload = _messages
+          .where(
+            (m) =>
+                m.text.trim().isNotEmpty && m.senderType != _SenderType.system,
+          )
+          .toList();
+      final recentHistory = historyPayload
+          .skip(historyPayload.length > 6 ? historyPayload.length - 6 : 0)
+          .map(
+            (m) => {
+              'role': m.isMine ? 'user' : 'assistant',
+              'content': m.text.trim(),
+            },
+          )
+          .toList();
+      final storeUserId = (_resolvedTargetUserId ?? widget.targetUserId)
+          ?.trim();
+      try {
+        final res = await ApiClient.post('/ai/chat', {
+          'message': aiQuery,
+          'role_context': isCs ? 'customer' : 'store_bot',
+          if (!isCs) 'store_name': _displayPartnerName,
+          if (!isCs &&
+              storeUserId != null &&
+              storeUserId.isNotEmpty &&
+              storeUserId != 'null')
+            'store_user_id': storeUserId,
+          if (product != null)
+            'product_name': product.name
+          else if (order != null)
+            'product_name': order.productName,
+          if (recentHistory.isNotEmpty) 'history': recentHistory,
+          'locale': AppSettings.instance.locale == 'en' ? 'en' : 'id',
+        });
+        final aiReply = (res['data']?['reply'] ?? '').toString().trim();
+        if (aiReply.isNotEmpty && mounted && !_isSellerConnected) {
+          setState(() {
+            _messages.add(
+              _ChatMessage(
+                isMine: false,
+                time: _nowLabel(),
+                text: aiReply,
+                senderType: _SenderType.storeBot,
+              ),
+            );
+          });
+          _scrollToBottom();
+          return;
+        }
+      } catch (err) {
+        debugPrint('[StoreBot] Fallback offline aktif: $err');
+      }
+    }
+
     String botReply;
-    if (product != null) {
-      botReply =
-          'Halo Kak! Terima kasih sudah menanyakan ${product.name}. Karya keramik ini ready stock dan langsung dibuat oleh pengrajin sentra Dinoyo. Ingin info varian warna atau estimasi packing? Asisten bot siap membantu, atau klik tombol di bawah untuk berbicara langsung dengan penjual! 😊'
-              .tr;
+    if (order != null) {
+      botReply = isCs
+          ? 'Halo Kak! Informasi pesanan ${order.orderCode} (${order.productName}) sudah saya catat. Silakan sampaikan kendala atau pertanyaanmu, atau klik tombol di bawah untuk langsung terhubung ke Customer Service.'
+                .tr
+          : 'Halo Kak! Informasi pesanan ${order.orderCode} (${order.productName}) sudah saya terima. Asisten Bot siap membantu mengecek info pengiriman/packing, atau tekan Chat Penjual di bawah jika ingin berbicara langsung dengan toko.'
+                .tr;
+    } else if (product != null) {
+      botReply = isCs
+          ? 'Halo Kak! Terima kasih sudah membagikan info ${product.name}. Ada kendala atau pertanyaan terkait produk ini yang bisa saya bantu sebelum terhubung ke Customer Service?'
+                .tr
+          : 'Halo Kak! Terima kasih sudah menanyakan ${product.name}. Karya keramik ini ready stock dan langsung dibuat oleh pengrajin sentra Dinoyo. Ingin info varian warna atau estimasi packing? Asisten bot siap membantu, atau klik tombol di bawah untuk berbicara langsung dengan penjual! 😊'
+                .tr;
     } else if (isMedia) {
-      botReply = 'Foto referensi berhasil kami terima kak! Ada model keramik serupa yang ingin ditanyakan ketersediaannya? Asisten bot siap membantu, atau hubungi penjual langsung jika butuh custom keramik! 📸🏺'
-          .tr;
+      botReply = isCs
+          ? 'Foto lampiran berhasil kami terima kak! Silakan jelaskan kendala atau kebutuhanmu, atau klik Chat dengan Customer Service di bawah untuk bantuan langsung dari tim CS. 📸'
+                .tr
+          : 'Foto referensi berhasil kami terima kak! Ada model keramik serupa yang ingin ditanyakan ketersediaannya? Asisten bot siap membantu, atau hubungi penjual langsung jika butuh custom keramik! 📸🏺'
+                .tr;
     } else if (isSticker) {
       botReply = 'Terima kasih stikernya kak! Ada yang bisa kami bantu mengenai pesanan atau koleksi keramik DinoyoCraft hari ini? 🎨✨'
+          .tr;
+    } else if (isCs) {
+      botReply = 'Halo Kak! Saya Asisten Bot Customer Service DinoyoCraft. Saya siap membantu pertanyaan seputar produk keramik, pesanan (#DNC/ORD), pembayaran Midtrans, pemulihan akun (csdinoyocraft@gmail.com), dan workshop. Jika butuh tim CS langsung, klik tombol di bawah ya!'
           .tr;
     } else if (lower.contains('stok') ||
         lower.contains('ready') ||
         lower.contains('ada') ||
         lower.contains('tersedia')) {
       botReply =
-          'Halo Kak! Produk keramik di ${widget.storeName} sebagian besar ready stock dan siap dikirim. Setiap karya diproduksi langsung dari tanah liat Dinoyo dengan pembakaran suhu tinggi. Butuh detail stok varian tertentu? Hubungi penjual langsung lewat tombol di bawah ya! 👍'
+          'Halo Kak! Produk keramik di $_displayPartnerName sebagian besar ready stock dan siap dikirim. Setiap karya diproduksi langsung dari tanah liat Dinoyo dengan pembakaran suhu tinggi. Butuh detail stok varian tertentu? Hubungi penjual langsung lewat tombol di bawah ya! 👍'
               .tr;
     } else if (lower.contains('kirim') ||
         lower.contains('ongkir') ||
@@ -722,7 +1060,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         lower.contains('desain') ||
         lower.contains('warna')) {
       botReply =
-          '${widget.storeName} melayani pembuatan keramik custom (desain motif, glasir khusus, ukiran nama/logo). Silakan chat langsung dengan penjual untuk berkonsultasi detailnya ya! 🏺'
+          '$_displayPartnerName melayani pembuatan keramik custom (desain motif, glasir khusus, ukiran nama/logo). Silakan chat langsung dengan penjual untuk berkonsultasi detailnya ya! 🏺'
               .tr;
     } else {
       botReply = 'Halo Kak! Pesanmu sudah kami terima. Penjual saat ini sedang di workshop keramik. Saya sebagai Asisten Bot Toko siap membantu menjawab pertanyaan seputar keramik. Jika butuh respons langsung dari pemilik toko, silakan tekan tombol di bawah ya! 🙏'
@@ -746,8 +1084,72 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     });
   }
 
+  Future<void> _forwardPendingBotContextCards() async {
+    final targetId = _resolvedTargetUserId;
+    if (!AuthSession.isLoggedIn || targetId == null || targetId.isEmpty) return;
+
+    final pendingOrd = _pendingBotOrder;
+    final pendingOrdTemp = _pendingBotOrderTempId;
+    final pendingProd = _pendingBotProduct;
+    final pendingProdTemp = _pendingBotProductTempId;
+    _pendingBotOrder = null;
+    _pendingBotOrderTempId = null;
+    _pendingBotProduct = null;
+    _pendingBotProductTempId = null;
+
+    try {
+      if (pendingOrd != null) {
+        final res = await ApiClient.post('/chat/send/$targetId', {
+          'message': '',
+          'metadata': pendingOrd.toJson(),
+        });
+        if (pendingOrdTemp != null) {
+          _applyServerMessageId(pendingOrdTemp, res['data']?['id']?.toString());
+        }
+      }
+      if (pendingProd != null) {
+        final res = await ApiClient.post('/chat/send/$targetId', {
+          'message': '',
+          'metadata': ChatContextHelper.productToMetadata(
+            pendingProd,
+            storeFallback: _displayPartnerName,
+          ),
+        });
+        if (pendingProdTemp != null) {
+          _applyServerMessageId(
+            pendingProdTemp,
+            res['data']?['id']?.toString(),
+          );
+        }
+      }
+    } catch (_) {}
+  }
+
   void _connectToSeller() {
     if (_isSellerConnected || _isConnectingSeller) return;
+    final isCs = _isCustomerServiceRoom;
+
+    if (AuthSession.isLoggedIn) {
+      setState(() {
+        _isConnectingSeller = false;
+        _isSellerConnected = true;
+        _messages.add(
+          _ChatMessage(
+            isMine: false,
+            time: _nowLabel(),
+            text: isCs
+                ? 'Terhubung kembali langsung dengan Customer Service.'.tr
+                : 'Terhubung kembali langsung dengan Penjual.'.tr,
+            senderType: _SenderType.system,
+          ),
+        );
+      });
+      _scrollToBottom();
+      unawaited(
+        _forwardPendingBotContextCards().then((_) => _syncMessagesSilently()),
+      );
+      return;
+    }
 
     setState(() {
       _isConnectingSeller = true;
@@ -755,7 +1157,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         _ChatMessage(
           isMine: false,
           time: _nowLabel(),
-          text: 'Menghubungkan ke Pemilik Toko... Mohon tunggu sebentar ya.'.tr,
+          text: isCs
+              ? 'Menghubungkan ke Customer Service... Mohon tunggu sebentar ya.'
+                    .tr
+              : 'Menghubungkan ke Pemilik Toko... Mohon tunggu sebentar ya.'.tr,
           senderType: _SenderType.system,
         ),
       );
@@ -772,9 +1177,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           _ChatMessage(
             isMine: false,
             time: _nowLabel(),
-            text:
-                'Halo Kak! Saya Mas Dinoyo dari ${widget.storeName}. Maaf tadi masih mengecek pembakaran di workshop. Ada yang bisa saya bantu secara langsung terkait produk atau pesanan Kakak? 😊'
-                    .tr,
+            text: isCs
+                ? 'Halo Kak! Saya tim Customer Service DinoyoCraft. Ada kendala atau pertanyaan yang bisa saya bantu secara langsung? 😊'
+                      .tr
+                : 'Halo Kak! Saya Mas Dinoyo dari $_displayPartnerName. Maaf tadi masih mengecek pembakaran di workshop. Ada yang bisa saya bantu secara langsung terkait produk atau pesanan Kakak? 😊'
+                      .tr,
             senderType: _SenderType.seller,
           ),
         );
@@ -835,18 +1242,23 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     });
     _scrollToBottom();
 
-    if (_useBackendChat && _resolvedTargetUserId != null) {
+    if (_useBackendChat &&
+        _isSellerConnected &&
+        _resolvedTargetUserId != null) {
       ApiClient.post('/chat/send/$_resolvedTargetUserId', {
-        'message': '',
-        'image_url': assetPath,
-      }).then((res) {
-        _applyServerMessageId(tempId, res['data']?['id']?.toString());
-        _syncMessagesSilently();
-      }).catchError((err) {
-        debugPrint('[Chat] Gagal kirim gambar: $err');
-      }).whenComplete(() {
-        if (mounted) setState(() => _isSending = false);
-      });
+            'message': '',
+            'image_url': assetPath,
+          })
+          .then((res) {
+            _applyServerMessageId(tempId, res['data']?['id']?.toString());
+            _syncMessagesSilently();
+          })
+          .catchError((err) {
+            debugPrint('[Chat] Gagal kirim gambar: $err');
+          })
+          .whenComplete(() {
+            if (mounted) setState(() => _isSending = false);
+          });
     } else {
       setState(() => _isSending = false);
       if (!_isSellerConnected && !_isConnectingSeller) {
@@ -877,19 +1289,24 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     });
     _scrollToBottom();
 
-    if (_useBackendChat && _resolvedTargetUserId != null) {
+    if (_useBackendChat &&
+        _isSellerConnected &&
+        _resolvedTargetUserId != null) {
       final stickerFile = sticker.assetPath.split('/').last;
       ApiClient.post('/chat/send/$_resolvedTargetUserId', {
-        'message': '',
-        'image_url': '/uploads/stickers/$stickerFile',
-      }).then((res) {
-        _applyServerMessageId(tempId, res['data']?['id']?.toString());
-        _syncMessagesSilently();
-      }).catchError((err) {
-        debugPrint('[Chat] Gagal kirim stiker: $err');
-      }).whenComplete(() {
-        if (mounted) setState(() => _isSending = false);
-      });
+            'message': '',
+            'image_url': '/uploads/stickers/$stickerFile',
+          })
+          .then((res) {
+            _applyServerMessageId(tempId, res['data']?['id']?.toString());
+            _syncMessagesSilently();
+          })
+          .catchError((err) {
+            debugPrint('[Chat] Gagal kirim stiker: $err');
+          })
+          .whenComplete(() {
+            if (mounted) setState(() => _isSending = false);
+          });
     } else {
       setState(() => _isSending = false);
       if (!_isSellerConnected && !_isConnectingSeller) {
@@ -928,7 +1345,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           await _initRealChat();
         }
 
-        if (_useBackendChat && _resolvedTargetUserId != null) {
+        if (_useBackendChat &&
+            _isSellerConnected &&
+            _resolvedTargetUserId != null) {
           try {
             final res = await ApiClient.postMultipart(
               '/chat/send/$_resolvedTargetUserId',
@@ -972,6 +1391,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   void _openChatMenu() {
     final router = GoRouter.of(context);
+    final isCs = _isCustomerServiceRoom;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surfaceElevated,
@@ -983,24 +1403,41 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(height: 8),
-            ListTile(
-              leading: Icon(Icons.storefront_outlined, size: 22),
-              title: Text(
-                'Lihat Profil Toko'.tr,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.ink,
+            if (isCs)
+              ListTile(
+                leading: const Icon(Icons.help_outline_rounded, size: 22),
+                title: Text(
+                  'Pusat Bantuan'.tr,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                  ),
                 ),
+                onTap: () {
+                  Navigator.of(sheetCtx).pop();
+                  router.push('/help');
+                },
+              )
+            else
+              ListTile(
+                leading: Icon(Icons.storefront_outlined, size: 22),
+                title: Text(
+                  'Lihat Profil Toko'.tr,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(sheetCtx).pop();
+                  final index = MockData.stores.indexWhere(
+                    (s) => widget.storeName.contains(s.name),
+                  );
+                  router.push('/store/${index < 0 ? 0 : index}');
+                },
               ),
-              onTap: () {
-                Navigator.of(sheetCtx).pop();
-                final index = MockData.stores.indexWhere(
-                  (s) => widget.storeName.contains(s.name),
-                );
-                router.push('/store/${index < 0 ? 0 : index}');
-              },
-            ),
             ListTile(
               leading: Icon(Icons.delete_outline_rounded, size: 22),
               title: Text(
@@ -1011,30 +1448,62 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   color: AppColors.ink,
                 ),
               ),
-              onTap: () {
+              onTap: () async {
                 Navigator.of(sheetCtx).pop();
-                setState(() => _messages.clear());
+                setState(() {
+                  _messages.clear();
+                  _seenMessageIds.clear();
+                });
+                if (_useBackendChat && _resolvedTargetUserId != null) {
+                  try {
+                    await ApiClient.delete(
+                      '/chat/messages/$_resolvedTargetUserId',
+                    );
+                  } catch (_) {}
+                }
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      content: Text('Percakapan berhasil dihapus.'.tr),
+                    ),
+                  );
+                }
               },
             ),
-            ListTile(
-              leading: Icon(Icons.flag_outlined, size: 22),
-              title: Text(
-                'Laporkan Percakapan'.tr,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.ink,
-                ),
-              ),
-              onTap: () {
-                Navigator.of(sheetCtx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Terima kasih, laporanmu kami terima.'.tr),
+            if (!isCs)
+              ListTile(
+                leading: Icon(Icons.flag_outlined, size: 22),
+                title: Text(
+                  'Laporkan Percakapan'.tr,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
                   ),
-                );
-              },
-            ),
+                ),
+                onTap: () async {
+                  Navigator.of(sheetCtx).pop();
+                  try {
+                    await ApiClient.post('/moderation/report', {
+                      'type': 'chat',
+                      'target_id': int.tryParse(_resolvedTargetUserId ?? ''),
+                      'target_name': widget.storeName,
+                      'reason': 'Laporan percakapan chat oleh pengguna',
+                    });
+                  } catch (_) {}
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        behavior: SnackBarBehavior.floating,
+                        content: Text(
+                          'Terima kasih, laporanmu kami terima.'.tr,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
           ],
         ),
       ),
@@ -1094,6 +1563,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                             },
                           ),
                   ),
+                  if (_orderPreview != null)
+                    _buildBottomOrderPreview(_orderPreview!),
                   if (_productPreview != null)
                     _buildBottomProductPreview(_productPreview!),
                   _buildAssistantBanner(),
@@ -1108,6 +1579,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Widget _buildAssistantBanner() {
+    final isCs = _isCustomerServiceRoom;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
@@ -1144,8 +1616,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           Expanded(
             child: Text(
               _isSellerConnected
-                  ? 'Terhubung langsung dengan Penjual'.tr
-                  : 'Asisten Bot toko siap menjawab saat toko sibuk'.tr,
+                  ? (isCs
+                        ? 'Terhubung langsung dengan Customer Service'.tr
+                        : 'Terhubung langsung dengan Penjual'.tr)
+                  : (isCs
+                        ? 'Asisten Bot CS siap membantu sebelum ke CS'.tr
+                        : 'Asisten Bot siap membantu sebelum ke Penjual'.tr),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.plusJakartaSans(
@@ -1178,7 +1654,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Chat Penjual'.tr,
+                      isCs ? 'Chat CS'.tr : 'Chat Penjual'.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -1198,8 +1674,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     _ChatMessage(
                       isMine: false,
                       time: _nowLabel(),
-                      text: 'Asisten Bot Toko aktif kembali. Silakan tanyakan seputar produk atau toko! 🤖'
-                          .tr,
+                      text: isCs
+                          ? 'Asisten Bot CS aktif kembali. Silakan tanyakan seputar pesanan, pembayaran, atau akun! 🤖'
+                                .tr
+                          : 'Asisten Bot Toko aktif kembali. Silakan tanyakan seputar produk atau toko! 🤖'
+                                .tr,
                       senderType: _SenderType.storeBot,
                     ),
                   );
@@ -1229,6 +1708,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Widget _buildHeader() {
+    final isCs = _isCustomerServiceRoom;
+    final headerName = _displayPartnerName;
     return SizedBox(
       height: 62,
       child: Row(
@@ -1245,12 +1726,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ),
           Builder(
             builder: (context) {
-              final matchingStore = MockData.stores.cast<Store?>().firstWhere(
-                (s) =>
-                    s?.name.trim().toLowerCase() ==
-                    widget.storeName.trim().toLowerCase(),
-                orElse: () => null,
-              );
+              final matchingStore = isCs
+                  ? null
+                  : MockData.stores.cast<Store?>().firstWhere(
+                      (s) =>
+                          s?.name.trim().toLowerCase() ==
+                          widget.storeName.trim().toLowerCase(),
+                      orElse: () => null,
+                    );
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -1261,7 +1744,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 1.5),
                       gradient:
-                          (matchingStore == null ||
+                          (isCs ||
+                              matchingStore == null ||
                               !matchingStore.hasCustomAvatar)
                           ? const LinearGradient(
                               begin: Alignment.topLeft,
@@ -1271,28 +1755,41 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           : null,
                     ),
                     child: ClipOval(
-                      child:
-                          matchingStore != null && matchingStore.hasCustomAvatar
-                          ? DcCachedImage(
-                              imageUrl:
-                                  matchingStore.avatar ?? matchingStore.image,
-                              fit: BoxFit.cover,
-                            )
-                          : Center(
-                              child: Text(
-                                matchingStore?.initials ??
-                                    (widget.storeName.trim().isNotEmpty
-                                        ? widget.storeName
-                                              .trim()[0]
-                                              .toUpperCase()
-                                        : 'DC'),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
+                      child: isCs
+                          ? Center(
+                              child: SvgPicture.asset(
+                                AppAssets.iconFloatingCS,
+                                width: 19,
+                                height: 19,
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.white,
+                                  BlendMode.srcIn,
                                 ),
                               ),
-                            ),
+                            )
+                          : (matchingStore != null &&
+                                    matchingStore.hasCustomAvatar
+                                ? DcCachedImage(
+                                    imageUrl:
+                                        matchingStore.avatar ??
+                                        matchingStore.image,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Center(
+                                    child: Text(
+                                      matchingStore?.initials ??
+                                          (headerName.trim().isNotEmpty
+                                              ? headerName
+                                                    .trim()[0]
+                                                    .toUpperCase()
+                                              : 'DC'),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  )),
                     ),
                   ),
                   Positioned(
@@ -1319,7 +1816,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.storeName,
+                  headerName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
@@ -1379,13 +1876,494 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           border: Border.all(color: AppColors.borderAlt),
         ),
         child: Text(
-          'Hari ini, 14:10'.tr,
+          'Hari ini'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 11,
             color: AppColors.textSecondary,
           ),
         ),
       ),
+    );
+  }
+
+  (Color fg, Color bg, Color border, IconData icon) _orderStatusPalette(
+    String status,
+  ) {
+    final isDark = AppColors.isDark;
+    return switch (status) {
+      'shipped' => (
+        const Color(0xFF2563EB),
+        isDark
+            ? const Color(0xFF1E3A8A).withValues(alpha: 0.32)
+            : const Color(0xFFEFF6FF),
+        isDark
+            ? const Color(0xFF3B82F6).withValues(alpha: 0.45)
+            : const Color(0xFFBFDBFE),
+        Icons.local_shipping_rounded,
+      ),
+      'completed' => (
+        const Color(0xFF16A34A),
+        isDark
+            ? const Color(0xFF14532D).withValues(alpha: 0.32)
+            : const Color(0xFFF0FDF4),
+        isDark
+            ? const Color(0xFF22C55E).withValues(alpha: 0.45)
+            : const Color(0xFFBBF7D0),
+        Icons.check_circle_rounded,
+      ),
+      'cancelled' => (
+        const Color(0xFFDC2626),
+        isDark
+            ? const Color(0xFF7F1D1D).withValues(alpha: 0.32)
+            : const Color(0xFFFEF2F2),
+        isDark
+            ? const Color(0xFFEF4444).withValues(alpha: 0.45)
+            : const Color(0xFFFECACA),
+        Icons.cancel_rounded,
+      ),
+      'pending' => (
+        const Color(0xFFD97706),
+        isDark
+            ? const Color(0xFF78350F).withValues(alpha: 0.32)
+            : const Color(0xFFFFFBEB),
+        isDark
+            ? const Color(0xFFF59E0B).withValues(alpha: 0.45)
+            : const Color(0xFFFDE68A),
+        Icons.schedule_rounded,
+      ),
+      _ => (
+        const Color(0xFFD97706),
+        isDark
+            ? const Color(0xFF78350F).withValues(alpha: 0.32)
+            : const Color(0xFFFFFBEB),
+        isDark
+            ? const Color(0xFFF59E0B).withValues(alpha: 0.45)
+            : const Color(0xFFFDE68A),
+        Icons.inventory_2_rounded,
+      ),
+    };
+  }
+
+  List<String> _orderQuickQuestions(OrderChatPreview order) {
+    return switch (order.status) {
+      'paid' || 'packed' => [
+        'Kapan pesanan ${order.orderCode} dikirim kak?',
+        'Mohon pastikan packing aman ya kak 🙏',
+      ],
+      'shipped' => [
+        'Apakah paket ${order.orderCode} sudah dijemput kurir?',
+        'Mohon bantu cek posisi pengiriman ya kak',
+      ],
+      'pending' => ['Apakah stok pesanan ${order.orderCode} ready kak?'],
+      _ => ['Halo kak, saya ingin bertanya terkait pesanan ${order.orderCode}'],
+    };
+  }
+
+  Widget _buildBottomOrderPreview(OrderChatPreview order) {
+    final (fg, bg, border, statusIcon) = _orderStatusPalette(order.status);
+    final quickList = _orderQuickQuestions(order);
+    final variantLine = [
+      if (order.variant.isNotEmpty) order.variant,
+      '${order.quantity}x',
+      if (order.otherItemsCount > 0) '+${order.otherItemsCount} produk lainnya',
+    ].join(' • ');
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.divider)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (order.orderId > 0) {
+                    showOrderTrackingSheet(context, order.orderId);
+                  } else if (order.productId != null) {
+                    context.push('/product/${order.productId}');
+                  }
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: DcCachedImage(
+                    imageUrl: order.resolvedImage,
+                    width: 58,
+                    height: 58,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (order.orderId > 0) {
+                      showOrderTrackingSheet(context, order.orderId);
+                    }
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: bg,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: border, width: 0.8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(statusIcon, size: 9, color: fg),
+                                const SizedBox(width: 3),
+                                Text(
+                                  order.sectionLabel.tr,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: fg,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              order.orderCode,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        order.productName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              variantLine,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            MockData.formatPrice(order.totalAmount),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _orderPreview = null;
+                  });
+                },
+                icon: Icon(
+                  Icons.close_rounded,
+                  size: 20,
+                  color: AppColors.textMuted,
+                ),
+                padding: const EdgeInsets.all(6),
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                splashRadius: 18,
+                tooltip: 'Hapus Preview Pesanan'.tr,
+              ),
+            ],
+          ),
+          if (quickList.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final q in quickList)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: InkWell(
+                        onTap: () => _send(q),
+                        borderRadius: BorderRadius.circular(999),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceSubtle,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: AppColors.borderAlt),
+                          ),
+                          child: Text(
+                            q,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderCard(OrderChatPreview order) {
+    final (fg, bg, border, statusIcon) = _orderStatusPalette(order.status);
+    final variantLine = [
+      if (order.variant.isNotEmpty) order.variant,
+      '${order.quantity}x',
+      if (order.otherItemsCount > 0) '+${order.otherItemsCount} produk lainnya',
+    ].join(' • ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Header badge status + kode pesanan
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: border, width: 0.8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(statusIcon, size: 10, color: fg),
+                  const SizedBox(width: 4),
+                  Text(
+                    order.sectionLabel.tr,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      color: fg,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            Text(
+              order.orderCode,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: DcCachedImage(
+                imageUrl: order.resolvedImage,
+                width: 64,
+                height: 64,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    order.productName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    variantLine,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Total: ${MockData.formatPrice(order.totalAmount)}',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (order.trackingNumber != null &&
+            order.trackingNumber!.trim().isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSubtle,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppColors.borderAlt),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.local_shipping_outlined,
+                  size: 12,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    'Resi${order.shippingMethod != null ? ' ${order.shippingMethod}' : ''}: ${order.trackingNumber}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            if (order.productId != null && order.productId!.isNotEmpty) ...[
+              SizedBox(
+                width: 38,
+                height: 34,
+                child: OutlinedButton(
+                  onPressed: () => context.push('/product/${order.productId}'),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    foregroundColor: AppColors.ink,
+                    backgroundColor: AppColors.surfaceSubtle,
+                    side: BorderSide(color: AppColors.borderAlt, width: 1.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Icon(Icons.shopping_bag_outlined, size: 17),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: SizedBox(
+                height: 34,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    if (order.orderId > 0) {
+                      showOrderTrackingSheet(context, order.orderId);
+                    } else if (order.productId != null &&
+                        order.productId!.isNotEmpty) {
+                      context.push('/product/${order.productId}');
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.local_shipping_outlined,
+                    size: 14,
+                    color: AppColors.white,
+                  ),
+                  label: Text(
+                    order.orderId > 0 ? 'Lacak Pesanan'.tr : 'Lihat Produk'.tr,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.black,
+                    foregroundColor: AppColors.white,
+                    padding: EdgeInsets.zero,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: AppColors.darkButtonSide ?? BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -1688,6 +2666,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Widget _buildTextContent(_ChatMessage message) {
+    final isCs = _isCustomerServiceRoom;
     if (message.senderType == _SenderType.storeBot) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1712,7 +2691,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'Asisten Toko (Bot)'.tr,
+                  isCs ? 'Asisten CS (Bot)'.tr : 'Asisten Toko (Bot)'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
@@ -1758,7 +2737,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        'Chat dengan Penjual'.tr,
+                        isCs
+                            ? 'Chat dengan Customer Service'.tr
+                            : 'Chat dengan Penjual'.tr,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
@@ -1800,7 +2781,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'Penjual Toko'.tr,
+                  isCs ? 'Customer Service'.tr : 'Penjual Toko'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
@@ -1878,7 +2859,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
 
     final isProduct = message.product != null;
-    final isSticker = message.isSticker ||
+    final isOrder = message.orderPreview != null;
+    final isRichCard = isProduct || isOrder;
+    final isSticker =
+        message.isSticker ||
         (message.imagePath != null &&
             (message.imagePath!.contains('sticker') ||
                 message.imagePath!.contains('/stickers/')));
@@ -1899,8 +2883,34 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 !imgPath!.startsWith('assets/') &&
                 File(imgPath).existsSync()));
 
-    final content = isProduct
-        ? _buildProductCard(message.product!)
+    final content = isOrder
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildOrderCard(message.orderPreview!),
+              if (message.text.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Divider(height: 1, color: AppColors.borderAlt),
+                const SizedBox(height: 8),
+                _buildTextContent(message),
+              ],
+            ],
+          )
+        : isProduct
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildProductCard(message.product!),
+              if (message.text.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Divider(height: 1, color: AppColors.borderAlt),
+                const SizedBox(height: 8),
+                _buildTextContent(message),
+              ],
+            ],
+          )
         : hasImage
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1914,13 +2924,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           context,
                           title: message.isMine
                               ? 'Foto Terkirim'.tr
-                              : 'Foto dari Toko'.tr,
+                              : (_isCustomerServiceRoom
+                                    ? 'Foto dari Customer Service'.tr
+                                    : 'Foto dari Toko'.tr),
                           subtitle: message.time,
                           filePath: isDiskFile ? message.imagePath : null,
                           assetPath: isDiskFile
                               ? null
                               : (isNetworkImg
-                                    ? ApiClient.resolveImageUrl(message.imagePath)
+                                    ? ApiClient.resolveImageUrl(
+                                        message.imagePath,
+                                      )
                                     : message.imagePath),
                         );
                       },
@@ -1973,33 +2987,57 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               if (!message.isMine) ...[
-                CircleAvatar(
-                  radius: 12,
-                  backgroundColor: message.senderType == _SenderType.storeBot
-                      ? AppColors.black
-                      : Colors.transparent,
-                  backgroundImage: message.senderType == _SenderType.storeBot
-                      ? null
-                      : AssetImage(_storeImage),
-                  child: message.senderType == _SenderType.storeBot
-                      ? SvgPicture.asset(
-                          AppAssets.iconBot,
-                          width: 14,
-                          height: 14,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.srcIn,
-                          ),
-                        )
-                      : null,
-                ),
+                if (message.senderType == _SenderType.storeBot)
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: AppColors.black,
+                    child: SvgPicture.asset(
+                      AppAssets.iconBot,
+                      width: 14,
+                      height: 14,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  )
+                else if (_isCustomerServiceRoom)
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF000000), Color(0xFFC0673D)],
+                      ),
+                    ),
+                    child: Center(
+                      child: SvgPicture.asset(
+                        AppAssets.iconFloatingCS,
+                        width: 13,
+                        height: 13,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: Colors.transparent,
+                    backgroundImage: AssetImage(_storeImage),
+                  ),
                 const SizedBox(width: 8),
               ],
               Flexible(
                 child: Container(
                   padding: isSticker
                       ? EdgeInsets.zero
-                      : isProduct
+                      : isRichCard
                       ? const EdgeInsets.all(10)
                       : message.imagePath != null
                       ? const EdgeInsets.all(6)
@@ -2008,12 +3046,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           vertical: 10,
                         ),
                   constraints: BoxConstraints(
-                    maxWidth: isProduct ? 272 : (isSticker ? 130 : 260),
+                    maxWidth: isRichCard ? 280 : (isSticker ? 130 : 260),
                   ),
                   decoration: BoxDecoration(
                     color: isSticker ? Colors.transparent : AppColors.surface,
                     borderRadius: isSticker ? BorderRadius.zero : bubbleRadius,
-                    border: isSticker ? null : Border.all(color: AppColors.borderAlt),
+                    border: isSticker
+                        ? null
+                        : Border.all(color: AppColors.borderAlt),
                   ),
                   child: content,
                 ),

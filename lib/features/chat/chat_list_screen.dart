@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -13,6 +14,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_cached_image.dart';
 import '../../data/mock_data.dart';
+import 'models/chat_context_preview.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -35,7 +37,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (AuthSession.isLoggedIn) {
       _loading = true;
       _fetchContacts();
-      final uid = (AuthSession.user?['id'] ?? AuthSession.user?['userId'])?.toString();
+      final uid = (AuthSession.user?['id'] ?? AuthSession.user?['userId'])
+          ?.toString();
       if (uid != null && uid.isNotEmpty) {
         unawaited(PusherService.instance.subscribeToUserOrders(uid));
       }
@@ -86,16 +89,43 @@ class _ChatListScreenState extends State<ChatListScreen> {
           final rawName = (c['name'] ?? '').toString().trim();
           final role = (c['role'] ?? '').toString().trim().toLowerCase();
           final lastMsg = (c['last_message'] ?? '').toString().trim();
-          final displayName = rawStore.isNotEmpty
-              ? rawStore
-              : (rawName.isNotEmpty ? rawName : 'Pengrajin Dinoyo');
+          final metaPreview = ChatContextHelper.formatMetadataPreview(
+            c['last_metadata'],
+          );
+          final parsedMeta = ChatContextHelper.parseMetadata(
+            c['last_metadata'],
+          );
+          final effectivePreview = lastMsg.isNotEmpty ? lastMsg : metaPreview;
+          final lowerName = rawName.toLowerCase();
+          final lowerStore = rawStore.toLowerCase();
+          final isCs =
+              role == 'admin' ||
+              c['is_cs'] == true ||
+              const {
+                'super admin',
+                'cs dinoyocraft',
+                'customer service',
+              }.contains(lowerName) ||
+              const {
+                'super admin',
+                'cs dinoyocraft',
+                'customer service',
+              }.contains(lowerStore);
+          final displayName = isCs
+              ? 'Customer Service'
+              : (rawStore.isNotEmpty
+                    ? rawStore
+                    : (rawName.isNotEmpty ? rawName : 'Pengrajin Dinoyo'));
 
           normalizedForSync.add({
             'store_name': displayName,
             'unread_count': c['unread_count'] ?? 0,
           });
 
-          if (role != 'mitra' && rawStore.isEmpty && lastMsg.isEmpty) {
+          if (!isCs &&
+              role != 'mitra' &&
+              rawStore.isEmpty &&
+              effectivePreview.isEmpty) {
             continue;
           }
 
@@ -104,18 +134,35 @@ class _ChatListScreenState extends State<ChatListScreen> {
               ? rawUnread.toInt()
               : int.tryParse('$rawUnread') ?? 0;
           final rawAvatar = c['avatar_url']?.toString().trim();
-          final resolvedAvatar = (rawAvatar != null &&
+          final resolvedAvatar =
+              (!isCs &&
+                  rawAvatar != null &&
                   rawAvatar.isNotEmpty &&
                   rawAvatar != 'null')
               ? ApiClient.resolveImageUrl(rawAvatar)
               : null;
           final isStoreContact = role == 'mitra' || rawStore.isNotEmpty;
-          final avatarUrl = _isValidChatAvatar(
-            resolvedAvatar,
-            excludeGoogleAvatar: isStoreContact,
-          )
+          final avatarUrl =
+              (!isCs &&
+                  _isValidChatAvatar(
+                    resolvedAvatar,
+                    excludeGoogleAvatar: isStoreContact,
+                  ))
               ? resolvedAvatar
               : null;
+
+          String? contextChip;
+          if (parsedMeta != null) {
+            if (parsedMeta['context_type'] == 'order') {
+              final ord = OrderChatPreview.fromJson(parsedMeta);
+              contextChip = '${ord.sectionLabel} • ${ord.orderCode}';
+            } else if (parsedMeta['context_type'] == 'product') {
+              final pName = (parsedMeta['product_name'] ?? '')
+                  .toString()
+                  .trim();
+              if (pName.isNotEmpty) contextChip = pName;
+            }
+          }
 
           final isOnline = c['is_online'] == true || c['is_online'] == 1;
           parsed.add(
@@ -123,15 +170,20 @@ class _ChatListScreenState extends State<ChatListScreen> {
               userId: c['id']?.toString(),
               store: displayName,
               time: _formatChatTime(c['last_message_time']?.toString()),
-              preview: lastMsg.isNotEmpty
-                  ? lastMsg
+              preview: effectivePreview.isNotEmpty
+                  ? effectivePreview
                   : 'Mulai obrolan dengan $displayName',
               image: AppAssets.storeDinoyo,
               avatarUrl: avatarUrl,
               unread: unreadCount > 0,
               unreadCount: unreadCount,
               online: isOnline,
-              contextLabel: role == 'mitra' ? 'Pengrajin DinoyoCraft' : 'Pesan',
+              isCustomerService: isCs,
+              contextLabel:
+                  contextChip ??
+                  (isCs
+                      ? 'Customer Service Resmi'
+                      : (role == 'mitra' ? 'Pengrajin DinoyoCraft' : 'Pesan')),
             ),
           );
         }
@@ -167,8 +219,18 @@ class _ChatListScreenState extends State<ChatListScreen> {
         return 'Kemarin';
       }
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-        'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des',
       ];
       return '${dt.day} ${months[dt.month - 1]}';
     } catch (_) {
@@ -250,8 +312,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                 onRefresh: _fetchContacts,
                                 color: AppColors.ink,
                                 child: ListView.separated(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(20, 6, 20, 30),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    6,
+                                    20,
+                                    30,
+                                  ),
                                   itemCount: items.length,
                                   separatorBuilder: (_, _) =>
                                       const SizedBox(height: 12),
@@ -278,6 +344,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       ),
     );
   }
+
   static bool _isValidChatAvatar(
     String? url, {
     required bool excludeGoogleAvatar,
@@ -319,6 +386,7 @@ class _ChatData {
     this.unread = false,
     this.unreadCount = 0,
     this.online = false,
+    this.isCustomerService = false,
     this.productChip,
     this.productImage,
     this.contextLabel,
@@ -333,6 +401,7 @@ class _ChatData {
   final bool unread;
   final int unreadCount;
   final bool online;
+  final bool isCustomerService;
   final String? productChip;
   final String? productImage;
   final String? contextLabel;
@@ -351,8 +420,7 @@ const List<_ChatData> _chats = [
   _ChatData(
     store: 'Karya Tanah',
     time: 'Kemarin',
-    preview:
-        'Siap kak, untuk pesanan cangkir kopi handmade bisa kami proses hari ini.',
+    preview: 'Siap kak, untuk pesanan cangkir kopi handmade bisa kami proses hari ini.',
     image: AppAssets.storeRuangTanah,
     online: true,
     unread: true,
@@ -362,16 +430,14 @@ const List<_ChatData> _chats = [
   _ChatData(
     store: 'Ruang Tanah',
     time: '18 Feb',
-    preview:
-        'Baik kak, silakan kirimkan alamat lengkap untuk cek ongkos kirim kayu.',
+    preview: 'Baik kak, silakan kirimkan alamat lengkap untuk cek ongkos kirim kayu.',
     image: AppAssets.storeRuangTanah,
     contextLabel: 'Diskusi Pengiriman Khusus',
   ),
   _ChatData(
     store: 'Dinoyo Craft House',
     time: '14 Feb',
-    preview:
-        'Halo, untuk paket workshop keramik akhir pekan masih ada 2 slot ya kak.',
+    preview: 'Halo, untuk paket workshop keramik akhir pekan masih ada 2 slot ya kak.',
     image: AppAssets.storeDinoyo,
     productChip: 'Wisata Edukasi Keramik',
     productImage: AppAssets.workshopHero,
@@ -420,7 +486,7 @@ class _ChatCard extends StatelessWidget {
 
     final badgeUnreadCount =
         MockData.unreadChatCountByStore[chat.store.trim().toLowerCase()] ??
-            (isUnread ? (chat.unreadCount > 0 ? chat.unreadCount : 1) : 0);
+        (isUnread ? (chat.unreadCount > 0 ? chat.unreadCount : 1) : 0);
 
     final initialsFallback = Center(
       child: Text(
@@ -443,6 +509,7 @@ class _ChatCard extends StatelessWidget {
             'store': chat.store,
             if (chat.userId != null && chat.userId!.isNotEmpty)
               'userId': chat.userId!,
+            if (chat.isCustomerService) 'isCs': '1',
           },
         );
         await context.push(uri.toString());
@@ -456,10 +523,7 @@ class _ChatCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: borderColor,
-            width: borderWidth,
-          ),
+          border: Border.all(color: borderColor, width: borderWidth),
           boxShadow: boxShadow,
         ),
         child: Row(
@@ -469,7 +533,31 @@ class _ChatCard extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                if (chat.userId != null)
+                if (chat.isCustomerService)
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF000000), Color(0xFFC0673D)],
+                      ),
+                    ),
+                    child: Center(
+                      child: SvgPicture.asset(
+                        AppAssets.iconFloatingCS,
+                        width: 22,
+                        height: 22,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+                  )
+                else if (chat.userId != null)
                   Container(
                     width: 48,
                     height: 48,
@@ -482,7 +570,8 @@ class _ChatCard extends StatelessWidget {
                       ),
                     ),
                     child: ClipOval(
-                      child: (chat.avatarUrl != null &&
+                      child:
+                          (chat.avatarUrl != null &&
                               chat.avatarUrl!.startsWith('http'))
                           ? DcCachedImage(
                               imageUrl: chat.avatarUrl!,
@@ -523,7 +612,7 @@ class _ChatCard extends StatelessWidget {
                   // Name + time (+ unread badge)
                   Row(
                     children: [
-                      Flexible(
+                      Expanded(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -548,7 +637,7 @@ class _ChatCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Spacer(),
+                      const SizedBox(width: 8),
                       if (isUnread) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -564,8 +653,7 @@ class _ChatCard extends StatelessWidget {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color:
-                                  isDark ? AppColors.black : AppColors.white,
+                              color: isDark ? AppColors.black : AppColors.white,
                             ),
                           ),
                         ),
@@ -631,28 +719,28 @@ class _ChatCard extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: Image.asset(
-                                  chat.productImage!,
-                                  width: 20,
-                                  height: 20,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  chat.productChip!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textSecondary,
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Image.asset(
+                                    chat.productImage!,
+                                    width: 20,
+                                    height: 20,
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
-                              ),
+                                SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    chat.productChip!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
