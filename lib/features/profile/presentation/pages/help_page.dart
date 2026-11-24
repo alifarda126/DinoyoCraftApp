@@ -147,7 +147,7 @@ class _HelpScreenState extends State<HelpScreen> {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          'Email: hello@dinoyocraft.id\nWhatsApp: +62 812-3456-7890\nJam operasional: 09.00â€“18.00 WIB',
+                          'Email: support@dinoyocraft.my.id\nWhatsApp: +62 812-3456-7890\nJam operasional: 09.00–18.00 WIB',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             height: 1.5,
