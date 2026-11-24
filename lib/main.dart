@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'core/app_settings.dart';
+import 'core/network/api_client.dart';
 import 'core/storage/local_storage.dart';
 import 'core/router/app_router.dart';
 import 'core/services/app_info_service.dart';
@@ -22,6 +23,7 @@ import 'data/mock_data.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LocalStorage.init();
+  await ApiClient.init();
   await AppSettings.instance.loadSavedPreferences();
   unawaited(MockData.fetchPublicData());
   if (!kIsWeb) {

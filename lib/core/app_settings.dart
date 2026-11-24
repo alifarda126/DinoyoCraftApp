@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_cache_manager.dart';
 import 'app_device_manager.dart';
 import 'app_theme_persistence.dart';
+import 'storage/local_storage.dart';
 import 'theme/app_colors.dart';
 
 /// Mode tema aplikasi.
@@ -48,6 +49,10 @@ class AppSettings extends ChangeNotifier {
 
   /// Autentikasi dua langkah (kode OTP via email saat login berikutnya).
   bool twoFactorEnabled = false;
+
+  /// Preferensi notifikasi pesanan & WhatsApp yang tersimpan di penyimpanan lokal.
+  bool orderNotification = true;
+  bool whatsAppNotification = true;
 
   /// True setelah logout / keluar dari perangkat — login berikutnya
   /// (jika 2FA aktif) harus melewati verifikasi OTP.
@@ -101,8 +106,19 @@ class AppSettings extends ChangeNotifier {
         if (saved != AppThemeMode.system) {
           AppColors.isDark = saved == AppThemeMode.dark;
         }
-        notifyListeners();
       }
+      final savedLocale = LocalStorage.getLocale();
+      if (savedLocale == 'id' || savedLocale == 'en') {
+        locale = savedLocale!;
+      }
+      orderNotification = LocalStorage.getOrderNotification();
+      whatsAppNotification = LocalStorage.getWhatsAppNotification();
+      final user = LocalStorage.getUser();
+      if (user != null) {
+        final raw2fa = user['two_factor_enabled'];
+        twoFactorEnabled = raw2fa == true || raw2fa == 1 || raw2fa == '1';
+      }
+      notifyListeners();
     } catch (_) {
       // Abaikan bila di environment widget test
     }
@@ -110,6 +126,19 @@ class AppSettings extends ChangeNotifier {
 
   void setLocale(String code) {
     locale = code;
+    LocalStorage.savePreferences(locale: code);
+    notifyListeners();
+  }
+
+  void setOrderNotification(bool value) {
+    orderNotification = value;
+    LocalStorage.savePreferences(orderNotification: value);
+    notifyListeners();
+  }
+
+  void setWhatsAppNotification(bool value) {
+    whatsAppNotification = value;
+    LocalStorage.savePreferences(whatsAppNotification: value);
     notifyListeners();
   }
 

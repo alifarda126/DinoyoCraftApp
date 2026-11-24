@@ -1,9 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/app_settings.dart';
 import '../../core/app_text.dart';
@@ -26,6 +30,7 @@ class _ChatMessage {
     this.isFileImage = false,
     this.isSticker = false,
     this.isCS = false,
+    this.createdAtMs,
   });
 
   final String text;
@@ -38,6 +43,159 @@ class _ChatMessage {
   final bool isFileImage;
   final bool isSticker;
   final bool isCS;
+  final int? createdAtMs;
+
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'isBot': isBot,
+        'time': time,
+        'imagePath': imagePath,
+        'isFileImage': isFileImage,
+        'isSticker': isSticker,
+        'isCS': isCS,
+        'createdAtMs': createdAtMs ?? DateTime.now().millisecondsSinceEpoch,
+      };
+
+  static _ChatMessage fromJson(Map<String, dynamic> map) => _ChatMessage(
+        text: (map['text'] ?? '').toString(),
+        isBot: map['isBot'] == true,
+        time: (map['time'] ?? '').toString(),
+        imagePath: map['imagePath']?.toString(),
+        isFileImage: map['isFileImage'] == true,
+        isSticker: map['isSticker'] == true,
+        isCS: map['isCS'] == true,
+        createdAtMs: map['createdAtMs'] is int
+            ? map['createdAtMs'] as int
+            : int.tryParse(map['createdAtMs']?.toString() ?? ''),
+      );
+}
+
+/// Penyimpanan riwayat chat ClayBot selama 1x24 jam (otomatis terhapus setelah lewat 24 jam).
+abstract final class _ClayBotHistoryStore {
+  static const Duration ttl = Duration(hours: 24);
+  static final Map<String, List<_ChatMessage>> _memoryCache = {};
+
+  static String _scopeKey() {
+    final uid = AuthSession.user?['id'] ?? AuthSession.user?['userId'];
+    final cleaned = uid?.toString().trim() ?? '';
+    return cleaned.isNotEmpty ? 'user_$cleaned' : 'guest';
+  }
+
+  static Future<File> _getFile(String scope) async {
+    final fileName = 'dinoyocraft_claybot_history_$scope.json';
+    try {
+      final docDir = await getApplicationDocumentsDirectory();
+      return File('${docDir.path}/$fileName');
+    } catch (_) {
+      try {
+        final supportDir = await getApplicationSupportDirectory();
+        return File('${supportDir.path}/$fileName');
+      } catch (_) {
+        return File('${Directory.systemTemp.path}/$fileName');
+      }
+    }
+  }
+
+  static List<_ChatMessage> _filterNotExpired(List<_ChatMessage> items) {
+    final cutoffMs = DateTime.now().subtract(ttl).millisecondsSinceEpoch;
+    return items.where((m) {
+      final ts = m.createdAtMs ?? 0;
+      if (ts <= cutoffMs) return false;
+      if (m.isFileImage && m.imagePath != null && m.imagePath!.isNotEmpty) {
+        if (!kIsWeb && !File(m.imagePath!).existsSync()) return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  static List<_ChatMessage>? getCachedSync() {
+    final scope = _scopeKey();
+    final cached = _memoryCache[scope];
+    if (cached == null) return null;
+    final fresh = _filterNotExpired(cached);
+    if (fresh.isEmpty) {
+      _memoryCache.remove(scope);
+      return null;
+    }
+    _memoryCache[scope] = fresh;
+    return List<_ChatMessage>.from(fresh);
+  }
+
+  static Future<List<_ChatMessage>> load() async {
+    final scope = _scopeKey();
+    if (kIsWeb) {
+      return getCachedSync() ?? [];
+    }
+    try {
+      final file = await _getFile(scope);
+      if (!await file.exists()) {
+        return getCachedSync() ?? [];
+      }
+      final raw = await file.readAsString();
+      if (raw.trim().isEmpty) return [];
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return [];
+      final savedAtMs = decoded['updated_at_ms'] is int
+          ? decoded['updated_at_ms'] as int
+          : int.tryParse(decoded['updated_at_ms']?.toString() ?? '') ?? 0;
+      final cutoffMs = DateTime.now().subtract(ttl).millisecondsSinceEpoch;
+      if (savedAtMs <= cutoffMs) {
+        _memoryCache.remove(scope);
+        await file.delete().catchError((_) => file);
+        return [];
+      }
+      final rawList = decoded['messages'];
+      if (rawList is! List) return [];
+      final parsed = rawList
+          .whereType<Map>()
+          .map((m) => _ChatMessage.fromJson(Map<String, dynamic>.from(m)))
+          .toList();
+      final fresh = _filterNotExpired(parsed);
+      if (fresh.isEmpty) {
+        _memoryCache.remove(scope);
+        await file.delete().catchError((_) => file);
+        return [];
+      }
+      _memoryCache[scope] = fresh;
+      return List<_ChatMessage>.from(fresh);
+    } catch (e) {
+      debugPrint('[ClayBotHistory] Gagal membaca riwayat: $e');
+      return getCachedSync() ?? [];
+    }
+  }
+
+  static Future<void> save(List<_ChatMessage> messages) async {
+    final scope = _scopeKey();
+    final fresh = _filterNotExpired(messages);
+    if (fresh.isEmpty) {
+      _memoryCache.remove(scope);
+      if (!kIsWeb) {
+        try {
+          final file = await _getFile(scope);
+          if (await file.exists()) await file.delete();
+        } catch (_) {}
+      }
+      return;
+    }
+
+    _memoryCache[scope] = List<_ChatMessage>.from(fresh);
+    if (kIsWeb) return;
+    try {
+      final file = await _getFile(scope);
+      final parent = file.parent;
+      if (!parent.existsSync()) {
+        parent.createSync(recursive: true);
+      }
+      final payload = {
+        'updated_at_ms': DateTime.now().millisecondsSinceEpoch,
+        'expires_at': DateTime.now().add(ttl).toIso8601String(),
+        'messages': fresh.map((m) => m.toJson()).toList(),
+      };
+      await file.writeAsString(jsonEncode(payload), flush: true);
+    } catch (e) {
+      debugPrint('[ClayBotHistory] Gagal menyimpan riwayat: $e');
+    }
+  }
 }
 
 String _nowTime() {
@@ -57,12 +215,18 @@ const _quickReplies = [
 ];
 
 const _scripted = <String, String>{
-  'Cari produk': 'Kamu bisa cari produk keramik di tab Produk atau lewat ikon 🔍 di header Beranda. Filter berdasarkan kategori: Vas, Cangkir, Piring, dan Mangkuk.',
-  'Rekomendasi cangkir': 'Tentu! Saya menemukan beberapa pilihan cangkir terfavorit langsung dari pengrajin Dinoyo: Cangkir Handmade (Karya Tanah) & Cangkir Speckle (Dinoyo Ceramic Studio).',
-  'Cari toko': 'Ada 4 studio keramik di Kampung Dinoyo: Dinoyo Ceramic Studio, Karya Tanah, Ruang Tanah, dan Dinoyo Craft House. Lihat di tab Toko!',
-  'Info workshop': 'Workshop keramik tersedia di Dinoyo! Buka tab Workshop untuk info jadwal dan reservasi via WhatsApp. Sesi berlangsung ±2 jam.',
-  'Bantuan pesanan': 'Untuk informasi pesanan kamu, kunjungi tab Bantuan atau halaman Profil → Riwayat Pesanan. Atau tanya saya langsung!',
-  'Chat dengan customer service langsung': 'Menghubungkan kamu ke Customer Service DinoyoCraft... Mohon tunggu sebentar ya.',
+  'Cari produk':
+      'Kamu bisa cari produk keramik di tab Produk atau lewat ikon 🔍 di header Beranda. Filter berdasarkan kategori: Vas, Cangkir, Piring, dan Mangkuk.',
+  'Rekomendasi cangkir':
+      'Tentu! Saya menemukan beberapa pilihan cangkir terfavorit langsung dari pengrajin Dinoyo: Cangkir Handmade (Karya Tanah) & Cangkir Speckle (Dinoyo Ceramic Studio).',
+  'Cari toko':
+      'Ada 4 studio keramik di Kampung Dinoyo: Dinoyo Ceramic Studio, Karya Tanah, Ruang Tanah, dan Dinoyo Craft House. Lihat di tab Toko!',
+  'Info workshop':
+      'Workshop keramik tersedia di Dinoyo! Buka tab Workshop untuk info jadwal dan reservasi via WhatsApp. Sesi berlangsung ±2 jam.',
+  'Bantuan pesanan':
+      'Untuk informasi pesanan kamu, kunjungi tab Bantuan atau halaman Profil → Riwayat Pesanan. Atau tanya saya langsung!',
+  'Chat dengan customer service langsung':
+      'Menghubungkan kamu ke Customer Service DinoyoCraft... Mohon tunggu sebentar ya.',
 };
 
 // ─── Popup chatbot — dipanggil via showClayBotPopup() ────────────────────────
@@ -90,19 +254,59 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
   final bool _isCSConnected = false;
   bool _isBotTyping = false;
 
-  late final List<_ChatMessage> _messages = [
-    _ChatMessage(
-      text:
-          ('Halo! 👋\n\nSaya ClayBot, asisten DinoyoCraft. '
-                  'Saya siap membantu kamu menemukan produk keramik lokal, '
-                  'mencari studio toko, info jadwal workshop, hingga bantuan pesananmu.')
-              .tr,
-      isBot: true,
-    ),
-  ];
+  late final List<_ChatMessage> _messages = _buildInitialMessages();
+
+  _ChatMessage _greetingMessage() => _ChatMessage(
+        text: ('Halo! 👋\n\nSaya ClayBot, asisten DinoyoCraft. '
+            'Saya siap membantu kamu menemukan produk keramik lokal, '
+            'mencari studio toko, info jadwal workshop, hingga bantuan pesananmu.').tr,
+        isBot: true,
+        createdAtMs: DateTime.now().millisecondsSinceEpoch,
+      );
+
+  List<_ChatMessage> _buildInitialMessages() {
+    final cached = _ClayBotHistoryStore.getCachedSync();
+    if (cached != null && cached.isNotEmpty) {
+      if (cached.any((m) => !m.isBot)) {
+        _showQuickReplies = false;
+      }
+      return cached;
+    }
+    return [_greetingMessage()];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSavedHistory();
+  }
+
+  Future<void> _restoreSavedHistory() async {
+    final saved = await _ClayBotHistoryStore.load();
+    if (!mounted || saved.isEmpty) return;
+    // Jangan timpa bila user sudah mulai mengetik/kirim pesan sebelum load disk selesai
+    if (_messages.any((m) => !m.isBot)) return;
+    setState(() {
+      _messages
+        ..clear()
+        ..addAll(saved);
+      if (saved.any((m) => !m.isBot)) {
+        _showQuickReplies = false;
+      }
+    });
+    _scrollToBottom();
+  }
+
+  void _persistMessages() {
+    // Hanya simpan ke disk bila sudah ada interaksi user (bukan cuma salam awal)
+    if (_messages.any((m) => !m.isBot)) {
+      unawaited(_ClayBotHistoryStore.save(_messages));
+    }
+  }
 
   @override
   void dispose() {
+    _persistMessages();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
@@ -115,13 +319,16 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
         _isBotTyping = false;
         _messages.add(
           _ChatMessage(
-            text: 'Untuk terhubung langsung dengan Customer Service DinoyoCraft secara realtime, silakan masuk ke akun kamu terlebih dahulu ya 😊'
-                .tr,
+            text:
+                'Untuk terhubung langsung dengan Customer Service DinoyoCraft secara realtime, silakan masuk ke akun kamu terlebih dahulu ya 😊'
+                    .tr,
             isBot: true,
             time: _nowTime(),
+            createdAtMs: DateTime.now().millisecondsSinceEpoch,
           ),
         );
       });
+      _persistMessages();
       _scrollToBottom();
       return;
     }
@@ -159,13 +366,16 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
     setState(() {
       _messages.add(
         _ChatMessage(
-          text: 'Maaf, layanan Live Chat CS sedang tidak terjangkau saat ini. Silakan hubungi csdinoyocraft@gmail.com atau coba sesaat lagi ya.'
-              .tr,
+          text:
+              'Maaf, layanan Live Chat CS sedang tidak terjangkau saat ini. Silakan hubungi csdinoyocraft@gmail.com atau coba sesaat lagi ya.'
+                  .tr,
           isBot: true,
           time: _nowTime(),
+          createdAtMs: DateTime.now().millisecondsSinceEpoch,
         ),
       );
     });
+    _persistMessages();
     _scrollToBottom();
   }
 
@@ -174,8 +384,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
     if (trimmed.isEmpty || _isBotTyping) return;
     final t = _nowTime();
 
-    final isCSRequest =
-        trimmed == 'Chat dengan customer service langsung' ||
+    final isCSRequest = trimmed == 'Chat dengan customer service langsung' ||
         trimmed.toLowerCase().contains('customer service') ||
         trimmed.toLowerCase().contains('cs langsung') ||
         trimmed.toLowerCase() == 'cs';
@@ -183,18 +392,22 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
     final historyPayload = _messages
         .where((m) => m.text.trim().isNotEmpty)
         .skip(_messages.length > 8 ? _messages.length - 8 : 0)
-        .map(
-          (m) => {
-            'role': m.isBot ? 'assistant' : 'user',
-            'content': m.text.trim(),
-          },
-        )
+        .map((m) => {
+              'role': m.isBot ? 'assistant' : 'user',
+              'content': m.text.trim(),
+            })
         .toList();
 
     setState(() {
       _showQuickReplies = false;
-      _messages.add(_ChatMessage(text: trimmed, isBot: false, time: t));
+      _messages.add(_ChatMessage(
+        text: trimmed,
+        isBot: false,
+        time: t,
+        createdAtMs: DateTime.now().millisecondsSinceEpoch,
+      ));
     });
+    _persistMessages();
     _input.clear();
     _scrollToBottom();
 
@@ -219,24 +432,31 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
             text: reply.isNotEmpty
                 ? reply
                 : (_scripted[trimmed] ??
-                      'Ada produk keramik spesifik yang sedang ingin kamu cari hari ini?'),
+                    'Ada produk keramik spesifik yang sedang ingin kamu cari hari ini?'),
             isBot: true,
             time: _nowTime(),
+            createdAtMs: DateTime.now().millisecondsSinceEpoch,
           ),
         );
       });
+      _persistMessages();
       _scrollToBottom();
     } catch (_) {
       if (!mounted) return;
-      final fallback =
-          _scripted[trimmed] ??
+      final fallback = _scripted[trimmed] ??
           'Halo! Saat ini koneksi ClayBot sedang sibuk, namun kamu bisa menjelajahi koleksi keramik di tab Produk, Toko, atau pilih "Chat dengan customer service langsung" ya 😊';
       setState(() {
         _isBotTyping = false;
         _messages.add(
-          _ChatMessage(text: fallback, isBot: true, time: _nowTime()),
+          _ChatMessage(
+            text: fallback,
+            isBot: true,
+            time: _nowTime(),
+            createdAtMs: DateTime.now().millisecondsSinceEpoch,
+          ),
         );
       });
+      _persistMessages();
       _scrollToBottom();
     }
   }
@@ -245,33 +465,32 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
   void _sendImage(String assetPath, {bool isFile = false}) {
     setState(() {
       _showQuickReplies = false;
-      _messages.add(
-        _ChatMessage(
-          text: '',
-          isBot: false,
-          time: _nowTime(),
-          imagePath: assetPath,
-          isFileImage: isFile,
-        ),
-      );
+      _messages.add(_ChatMessage(
+        text: '',
+        isBot: false,
+        time: _nowTime(),
+        imagePath: assetPath,
+        isFileImage: isFile,
+        createdAtMs: DateTime.now().millisecondsSinceEpoch,
+      ));
     });
+    _persistMessages();
     _scrollToBottom();
     Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
       setState(() {
-        _messages.add(
-          _ChatMessage(
-            text: _isCSConnected
-                ? 'Terima kasih Kak, foto produknya sudah kami terima! Tim Customer Service sedang memeriksanya.'
-                      .tr
-                : 'Terima kasih, foto produknya sudah kami terima! '
-                      'Ada yang ingin ditanyakan tentang produk pada gambar ini?',
-            isBot: true,
-            isCS: _isCSConnected,
-            time: _nowTime(),
-          ),
-        );
+        _messages.add(_ChatMessage(
+          text: _isCSConnected
+              ? 'Terima kasih Kak, foto produknya sudah kami terima! Tim Customer Service sedang memeriksanya.'.tr
+              : 'Terima kasih, foto produknya sudah kami terima! '
+                  'Ada yang ingin ditanyakan tentang produk pada gambar ini?',
+          isBot: true,
+          isCS: _isCSConnected,
+          time: _nowTime(),
+          createdAtMs: DateTime.now().millisecondsSinceEpoch,
+        ));
       });
+      _persistMessages();
       _scrollToBottom();
     });
   }
@@ -295,6 +514,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
 
   void _sendSticker(DinoyoSticker sticker) {
     setState(() {
+      _showQuickReplies = false;
       _messages.add(
         _ChatMessage(
           text: '',
@@ -302,9 +522,11 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
           time: _nowTime(),
           imagePath: sticker.assetPath,
           isSticker: true,
+          createdAtMs: DateTime.now().millisecondsSinceEpoch,
         ),
       );
     });
+    _persistMessages();
     _scrollToBottom();
 
     // Respons ramah dari ClayBot menyambut stiker
@@ -316,9 +538,11 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
             text: 'Wah, stiker Si Clay yang lucu! Ada yang bisa ClayBot bantu seputar produk atau workshop keramik Dinoyo? 😊',
             isBot: true,
             time: _nowTime(),
+            createdAtMs: DateTime.now().millisecondsSinceEpoch,
           ),
         );
       });
+      _persistMessages();
       _scrollToBottom();
     });
   }
@@ -444,11 +668,8 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                 // Close button
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(
-                    Icons.close_rounded,
-                    size: 22,
-                    color: AppColors.ink,
-                  ),
+                  icon: Icon(Icons.close_rounded,
+                      size: 22, color: AppColors.ink),
                 ),
               ],
             ),
@@ -506,16 +727,12 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                         onTap: () => _send(qr.$2),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
+                              horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: AppColors.surface,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: AppColors.border,
-                              width: 1,
-                            ),
+                                color: AppColors.border, width: 1),
                           ),
                           child: Text(
                             '${qr.$1} ${qr.$2.tr}',
@@ -542,13 +759,14 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                   onTap: () => _send('Chat dengan customer service langsung'),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
+                        horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.border, width: 1),
+                      border: Border.all(
+                        color: AppColors.border,
+                        width: 1,
+                      ),
                     ),
                     child: Text(
                       '💬 ${'Chat dengan customer service langsung'.tr}',
@@ -575,24 +793,20 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(
-                    alpha: AppColors.isDark ? 0.2 : 0.04,
-                  ),
+                  color: Colors.black.withValues(alpha: AppColors.isDark ? 0.2 : 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, -2),
                 ),
               ],
             ),
             padding: EdgeInsets.fromLTRB(
-              14,
-              10,
-              14,
-              // Keyboard inset ATAU gesture nav bar (whichever is taller)
-              10 +
-                  (bottomInset > 0
-                      ? bottomInset.clamp(0.0, 400.0)
-                      : gestureNavBar.clamp(0.0, 48.0)),
-            ),
+                14,
+                10,
+                14,
+                // Keyboard inset ATAU gesture nav bar (whichever is taller)
+                10 + (bottomInset > 0
+                    ? bottomInset.clamp(0.0, 400.0)
+                    : gestureNavBar.clamp(0.0, 48.0))),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -646,10 +860,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                             Expanded(
                               child: TextField(
                                 controller: _input,
-                                onTapOutside: (_) => FocusManager
-                                    .instance
-                                    .primaryFocus
-                                    ?.unfocus(),
+                                onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 14,
                                   color: AppColors.ink,
@@ -681,10 +892,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                               onTap: _openStickerSheet,
                               behavior: HitTestBehavior.opaque,
                               child: Padding(
-                                padding: const EdgeInsets.only(
-                                  right: 14,
-                                  left: 4,
-                                ),
+                                padding: const EdgeInsets.only(right: 14, left: 4),
                                 child: SvgPicture.asset(
                                   AppAssets.iconEmoji,
                                   width: 20,
@@ -828,9 +1036,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                     ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
+                        horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       color: AppColors.isDark
                           ? const Color(0xFF333336)
@@ -947,9 +1153,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                   else
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
+                          horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         color: AppColors.black,
                         borderRadius: const BorderRadius.only(
@@ -996,7 +1200,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
 // ─── Legacy full-screen route (kept for backward-compat, now just shows popup)
 // Ini tidak lagi dipakai sebagai route — bisa dihapus jika router di-cleanup.
 class ChatbotScreen extends StatelessWidget {
-  const ChatbotScreen({super.key});
+const   ChatbotScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

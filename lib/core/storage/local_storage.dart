@@ -12,6 +12,10 @@ abstract final class LocalStorage {
   static String? _cachedRefreshToken;
   static Map<String, dynamic>? _cachedUser;
   static String? _cachedFcmToken;
+  static String? _cachedLocale;
+  static bool _cachedOrderNotif = true;
+  static bool _cachedWhatsAppNotif = true;
+  static String? _cachedLastBaseHost;
 
   static Future<File> _getFile() async {
     try {
@@ -40,6 +44,14 @@ abstract final class LocalStorage {
         _cachedRefreshToken = data['refresh_token'] as String?;
         _cachedUser = data['user'] as Map<String, dynamic>?;
         _cachedFcmToken = data['fcm_token'] as String?;
+        _cachedLocale = data['locale'] as String?;
+        _cachedLastBaseHost = data['last_base_host'] as String?;
+        if (data['order_notification'] is bool) {
+          _cachedOrderNotif = data['order_notification'] as bool;
+        }
+        if (data['whatsapp_notification'] is bool) {
+          _cachedWhatsAppNotif = data['whatsapp_notification'] as bool;
+        }
         }
       }
     } catch (e) {
@@ -82,6 +94,29 @@ abstract final class LocalStorage {
     await _persist();
   }
 
+  static String? getLocale() => _cachedLocale;
+  static bool getOrderNotification() => _cachedOrderNotif;
+  static bool getWhatsAppNotification() => _cachedWhatsAppNotif;
+  static String? getLastBaseHost() => _cachedLastBaseHost;
+
+  static Future<void> saveLastBaseHost(String host) async {
+    final normalized = host.trim().replaceAll(RegExp(r'/+$'), '');
+    if (normalized.isEmpty || _cachedLastBaseHost == normalized) return;
+    _cachedLastBaseHost = normalized;
+    await _persist();
+  }
+
+  static Future<void> savePreferences({
+    String? locale,
+    bool? orderNotification,
+    bool? whatsAppNotification,
+  }) async {
+    if (locale != null) _cachedLocale = locale;
+    if (orderNotification != null) _cachedOrderNotif = orderNotification;
+    if (whatsAppNotification != null) _cachedWhatsAppNotif = whatsAppNotification;
+    await _persist();
+  }
+
   static Future<void> clearAuth() async {
     _cachedToken = null;
     _cachedRefreshToken = null;
@@ -97,13 +132,17 @@ abstract final class LocalStorage {
       if (!parent.existsSync()) {
         parent.createSync(recursive: true);
       }
-    final payload = {
-      'token': _cachedToken,
-      'refresh_token': _cachedRefreshToken,
-      'user': _cachedUser,
-      'fcm_token': _cachedFcmToken,
-      'saved_at': DateTime.now().toIso8601String(),
-    };
+      final payload = {
+        'token': _cachedToken,
+        'refresh_token': _cachedRefreshToken,
+        'user': _cachedUser,
+        'fcm_token': _cachedFcmToken,
+        'locale': _cachedLocale,
+        'order_notification': _cachedOrderNotif,
+        'whatsapp_notification': _cachedWhatsAppNotif,
+        'last_base_host': _cachedLastBaseHost,
+        'saved_at': DateTime.now().toIso8601String(),
+      };
       await file.writeAsString(jsonEncode(payload), flush: true);
     } catch (e) {
       debugPrint('[LocalStorage] Error persisting auth: $e');

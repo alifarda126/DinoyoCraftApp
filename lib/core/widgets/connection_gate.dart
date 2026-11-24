@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../app_text.dart';
+import '../../data/mock_data.dart';
 import '../network/api_client.dart';
 import '../network/server_status.dart';
 import '../services/connectivity_service.dart';
@@ -61,8 +62,12 @@ class _NoInternetPageState extends State<NoInternetPage> {
     // Paksa ping server; bila internet sudah kembali, ApiClient akan
     // menandai ServerStatus up dan ConnectionGate membuka aplikasi.
     try {
-      await ApiClient.get('/products/public?page=1&limit=1');
-      ServerStatus.markUp();
+      final host = await ApiClient.discoverActiveHost(force: true);
+      if (host != null) {
+        await ApiClient.get('/products/public?page=1&limit=1');
+        unawaited(MockData.fetchPublicData(force: true));
+        ServerStatus.markUp();
+      }
     } catch (_) {
       // Masih offline — halaman tetap, pengguna dapat mencoba lagi.
     }
@@ -122,8 +127,12 @@ class _ServerUnavailablePageState extends State<ServerUnavailablePage> {
     if (_checking) return;
     if (!silent && mounted) setState(() => _checking = true);
     try {
-      await ApiClient.get('/products/public?page=1&limit=1');
-      ServerStatus.markUp(); // respons diterima -> server hidup
+      final host = await ApiClient.discoverActiveHost(force: true);
+      if (host != null) {
+        await ApiClient.get('/products/public?page=1&limit=1');
+        unawaited(MockData.fetchPublicData(force: true));
+        ServerStatus.markUp(); // respons diterima -> server hidup
+      }
     } catch (_) {
       // Tetap gagal — tunggu siklus berikutnya.
     }

@@ -210,6 +210,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     );
   }
 
+  bool _isAiMessageRow(Map row) {
+    if (row['is_ai'] == true || row['type']?.toString() == 'ai_reply') {
+      return true;
+    }
+    final meta = ChatContextHelper.parseMetadata(row['metadata']);
+    return meta != null && meta['is_ai'] == true;
+  }
+
   void _processIncomingPusherMessage(PusherChatMessage msg) {
     if (!mounted || msg.isMine) return;
     final targetId = _resolvedTargetUserId?.trim();
@@ -217,8 +225,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     // Verifikasi pesan ditujukan untuk room obrolan aktif ini:
     // 1) senderId cocok dengan partnerId toko/mitra
     // 2) ATAU channel pesan sama dengan channel bilateral (_activeChatChannel)
-    final matchesTarget =
-        (targetId != null &&
+    final matchesTarget = (targetId != null &&
             targetId.isNotEmpty &&
             msg.senderId.trim() == targetId) ||
         (_activeChatChannel != null && msg.channel == _activeChatChannel);
@@ -227,8 +234,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (msg.id.isNotEmpty && _seenMessageIds.contains(msg.id)) return;
     if (msg.id.isNotEmpty) _seenMessageIds.add(msg.id);
 
-    final isSticker =
-        (msg.imagePath != null &&
+    final isSticker = (msg.imagePath != null &&
             (msg.imagePath!.contains('sticker') ||
                 msg.imagePath!.contains('/stickers/'))) ||
         msg.type == 'sticker';
@@ -293,9 +299,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       targetId = _productPreview!.mitraUserId.toString();
     }
 
-    if (targetId == null &&
-        _productPreview != null &&
-        _productPreview!.mitraId > 0) {
+    if (targetId == null && _productPreview != null && _productPreview!.mitraId > 0) {
       final storeMatch = MockData.stores.cast<Store?>().firstWhere(
         (s) => s?.id == _productPreview!.mitraId,
         orElse: () => null,
@@ -335,15 +339,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         if (mitraRes['success'] == true && mitraRes['data'] is List) {
           final targetLower = widget.storeName.trim().toLowerCase();
           for (final item in (mitraRes['data'] as List).whereType<Map>()) {
-            final sName = (item['store_name'] ?? item['name'] ?? '')
-                .toString()
-                .trim()
-                .toLowerCase();
+            final sName = (item['store_name'] ?? item['name'] ?? '').toString().trim().toLowerCase();
             if (sName == targetLower ||
                 (targetLower.isNotEmpty && sName.contains(targetLower)) ||
                 (sName.isNotEmpty && targetLower.contains(sName))) {
-              targetId = (item['user_id'] ?? item['userId'] ?? item['id'])
-                  ?.toString();
+              targetId = (item['user_id'] ?? item['userId'] ?? item['id'])?.toString();
               break;
             }
           }
@@ -373,9 +373,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           if (idStr.isNotEmpty) _seenMessageIds.add(idStr);
           final isMine =
               currentId != null && row['sender_id']?.toString() == currentId;
+          final isAi = !isMine && _isAiMessageRow(row);
           final imgUrl = row['image_url']?.toString();
-          final isSticker =
-              (imgUrl != null &&
+          final isSticker = (imgUrl != null &&
                   (imgUrl.contains('sticker') ||
                       imgUrl.contains('/stickers/'))) ||
               row['type'] == 'sticker';
@@ -393,22 +393,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               isSticker: isSticker,
               product: metaProd,
               orderPreview: metaOrder,
-              senderType: isMine ? _SenderType.user : _SenderType.seller,
+              senderType: isMine
+                  ? _SenderType.user
+                  : (isAi ? _SenderType.storeBot : _SenderType.seller),
             ),
           );
         }
       }
 
       if (!mounted) return;
-      final isOnline =
-          res['is_online'] == true || res['target_user']?['is_online'] == true;
-      final lastSeen =
-          res['last_seen_at']?.toString() ??
+      final isOnline = res['is_online'] == true ||
+          res['target_user']?['is_online'] == true;
+      final lastSeen = res['last_seen_at']?.toString() ??
           res['target_user']?['last_seen_at']?.toString();
-      final partnerRole = res['target_user']?['role']
-          ?.toString()
-          .trim()
-          .toLowerCase();
+      final partnerRole =
+          res['target_user']?['role']?.toString().trim().toLowerCase();
 
       setState(() {
         if (partnerRole != null && partnerRole.isNotEmpty) {
@@ -427,9 +426,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               time: _nowLabel(),
               text: _isCustomerServiceRoom
                   ? 'Halo Kak! Saya Asisten Bot Customer Service DinoyoCraft. Sebelum terhubung ke tim CS, ada yang bisa saya bantu seputar pesanan, pembayaran, akun, atau pengiriman? 😊'
-                        .tr
+                      .tr
                   : 'Halo Kak! Selamat datang di $_displayPartnerName. Saya Asisten Bot Toko siap membantu pertanyaan seputar produk keramik atau pengiriman sebelum terhubung dengan Penjual! 😊'
-                        .tr,
+                      .tr,
               senderType: _SenderType.storeBot,
             ),
           );
@@ -488,8 +487,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     try {
       final res = await ApiClient.get('/chat/messages/$targetId');
       final rawList = res['data'];
-      final currentId = (res['current_user_id'] ?? AuthSession.user?['id'])
-          ?.toString();
+      final currentId =
+          (res['current_user_id'] ?? AuthSession.user?['id'])?.toString();
       if (rawList is! List) return;
 
       bool hasNewMessage = false;
@@ -505,41 +504,56 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
         final isMine =
             currentId != null && row['sender_id']?.toString() == currentId;
+        final isAi = !isMine && _isAiMessageRow(row);
         final imgUrl = row['image_url']?.toString();
         final rowText = row['message']?.toString() ?? '';
-        final isSticker =
-            (imgUrl != null &&
+        final isSticker = (imgUrl != null &&
                 (imgUrl.contains('sticker') ||
                     imgUrl.contains('/stickers/'))) ||
             row['type'] == 'sticker';
         final (metaProd, metaOrder) = _parseRowMetadata(row['metadata']);
 
+        // Rekonsiliasi balasan AI lokal agar tidak double bubble saat polling
+        if (isAi) {
+          final pendingAiIdx = _messages.indexWhere(
+            (m) =>
+                !m.isMine &&
+                m.senderType == _SenderType.storeBot &&
+                (m.id == null || m.id!.isEmpty) &&
+                m.text.trim() == rowText.trim(),
+          );
+          if (pendingAiIdx != -1) {
+            _seenMessageIds.add(idStr);
+            _messages[pendingAiIdx] =
+                _messages[pendingAiIdx].copyWith(id: idStr);
+            continue;
+          }
+        }
+
         // Rekonsiliasi pesan optimis lokal (temp_*) agar tidak double bubble
         if (isMine) {
-          final pendingIdx = _messages.indexWhere(
-            (m) =>
-                m.id != null &&
-                m.id!.startsWith('temp_') &&
-                ((m.isSticker && isSticker) ||
-                    (m.product != null &&
-                        metaProd != null &&
-                        m.product!.id == metaProd.id) ||
-                    (m.orderPreview != null &&
-                        metaOrder != null &&
-                        m.orderPreview!.orderId == metaOrder.orderId) ||
-                    (!isSticker &&
-                        m.imagePath != null &&
-                        imgUrl != null &&
-                        imgUrl.isNotEmpty &&
-                        imgUrl != 'null' &&
-                        (m.isFileImage ||
-                            m.imagePath == imgUrl ||
-                            m.imagePath!.endsWith(imgUrl.split('/').last))) ||
-                    (m.text.isNotEmpty &&
-                        m.product == null &&
-                        m.orderPreview == null &&
-                        m.text == rowText)),
-          );
+          final pendingIdx = _messages.indexWhere((m) =>
+              m.id != null &&
+              m.id!.startsWith('temp_') &&
+              ((m.isSticker && isSticker) ||
+                  (m.product != null &&
+                      metaProd != null &&
+                      m.product!.id == metaProd.id) ||
+                  (m.orderPreview != null &&
+                      metaOrder != null &&
+                      m.orderPreview!.orderId == metaOrder.orderId) ||
+                  (!isSticker &&
+                      m.imagePath != null &&
+                      imgUrl != null &&
+                      imgUrl.isNotEmpty &&
+                      imgUrl != 'null' &&
+                      (m.isFileImage ||
+                          m.imagePath == imgUrl ||
+                          m.imagePath!.endsWith(imgUrl.split('/').last))) ||
+                  (m.text.isNotEmpty &&
+                      m.product == null &&
+                      m.orderPreview == null &&
+                      m.text == rowText)));
 
           if (pendingIdx != -1) {
             _seenMessageIds.add(idStr);
@@ -549,8 +563,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               imagePath: keepLocalFile
                   ? _messages[pendingIdx].imagePath
                   : ((imgUrl != null && imgUrl.isNotEmpty && imgUrl != 'null')
-                        ? imgUrl
-                        : _messages[pendingIdx].imagePath),
+                      ? imgUrl
+                      : _messages[pendingIdx].imagePath),
               isSticker: isSticker || _messages[pendingIdx].isSticker,
               product: metaProd ?? _messages[pendingIdx].product,
               orderPreview: metaOrder ?? _messages[pendingIdx].orderPreview,
@@ -567,26 +581,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             isMine: isMine,
             time: _formatMessageTime(row['created_at']?.toString() ?? ''),
             text: rowText,
-            imagePath: (imgUrl != null && imgUrl.isNotEmpty && imgUrl != 'null')
+            imagePath:
+                (imgUrl != null && imgUrl.isNotEmpty && imgUrl != 'null')
                 ? imgUrl
                 : null,
             isSticker: isSticker,
             product: metaProd,
             orderPreview: metaOrder,
-            senderType: isMine ? _SenderType.user : _SenderType.seller,
+            senderType: isMine
+                ? _SenderType.user
+                : (isAi ? _SenderType.storeBot : _SenderType.seller),
           ),
         );
       }
 
-      final isOnline =
-          res['is_online'] == true || res['target_user']?['is_online'] == true;
-      final lastSeen =
-          res['last_seen_at']?.toString() ??
+      final isOnline = res['is_online'] == true ||
+          res['target_user']?['is_online'] == true;
+      final lastSeen = res['last_seen_at']?.toString() ??
           res['target_user']?['last_seen_at']?.toString();
-      final partnerRole = res['target_user']?['role']
-          ?.toString()
-          .trim()
-          .toLowerCase();
+      final partnerRole =
+          res['target_user']?['role']?.toString().trim().toLowerCase();
 
       if (mounted &&
           (_isPartnerOnline != isOnline ||
@@ -606,7 +620,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       }
 
       if (hasNewMessage && mounted) {
-        final hasPartnerReply = newMessages.any((m) => !m.isMine);
+        final hasPartnerReply = newMessages.any(
+          (m) => !m.isMine && m.senderType != _SenderType.storeBot,
+        );
         setState(() {
           if (hasPartnerReply) {
             _isSellerConnected = true;
@@ -615,8 +631,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         });
         _scrollToBottom();
         MockData.markChatAsRead(_trackingStoreKey);
-        ApiClient.patch('/chat/messages/$targetId/read')
-            .catchError((_) => <String, dynamic>{});
+        ApiClient.patch('/chat/messages/$targetId/read').catchError((_) => <String, dynamic>{});
         unawaited(MockData.refreshUnreadCounts());
       }
     } catch (_) {
@@ -649,26 +664,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     return _isSellerConnected
         ? 'Offline'.tr
         : (_isCustomerServiceRoom
-              ? 'Asisten CS Siaga • Dibalas otomatis'.tr
-              : 'Asisten Toko Siaga • Dibalas otomatis'.tr);
+            ? 'Asisten CS Siaga • Dibalas otomatis'.tr
+            : 'Asisten Toko Siaga • Dibalas otomatis'.tr);
   }
 
   Color _getPartnerStatusColor() {
     if (_isPartnerOnline) return _onlineGreen;
-    if (_isSellerConnected ||
-        (_partnerLastSeen != null && _partnerLastSeen!.isNotEmpty)) {
+    if (_isSellerConnected || (_partnerLastSeen != null && _partnerLastSeen!.isNotEmpty)) {
       return AppColors.textMuted;
     }
     return const Color(0xFF3B82F6);
   }
 
   void _subscribePusher() {
-    final myIdStr = (AuthSession.user?['id'] ?? AuthSession.user?['userId'])
-        ?.toString();
+    final myIdStr = (AuthSession.user?['id'] ?? AuthSession.user?['userId'])?.toString();
     final myId = int.tryParse(myIdStr ?? '');
-    final targetId = int.tryParse(
-      _resolvedTargetUserId ?? widget.targetUserId ?? '',
-    );
+    final targetId = int.tryParse(_resolvedTargetUserId ?? widget.targetUserId ?? '');
 
     // 1. Subscribe ke channel percakapan bilateral: chat-{minId}-{maxId}
     if (myId != null && targetId != null && myId > 0 && targetId > 0) {
@@ -679,9 +690,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           PusherService.instance.unsubscribe(_activeChatChannel!);
         }
         _activeChatChannel = channelName;
-        debugPrint(
-          '[ChatRoomScreen] Subscribing ke channel Pusher: $channelName',
-        );
+        debugPrint('[ChatRoomScreen] Subscribing ke channel Pusher: $channelName');
         PusherService.instance.subscribeToChat(channelName: channelName);
       }
     }
@@ -691,9 +700,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       final userChan = 'user-$myId';
       if (_activeUserChannel != userChan) {
         _activeUserChannel = userChan;
-        debugPrint(
-          '[ChatRoomScreen] Subscribing ke channel Pusher pribadi: $userChan',
-        );
+        debugPrint('[ChatRoomScreen] Subscribing ke channel Pusher pribadi: $userChan');
         PusherService.instance.subscribeToChat(channelName: userChan);
       }
     }
@@ -826,21 +833,90 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       return;
     }
 
-    if (sentOrder != null) {
-      _pendingBotOrder = sentOrder;
-      _pendingBotOrderTempId = tempOrdId;
-    }
-    if (sentProduct != null) {
-      _pendingBotProduct = sentProduct;
-      _pendingBotProductTempId = tempProdId;
-    }
-
     setState(() => _isSending = false);
     if (!_isSellerConnected && !_isConnectingSeller) {
-      unawaited(_triggerStoreBotResponse(text, sentProduct, order: sentOrder));
+      unawaited(
+        _dispatchBotTurn(
+          text: text,
+          sentProduct: sentProduct,
+          sentOrder: sentOrder,
+          tempTextId: text.isNotEmpty ? tempId : null,
+          tempProdId: sentProduct != null ? tempProdId : null,
+          tempOrdId: sentOrder != null ? tempOrdId : null,
+        ),
+      );
     } else if (_isSellerConnected) {
       _triggerSellerResponse(text);
     }
+  }
+
+  /// Kirim kartu preview produk/pesanan ke backend SEBELUM memicu balasan AI,
+  /// sehingga kartu preview langsung tersimpan di DB & muncul di HP maupun Web.
+  Future<void> _dispatchBotTurn({
+    required String text,
+    required Product? sentProduct,
+    required OrderChatPreview? sentOrder,
+    String? tempTextId,
+    String? tempProdId,
+    String? tempOrdId,
+  }) async {
+    if (AuthSession.isLoggedIn && (sentOrder != null || sentProduct != null)) {
+      try {
+        if (_resolvedTargetUserId == null || _resolvedTargetUserId!.isEmpty) {
+          await _initRealChat();
+        }
+        final targetId = _resolvedTargetUserId;
+        if (targetId != null && targetId.isNotEmpty) {
+          if (sentOrder != null) {
+            final ordRes = await ApiClient.post('/chat/send/$targetId', {
+              'message': '',
+              'metadata': sentOrder.toJson(),
+            });
+            if (tempOrdId != null) {
+              _applyServerMessageId(tempOrdId, ordRes['data']?['id']?.toString());
+            }
+          }
+          if (sentProduct != null) {
+            final prodRes = await ApiClient.post('/chat/send/$targetId', {
+              'message': '',
+              'metadata': ChatContextHelper.productToMetadata(
+                sentProduct,
+                storeFallback: _displayPartnerName,
+              ),
+            });
+            if (tempProdId != null) {
+              _applyServerMessageId(tempProdId, prodRes['data']?['id']?.toString());
+            }
+          }
+        } else {
+          if (sentOrder != null) {
+            _pendingBotOrder = sentOrder;
+            _pendingBotOrderTempId = tempOrdId;
+          }
+          if (sentProduct != null) {
+            _pendingBotProduct = sentProduct;
+            _pendingBotProductTempId = tempProdId;
+          }
+        }
+      } catch (err) {
+        debugPrint('[Chat] Gagal menyimpan kartu preview ke backend: $err');
+        if (sentOrder != null) {
+          _pendingBotOrder = sentOrder;
+          _pendingBotOrderTempId = tempOrdId;
+        }
+        if (sentProduct != null) {
+          _pendingBotProduct = sentProduct;
+          _pendingBotProductTempId = tempProdId;
+        }
+      }
+    }
+
+    await _triggerStoreBotResponse(
+      text,
+      sentProduct,
+      order: sentOrder,
+      tempTextId: tempTextId,
+    );
   }
 
   Future<void> _dispatchBackendMessages({
@@ -901,6 +977,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     OrderChatPreview? order,
     bool isMedia = false,
     bool isSticker = false,
+    String? tempTextId,
   }) async {
     final trimmed = text.trim();
     final lower = trimmed.toLowerCase();
@@ -930,9 +1007,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final isCs = _isCustomerServiceRoom;
 
     // Gunakan backend AI (/api/ai/chat) agar mengikuti konfigurasi Admin dan guardrail DinoyoCraft.
-    if (!isMedia &&
-        !isSticker &&
-        (trimmed.isNotEmpty || product != null || order != null)) {
+    if (!isMedia && !isSticker && (trimmed.isNotEmpty || product != null || order != null)) {
       String aiQuery;
       if (trimmed.isNotEmpty) {
         if (order != null) {
@@ -952,32 +1027,26 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       }
 
       final historyPayload = _messages
-          .where(
-            (m) =>
-                m.text.trim().isNotEmpty && m.senderType != _SenderType.system,
-          )
+          .where((m) => m.text.trim().isNotEmpty && m.senderType != _SenderType.system)
           .toList();
       final recentHistory = historyPayload
           .skip(historyPayload.length > 6 ? historyPayload.length - 6 : 0)
-          .map(
-            (m) => {
-              'role': m.isMine ? 'user' : 'assistant',
-              'content': m.text.trim(),
-            },
-          )
+          .map((m) => {
+                'role': m.isMine ? 'user' : 'assistant',
+                'content': m.text.trim(),
+              })
           .toList();
-      final storeUserId = (_resolvedTargetUserId ?? widget.targetUserId)
-          ?.trim();
+      final storeUserId = (_resolvedTargetUserId ?? widget.targetUserId)?.trim();
       try {
         final res = await ApiClient.post('/ai/chat', {
           'message': aiQuery,
+          'original_message': trimmed,
           'role_context': isCs ? 'customer' : 'store_bot',
           if (!isCs) 'store_name': _displayPartnerName,
-          if (!isCs &&
-              storeUserId != null &&
-              storeUserId.isNotEmpty &&
-              storeUserId != 'null')
-            'store_user_id': storeUserId,
+          if (storeUserId != null && storeUserId.isNotEmpty && storeUserId != 'null') ...{
+            'target_user_id': storeUserId,
+            if (!isCs) 'store_user_id': storeUserId,
+          },
           if (product != null)
             'product_name': product.name
           else if (order != null)
@@ -985,19 +1054,39 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           if (recentHistory.isNotEmpty) 'history': recentHistory,
           'locale': AppSettings.instance.locale == 'en' ? 'en' : 'id',
         });
-        final aiReply = (res['data']?['reply'] ?? '').toString().trim();
+        final dataMap = res['data'] is Map ? res['data'] as Map : null;
+        final aiReply = (dataMap?['reply'] ?? '').toString().trim();
+        final savedUserMsgId = dataMap?['user_message_id']?.toString();
+        final savedAiMsgId = dataMap?['ai_message_id']?.toString();
+        if (tempTextId != null &&
+            savedUserMsgId != null &&
+            savedUserMsgId.isNotEmpty &&
+            savedUserMsgId != 'null') {
+          _applyServerMessageId(tempTextId, savedUserMsgId);
+        }
         if (aiReply.isNotEmpty && mounted && !_isSellerConnected) {
-          setState(() {
-            _messages.add(
-              _ChatMessage(
-                isMine: false,
-                time: _nowLabel(),
-                text: aiReply,
-                senderType: _SenderType.storeBot,
-              ),
-            );
-          });
-          _scrollToBottom();
+          final hasValidAiId = savedAiMsgId != null &&
+              savedAiMsgId.isNotEmpty &&
+              savedAiMsgId != 'null';
+          if (hasValidAiId) {
+            _seenMessageIds.add(savedAiMsgId);
+          }
+          final alreadyAdded = hasValidAiId &&
+              _messages.any((m) => m.id == savedAiMsgId);
+          if (!alreadyAdded) {
+            setState(() {
+              _messages.add(
+                _ChatMessage(
+                  id: hasValidAiId ? savedAiMsgId : null,
+                  isMine: false,
+                  time: _nowLabel(),
+                  text: aiReply,
+                  senderType: _SenderType.storeBot,
+                ),
+              );
+            });
+            _scrollToBottom();
+          }
           return;
         }
       } catch (err) {
@@ -1009,21 +1098,21 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (order != null) {
       botReply = isCs
           ? 'Halo Kak! Informasi pesanan ${order.orderCode} (${order.productName}) sudah saya catat. Silakan sampaikan kendala atau pertanyaanmu, atau klik tombol di bawah untuk langsung terhubung ke Customer Service.'
-                .tr
+              .tr
           : 'Halo Kak! Informasi pesanan ${order.orderCode} (${order.productName}) sudah saya terima. Asisten Bot siap membantu mengecek info pengiriman/packing, atau tekan Chat Penjual di bawah jika ingin berbicara langsung dengan toko.'
-                .tr;
+              .tr;
     } else if (product != null) {
       botReply = isCs
           ? 'Halo Kak! Terima kasih sudah membagikan info ${product.name}. Ada kendala atau pertanyaan terkait produk ini yang bisa saya bantu sebelum terhubung ke Customer Service?'
-                .tr
+              .tr
           : 'Halo Kak! Terima kasih sudah menanyakan ${product.name}. Karya keramik ini ready stock dan langsung dibuat oleh pengrajin sentra Dinoyo. Ingin info varian warna atau estimasi packing? Asisten bot siap membantu, atau klik tombol di bawah untuk berbicara langsung dengan penjual! 😊'
-                .tr;
+              .tr;
     } else if (isMedia) {
       botReply = isCs
           ? 'Foto lampiran berhasil kami terima kak! Silakan jelaskan kendala atau kebutuhanmu, atau klik Chat dengan Customer Service di bawah untuk bantuan langsung dari tim CS. 📸'
-                .tr
+              .tr
           : 'Foto referensi berhasil kami terima kak! Ada model keramik serupa yang ingin ditanyakan ketersediaannya? Asisten bot siap membantu, atau hubungi penjual langsung jika butuh custom keramik! 📸🏺'
-                .tr;
+              .tr;
     } else if (isSticker) {
       botReply = 'Terima kasih stikernya kak! Ada yang bisa kami bantu mengenai pesanan atau koleksi keramik DinoyoCraft hari ini? 🎨✨'
           .tr;
@@ -1116,10 +1205,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           ),
         });
         if (pendingProdTemp != null) {
-          _applyServerMessageId(
-            pendingProdTemp,
-            res['data']?['id']?.toString(),
-          );
+          _applyServerMessageId(pendingProdTemp, res['data']?['id']?.toString());
         }
       }
     } catch (_) {}
@@ -1145,9 +1231,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         );
       });
       _scrollToBottom();
-      unawaited(
-        _forwardPendingBotContextCards().then((_) => _syncMessagesSilently()),
-      );
+      unawaited(_forwardPendingBotContextCards().then((_) => _syncMessagesSilently()));
       return;
     }
 
@@ -1158,8 +1242,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           isMine: false,
           time: _nowLabel(),
           text: isCs
-              ? 'Menghubungkan ke Customer Service... Mohon tunggu sebentar ya.'
-                    .tr
+              ? 'Menghubungkan ke Customer Service... Mohon tunggu sebentar ya.'.tr
               : 'Menghubungkan ke Pemilik Toko... Mohon tunggu sebentar ya.'.tr,
           senderType: _SenderType.system,
         ),
@@ -1179,9 +1262,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             time: _nowLabel(),
             text: isCs
                 ? 'Halo Kak! Saya tim Customer Service DinoyoCraft. Ada kendala atau pertanyaan yang bisa saya bantu secara langsung? 😊'
-                      .tr
+                    .tr
                 : 'Halo Kak! Saya Mas Dinoyo dari $_displayPartnerName. Maaf tadi masih mengecek pembakaran di workshop. Ada yang bisa saya bantu secara langsung terkait produk atau pesanan Kakak? 😊'
-                      .tr,
+                    .tr,
             senderType: _SenderType.seller,
           ),
         );
@@ -1242,23 +1325,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     });
     _scrollToBottom();
 
-    if (_useBackendChat &&
-        _isSellerConnected &&
-        _resolvedTargetUserId != null) {
+    if (_useBackendChat && _isSellerConnected && _resolvedTargetUserId != null) {
       ApiClient.post('/chat/send/$_resolvedTargetUserId', {
-            'message': '',
-            'image_url': assetPath,
-          })
-          .then((res) {
-            _applyServerMessageId(tempId, res['data']?['id']?.toString());
-            _syncMessagesSilently();
-          })
-          .catchError((err) {
-            debugPrint('[Chat] Gagal kirim gambar: $err');
-          })
-          .whenComplete(() {
-            if (mounted) setState(() => _isSending = false);
-          });
+        'message': '',
+        'image_url': assetPath,
+      }).then((res) {
+        _applyServerMessageId(tempId, res['data']?['id']?.toString());
+        _syncMessagesSilently();
+      }).catchError((err) {
+        debugPrint('[Chat] Gagal kirim gambar: $err');
+      }).whenComplete(() {
+        if (mounted) setState(() => _isSending = false);
+      });
     } else {
       setState(() => _isSending = false);
       if (!_isSellerConnected && !_isConnectingSeller) {
@@ -1289,24 +1367,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     });
     _scrollToBottom();
 
-    if (_useBackendChat &&
-        _isSellerConnected &&
-        _resolvedTargetUserId != null) {
+    if (_useBackendChat && _isSellerConnected && _resolvedTargetUserId != null) {
       final stickerFile = sticker.assetPath.split('/').last;
       ApiClient.post('/chat/send/$_resolvedTargetUserId', {
-            'message': '',
-            'image_url': '/uploads/stickers/$stickerFile',
-          })
-          .then((res) {
-            _applyServerMessageId(tempId, res['data']?['id']?.toString());
-            _syncMessagesSilently();
-          })
-          .catchError((err) {
-            debugPrint('[Chat] Gagal kirim stiker: $err');
-          })
-          .whenComplete(() {
-            if (mounted) setState(() => _isSending = false);
-          });
+        'message': '',
+        'image_url': '/uploads/stickers/$stickerFile',
+      }).then((res) {
+        _applyServerMessageId(tempId, res['data']?['id']?.toString());
+        _syncMessagesSilently();
+      }).catchError((err) {
+        debugPrint('[Chat] Gagal kirim stiker: $err');
+      }).whenComplete(() {
+        if (mounted) setState(() => _isSending = false);
+      });
     } else {
       setState(() => _isSending = false);
       if (!_isSellerConnected && !_isConnectingSeller) {
@@ -1345,9 +1418,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           await _initRealChat();
         }
 
-        if (_useBackendChat &&
-            _isSellerConnected &&
-            _resolvedTargetUserId != null) {
+        if (_useBackendChat && _isSellerConnected && _resolvedTargetUserId != null) {
           try {
             final res = await ApiClient.postMultipart(
               '/chat/send/$_resolvedTargetUserId',
@@ -1496,9 +1567,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         behavior: SnackBarBehavior.floating,
-                        content: Text(
-                          'Terima kasih, laporanmu kami terima.'.tr,
-                        ),
+                        content: Text('Terima kasih, laporanmu kami terima.'.tr),
                       ),
                     );
                   }
@@ -1617,11 +1686,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             child: Text(
               _isSellerConnected
                   ? (isCs
-                        ? 'Terhubung langsung dengan Customer Service'.tr
-                        : 'Terhubung langsung dengan Penjual'.tr)
+                      ? 'Terhubung langsung dengan Customer Service'.tr
+                      : 'Terhubung langsung dengan Penjual'.tr)
                   : (isCs
-                        ? 'Asisten Bot CS siap membantu sebelum ke CS'.tr
-                        : 'Asisten Bot siap membantu sebelum ke Penjual'.tr),
+                      ? 'Asisten Bot CS siap membantu sebelum ke CS'.tr
+                      : 'Asisten Bot siap membantu sebelum ke Penjual'.tr),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.plusJakartaSans(
@@ -1676,9 +1745,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       time: _nowLabel(),
                       text: isCs
                           ? 'Asisten Bot CS aktif kembali. Silakan tanyakan seputar pesanan, pembayaran, atau akun! 🤖'
-                                .tr
+                              .tr
                           : 'Asisten Bot Toko aktif kembali. Silakan tanyakan seputar produk atau toko! 🤖'
-                                .tr,
+                              .tr,
                       senderType: _SenderType.storeBot,
                     ),
                   );
@@ -1767,29 +1836,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                                 ),
                               ),
                             )
-                          : (matchingStore != null &&
-                                    matchingStore.hasCustomAvatar
-                                ? DcCachedImage(
-                                    imageUrl:
-                                        matchingStore.avatar ??
-                                        matchingStore.image,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Center(
-                                    child: Text(
-                                      matchingStore?.initials ??
-                                          (headerName.trim().isNotEmpty
-                                              ? headerName
-                                                    .trim()[0]
-                                                    .toUpperCase()
-                                              : 'DC'),
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                      ),
+                          : (matchingStore != null && matchingStore.hasCustomAvatar
+                              ? DcCachedImage(
+                                  imageUrl:
+                                      matchingStore.avatar ?? matchingStore.image,
+                                  fit: BoxFit.cover,
+                                )
+                              : Center(
+                                  child: Text(
+                                    matchingStore?.initials ??
+                                        (headerName.trim().isNotEmpty
+                                            ? headerName
+                                                  .trim()[0]
+                                                  .toUpperCase()
+                                            : 'DC'),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
                                     ),
-                                  )),
+                                  ),
+                                )),
                     ),
                   ),
                   Positioned(
@@ -1892,70 +1959,54 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final isDark = AppColors.isDark;
     return switch (status) {
       'shipped' => (
-        const Color(0xFF2563EB),
-        isDark
-            ? const Color(0xFF1E3A8A).withValues(alpha: 0.32)
-            : const Color(0xFFEFF6FF),
-        isDark
-            ? const Color(0xFF3B82F6).withValues(alpha: 0.45)
-            : const Color(0xFFBFDBFE),
-        Icons.local_shipping_rounded,
-      ),
+          const Color(0xFF2563EB),
+          isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.32) : const Color(0xFFEFF6FF),
+          isDark ? const Color(0xFF3B82F6).withValues(alpha: 0.45) : const Color(0xFFBFDBFE),
+          Icons.local_shipping_rounded,
+        ),
       'completed' => (
-        const Color(0xFF16A34A),
-        isDark
-            ? const Color(0xFF14532D).withValues(alpha: 0.32)
-            : const Color(0xFFF0FDF4),
-        isDark
-            ? const Color(0xFF22C55E).withValues(alpha: 0.45)
-            : const Color(0xFFBBF7D0),
-        Icons.check_circle_rounded,
-      ),
+          const Color(0xFF16A34A),
+          isDark ? const Color(0xFF14532D).withValues(alpha: 0.32) : const Color(0xFFF0FDF4),
+          isDark ? const Color(0xFF22C55E).withValues(alpha: 0.45) : const Color(0xFFBBF7D0),
+          Icons.check_circle_rounded,
+        ),
       'cancelled' => (
-        const Color(0xFFDC2626),
-        isDark
-            ? const Color(0xFF7F1D1D).withValues(alpha: 0.32)
-            : const Color(0xFFFEF2F2),
-        isDark
-            ? const Color(0xFFEF4444).withValues(alpha: 0.45)
-            : const Color(0xFFFECACA),
-        Icons.cancel_rounded,
-      ),
+          const Color(0xFFDC2626),
+          isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.32) : const Color(0xFFFEF2F2),
+          isDark ? const Color(0xFFEF4444).withValues(alpha: 0.45) : const Color(0xFFFECACA),
+          Icons.cancel_rounded,
+        ),
       'pending' => (
-        const Color(0xFFD97706),
-        isDark
-            ? const Color(0xFF78350F).withValues(alpha: 0.32)
-            : const Color(0xFFFFFBEB),
-        isDark
-            ? const Color(0xFFF59E0B).withValues(alpha: 0.45)
-            : const Color(0xFFFDE68A),
-        Icons.schedule_rounded,
-      ),
+          const Color(0xFFD97706),
+          isDark ? const Color(0xFF78350F).withValues(alpha: 0.32) : const Color(0xFFFFFBEB),
+          isDark ? const Color(0xFFF59E0B).withValues(alpha: 0.45) : const Color(0xFFFDE68A),
+          Icons.schedule_rounded,
+        ),
       _ => (
-        const Color(0xFFD97706),
-        isDark
-            ? const Color(0xFF78350F).withValues(alpha: 0.32)
-            : const Color(0xFFFFFBEB),
-        isDark
-            ? const Color(0xFFF59E0B).withValues(alpha: 0.45)
-            : const Color(0xFFFDE68A),
-        Icons.inventory_2_rounded,
-      ),
+          const Color(0xFFD97706),
+          isDark ? const Color(0xFF78350F).withValues(alpha: 0.32) : const Color(0xFFFFFBEB),
+          isDark ? const Color(0xFFF59E0B).withValues(alpha: 0.45) : const Color(0xFFFDE68A),
+          Icons.inventory_2_rounded,
+        ),
     };
   }
 
   List<String> _orderQuickQuestions(OrderChatPreview order) {
     return switch (order.status) {
       'paid' || 'packed' => [
-        'Kapan pesanan ${order.orderCode} dikirim kak?',
-        'Mohon pastikan packing aman ya kak 🙏',
-      ],
+          'Kapan pesanan ${order.orderCode} dikirim kak?',
+          'Mohon pastikan packing aman ya kak 🙏',
+        ],
       'shipped' => [
-        'Apakah paket ${order.orderCode} sudah dijemput kurir?',
-        'Mohon bantu cek posisi pengiriman ya kak',
-      ],
-      'pending' => ['Apakah stok pesanan ${order.orderCode} ready kak?'],
-      _ => ['Halo kak, saya ingin bertanya terkait pesanan ${order.orderCode}'],
+          'Apakah paket ${order.orderCode} sudah dijemput kurir?',
+          'Mohon bantu cek posisi pengiriman ya kak',
+        ],
+      'pending' => [
+          'Apakah stok pesanan ${order.orderCode} ready kak?',
+        ],
+      _ => [
+          'Halo kak, saya ingin bertanya terkait pesanan ${order.orderCode}',
+        ],
     };
   }
 
@@ -2341,7 +2392,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     color: AppColors.white,
                   ),
                   label: Text(
-                    order.orderId > 0 ? 'Lacak Pesanan'.tr : 'Lihat Produk'.tr,
+                    order.orderId > 0
+                        ? 'Lacak Pesanan'.tr
+                        : 'Lihat Produk'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -2861,8 +2914,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final isProduct = message.product != null;
     final isOrder = message.orderPreview != null;
     final isRichCard = isProduct || isOrder;
-    final isSticker =
-        message.isSticker ||
+    final isSticker = message.isSticker ||
         (message.imagePath != null &&
             (message.imagePath!.contains('sticker') ||
                 message.imagePath!.contains('/stickers/')));
@@ -2925,16 +2977,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           title: message.isMine
                               ? 'Foto Terkirim'.tr
                               : (_isCustomerServiceRoom
-                                    ? 'Foto dari Customer Service'.tr
-                                    : 'Foto dari Toko'.tr),
+                                  ? 'Foto dari Customer Service'.tr
+                                  : 'Foto dari Toko'.tr),
                           subtitle: message.time,
                           filePath: isDiskFile ? message.imagePath : null,
                           assetPath: isDiskFile
                               ? null
                               : (isNetworkImg
-                                    ? ApiClient.resolveImageUrl(
-                                        message.imagePath,
-                                      )
+                                    ? ApiClient.resolveImageUrl(message.imagePath)
                                     : message.imagePath),
                         );
                       },
@@ -3051,9 +3101,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   decoration: BoxDecoration(
                     color: isSticker ? Colors.transparent : AppColors.surface,
                     borderRadius: isSticker ? BorderRadius.zero : bubbleRadius,
-                    border: isSticker
-                        ? null
-                        : Border.all(color: AppColors.borderAlt),
+                    border: isSticker ? null : Border.all(color: AppColors.borderAlt),
                   ),
                   child: content,
                 ),

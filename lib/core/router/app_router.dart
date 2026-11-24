@@ -11,6 +11,7 @@ import '../../features/auth/otp_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/chat/chat_list_screen.dart';
 import '../../features/chat/chat_room_screen.dart';
+import '../../features/chat/models/chat_context_preview.dart';
 import '../../features/chatbot/chatbot_screen.dart';
 import '../../features/checkout/checkout_screen.dart';
 
@@ -341,10 +342,27 @@ final GoRouter appRouter = GoRouter(
             'Dinoyo Ceramic Studio';
         final productId = state.uri.queryParameters['productId'];
         final targetUserId = state.uri.queryParameters['userId'];
+        final isCs = state.uri.queryParameters['isCs'] == '1';
+        final directConnect = state.uri.queryParameters['direct'] == '1';
+        OrderChatPreview? orderPreview;
+        final extra = state.extra;
+        if (extra is OrderChatPreview) {
+          orderPreview = extra;
+        } else if (extra is Map) {
+          final raw = extra['orderPreview'];
+          if (raw is OrderChatPreview) {
+            orderPreview = raw;
+          } else if (raw is Map<String, dynamic>) {
+            orderPreview = OrderChatPreview.fromJson(raw);
+          }
+        }
         return _live(() => ChatRoomScreen(
               storeName: storeName,
               productId: productId,
               targetUserId: targetUserId,
+              initialOrderPreview: orderPreview,
+              isCustomerService: isCs,
+              initialDirectConnect: directConnect,
             ));
       },
     ),
@@ -353,12 +371,41 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final storeName = state.uri.queryParameters['store'] ??
             'Dinoyo Ceramic Studio';
-        return _live(() => ReviewsScreen(storeName: storeName));
+        final productId = state.uri.queryParameters['productId'];
+        final mitraId =
+            int.tryParse(state.uri.queryParameters['mitraId'] ?? '');
+        return _live(() => ReviewsScreen(
+              storeName: storeName,
+              productId: productId,
+              mitraId: mitraId,
+            ));
       },
     ),
     GoRoute(
       path: '/review/write',
-      builder: (context, state) => _live(WriteReviewScreen.new),
+      builder: (context, state) {
+        final extra = state.extra is Map
+            ? Map<String, dynamic>.from(state.extra as Map)
+            : const <String, dynamic>{};
+        return _live(() => WriteReviewScreen(
+              orderId: extra['orderId']?.toString() ?? '#DNC-001',
+              productId: extra['productId'] is int
+                  ? extra['productId'] as int
+                  : int.tryParse('${extra['productId'] ?? ''}'),
+              orderItemId: extra['orderItemId'] is int
+                  ? extra['orderItemId'] as int
+                  : int.tryParse('${extra['orderItemId'] ?? ''}'),
+              productName:
+                  extra['productName']?.toString() ?? 'Vas Keramik Minimalis',
+              variant: extra['variant']?.toString() ?? 'Varian Standar',
+              studioName: extra['studioName']?.toString() ??
+                  'Dinoyo Ceramic Studio',
+              productImage: extra['productImage']?.toString() ??
+                  'assets/images/product_vas.png',
+              receivedDate:
+                  extra['receivedDate']?.toString() ?? 'Pesanan Selesai',
+            ));
+      },
     ),
     GoRoute(
       path: '/hapus-akun',

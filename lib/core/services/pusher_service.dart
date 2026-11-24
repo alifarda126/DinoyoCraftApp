@@ -12,7 +12,7 @@ class PusherConfig {
   /// App Key Pusher (didapat dari dashboard Pusher / backend .env).
   static String apiKey = const String.fromEnvironment(
     'PUSHER_APP_KEY',
-    defaultValue: 'b0fa050e0050acfb222a',
+    defaultValue: 'b5fa050e0050acfb222a',
   );
 
   /// Cluster Pusher (contoh: 'ap1' untuk Asia Pacific / Jakarta/Singapore).
@@ -47,6 +47,7 @@ class PusherChatMessage {
     this.type,
     this.isMine = false,
     this.extraData,
+    this.metadata,
   });
 
   final String id;
@@ -59,6 +60,7 @@ class PusherChatMessage {
   final String? type;
   final bool isMine;
   final Map<String, dynamic>? extraData;
+  final Map<String, dynamic>? metadata;
 
   factory PusherChatMessage.fromJson(
     Map<String, dynamic> json, {
@@ -68,6 +70,19 @@ class PusherChatMessage {
     final isMine = currentUserId != null && currentUserId.isNotEmpty
         ? senderId == currentUserId
         : json['is_mine'] == true;
+
+    Map<String, dynamic>? parsedMeta;
+    final rawMeta = json['metadata'];
+    if (rawMeta is Map) {
+      parsedMeta = Map<String, dynamic>.from(rawMeta);
+    } else if (rawMeta is String && rawMeta.trim().isNotEmpty && rawMeta.trim() != 'null') {
+      try {
+        final decoded = jsonDecode(rawMeta);
+        if (decoded is Map) {
+          parsedMeta = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {}
+    }
 
     return PusherChatMessage(
       id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
@@ -80,6 +95,7 @@ class PusherChatMessage {
       type: json['type']?.toString(),
       isMine: isMine,
       extraData: json['extra'] is Map<String, dynamic> ? json['extra'] : null,
+      metadata: parsedMeta,
     );
   }
 
@@ -94,6 +110,7 @@ class PusherChatMessage {
         if (type != null) 'type': type,
         'is_mine': isMine,
         if (extraData != null) 'extra': extraData,
+        if (metadata != null) 'metadata': metadata,
       };
 }
 
