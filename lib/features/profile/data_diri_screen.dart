@@ -340,7 +340,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                           ? 'pengguna'
                           : val.text.trim().toLowerCase();
                       return _buildHelper(
-                        'Username profil dinoyocraft.id/@$handle'.tr,
+                        'Username profil dinoyocraft.my.id/@$handle'.tr,
                       );
                     },
                   ),

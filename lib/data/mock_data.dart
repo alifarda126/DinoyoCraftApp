@@ -527,7 +527,7 @@ abstract final class MockData {
   /// [force] = ambil ulang meski data sudah ada (mis. saat reconnect).
   static Future<void> fetchPublicData({bool force = false}) async {
     if (isLoadingPublicData) return;
-    if (!force && products.isNotEmpty) return; // data real sudah dimuat
+    if (!force && products.isNotEmpty && stores.isNotEmpty) return;
     isLoadingPublicData = true;
     try {
       // 1. Fetch Produk Publik
@@ -559,6 +559,7 @@ abstract final class MockData {
             .map((item) => Store.fromJson(item as Map<String, dynamic>))
             .toList();
         stores = list;
+        catalogVersionNotifier.value++;
       }
 
       // 3. Sinkronkan keranjang dari database jika sudah login
@@ -569,6 +570,7 @@ abstract final class MockData {
       debugPrint('[MockData] Error fetching public data from backend: $e');
     } finally {
       isLoadingPublicData = false;
+      catalogVersionNotifier.value++;
     }
   }
 

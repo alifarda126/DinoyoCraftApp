@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'firebase_options.dart';
 
 import 'core/app_settings.dart';
 import 'core/network/api_client.dart';
@@ -29,17 +32,26 @@ Future<void> main() async {
   if (!kIsWeb) {
     AppSettings.instance.syncCacheSize();
   }
-  // Crashlytics Global Error Handler
+  // Pastikan Firebase Core siap sebelum memasang Crashlytics Global Error Handler
   try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
     FlutterError.onError = (errorDetails) {
-      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+      if (Firebase.apps.isNotEmpty) {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+      }
     };
     PlatformDispatcher.instance.onError = (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      if (Firebase.apps.isNotEmpty) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      }
       return true;
     };
   } catch (e) {
-    debugPrint('[Crashlytics] Safe initialization fallback: ');
+    debugPrint('[Crashlytics] Safe initialization fallback: $e');
   }
 
   // Inisialisasi background services secara aman dan non-blocking

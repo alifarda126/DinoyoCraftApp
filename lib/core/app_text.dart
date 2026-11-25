@@ -245,8 +245,8 @@ abstract final class AppText {
     'Sesuai KTP': 'As on ID Card',
     'Alamat Email': 'Email Address',
     'Nomor WhatsApp / Seluler': 'WhatsApp / Mobile Number',
-    'Username profil dinoyocraft.id/@customer. Ubah 30 hari sekali.':
-        'Profile username dinoyocraft.id/@customer. Change every 30 days.',
+    'Username profil dinoyocraft.my.id/@customer. Ubah 30 hari sekali.':
+        'Profile username dinoyocraft.my.id/@customer. Change every 30 days.',
     'Verif': 'Verified',
     'Ubah': 'Edit',
     'Format JPG, PNG atau WEBP. Maksimal 5 MB.':

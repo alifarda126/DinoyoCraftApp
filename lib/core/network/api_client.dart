@@ -9,15 +9,22 @@ import '../services/mobile_log_reporter.dart';
 import 'server_status.dart';
 
 class ApiClient {
-  /// URL backend production yang disuntik saat build release:
-  /// `flutter build apk --release --dart-define=API_BASE_URL=https://api.domain.com`
-  /// Kosong saat development lokal (otomatis memakai discovery LAN / adb reverse).
+  /// URL backend production default (`https://api.dinoyocraft.my.id`).
+  /// Untuk memakai backend lokal saat development, jalankan dengan:
+  /// `flutter run --dart-define=USE_LOCAL_BACKEND=true`
+  /// atau `--dart-define=API_BASE_URL=http://127.0.0.1:5000`.
+  static const bool useLocalBackend = bool.fromEnvironment(
+    'USE_LOCAL_BACKEND',
+    defaultValue: false,
+  );
+
   static const String configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: '',
+    defaultValue: 'https://api.dinoyocraft.my.id',
   );
 
   static String get _normalizedConfiguredHost {
+    if (useLocalBackend) return '';
     final raw = configuredBaseUrl.trim();
     if (raw.isEmpty) return '';
     return raw
@@ -28,7 +35,7 @@ class ApiClient {
   static bool get hasProductionBaseUrl => _normalizedConfiguredHost.isNotEmpty;
 
   static final List<String> candidateHosts = [
-    if (configuredBaseUrl.trim().isNotEmpty)
+    if (!useLocalBackend && configuredBaseUrl.trim().isNotEmpty)
       configuredBaseUrl
           .trim()
           .replaceAll(RegExp(r'/api/?$', caseSensitive: false), '')
@@ -75,7 +82,7 @@ class ApiClient {
   static String? get authToken => _authToken ?? LocalStorage.getToken();
   static set authToken(String? token) => _authToken = token;
 
-  static const Duration timeout = Duration(seconds: 10);
+  static const Duration timeout = Duration(seconds: 18);
 
   static String _normalizeHost(String host) =>
       host.trim().replaceAll(RegExp(r'/+$'), '');
@@ -109,6 +116,7 @@ class ApiClient {
       final prodHost = _normalizedConfiguredHost;
       final idx = _registerHost(prodHost);
       _activeHostIndex = idx;
+      _hasVerifiedHost = true;
       baseHostNotifier.value = candidateHosts[idx];
       if (autoDiscover) {
         unawaited(discoverActiveHost(scanSubnetFallback: false));
@@ -294,7 +302,7 @@ class ApiClient {
           final prodHost = _normalizedConfiguredHost;
           final ok = await _probeHostHealth(
             prodHost,
-            const Duration(seconds: 5),
+            const Duration(seconds: 10),
           );
           if (ok) {
             _setActiveHost(prodHost, persist: false);
@@ -365,8 +373,9 @@ class ApiClient {
 
     Object? lastError;
     final currentHost = baseHost;
-    final firstTimeout =
-        _hasVerifiedHost ? (requestTimeout ?? timeout) : const Duration(seconds: 3);
+    final firstTimeout = (_hasVerifiedHost || hasProductionBaseUrl)
+        ? (requestTimeout ?? timeout)
+        : const Duration(seconds: 4);
 
     try {
       final response = await requestFn(currentHost).timeout(firstTimeout);
@@ -387,7 +396,10 @@ class ApiClient {
     }
 
     _hasVerifiedHost = false;
-    final discovered = await discoverActiveHost(force: true);
+    final discovered = await discoverActiveHost(
+      force: true,
+      scanSubnetFallback: !hasProductionBaseUrl,
+    );
     if (discovered != null) {
       try {
         final response = await requestFn(discovered)
@@ -402,9 +414,15 @@ class ApiClient {
       } on TimeoutException catch (e) {
         lastError = e;
       }
+    } else {
+      ServerStatus.markDown();
     }
 
-    ServerStatus.markDown();
+    if (hasProductionBaseUrl) {
+      throw Exception(
+        'Koneksi ke server DinoyoCraft sedang lambat atau terputus. Silakan periksa jaringan internet Anda.',
+      );
+    }
     throw Exception(
       'Tidak dapat terhubung ke server backend ($lastError). Pastikan backend berjalan dan HP terhubung via kabel (adb reverse) atau satu jaringan Wi-Fi.',
     );
@@ -549,11 +567,15 @@ class ApiClient {
       return http.Response.fromStream(streamed);
     }
 
-    final response = await _executeWithFallback(makeRequest);
+    const uploadTimeout = Duration(seconds: 35);
+    final response = await _executeWithFallback(
+      makeRequest,
+      requestTimeout: uploadTimeout,
+    );
     return _handleResponseWithRefresh(
       response,
       path,
-      () => _executeWithFallback(makeRequest),
+      () => _executeWithFallback(makeRequest, requestTimeout: uploadTimeout),
     );
   }
 
@@ -589,11 +611,15 @@ class ApiClient {
       return http.Response.fromStream(streamed);
     }
 
-    final response = await _executeWithFallback(makeRequest);
+    const uploadTimeout = Duration(seconds: 35);
+    final response = await _executeWithFallback(
+      makeRequest,
+      requestTimeout: uploadTimeout,
+    );
     return _handleResponseWithRefresh(
       response,
       path,
-      () => _executeWithFallback(makeRequest),
+      () => _executeWithFallback(makeRequest, requestTimeout: uploadTimeout),
     );
   }
 

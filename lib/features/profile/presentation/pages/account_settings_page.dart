@@ -198,7 +198,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
               ),
             ),
             helper:
-                'Username profil dinoyocraft.id/@${_usernameCtrl.text}. Ubah 30 hari sekali.',
+                'Username profil dinoyocraft.my.id/@${_usernameCtrl.text}. Ubah 30 hari sekali.',
           ),
           SizedBox(height: AppDimensions.paddingXL),
 

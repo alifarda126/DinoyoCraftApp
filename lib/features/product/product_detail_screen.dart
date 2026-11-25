@@ -98,7 +98,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 onShare: () {
                   Clipboard.setData(
                     ClipboardData(
-                      text: 'https://dinoyocraft.id/product/${widget.productId}',
+                      text: 'https://dinoyocraft.my.id/product/${widget.productId}',
                     ),
                   );
                   _toast('Tautan produk disalin ke clipboard');

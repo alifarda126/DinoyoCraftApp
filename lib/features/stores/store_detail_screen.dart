@@ -113,7 +113,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             Clipboard.setData(
                               ClipboardData(
                                 text:
-                                    'https://dinoyocraft.id/store/${widget.storeIndex}',
+                                    'https://dinoyocraft.my.id/store/${widget.storeIndex}',
                               ),
                             );
                             ScaffoldMessenger.of(context).showSnackBar(

@@ -1,0 +1,65 @@
+name: Release DinoyoCraft APK
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Release APK
+        run: flutter build apk --release --dart-define=API_BASE_URL=https://api.dinoyocraft.my.id
+
+      - name: Rename APK Artifact
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME:-v1.0.0}"
+          cp build/app/outputs/flutter-apk/app-release.apk "DinoyoCraft-${TAG_NAME}.apk"
+          echo "APK_FILE=DinoyoCraft-${TAG_NAME}.apk" >> "$GITHUB_ENV"
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DinoyoCraft-APK
+          path: ${{ env.APK_FILE }}
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "DinoyoCraft Mobile ${{ github.ref_name }}"
+          body: |
+            ## DinoyoCraft Android Release (${{ github.ref_name }})
+            - Terhubung langsung ke server produksi `https://api.dinoyocraft.my.id`
+            - Realtime chat & notifikasi (Pusher + Firebase Cloud Messaging)
+            - Login Email, OTP 2FA, & Google Sign-In siap pakai
+
+            ### Cara Install di Android
+            1. Unduh file **${{ env.APK_FILE }}** di bawah pada bagian **Assets**.
+            2. Buka file APK di HP Android (izinkan instalasi dari browser/file manager bila diminta).
+          files: ${{ env.APK_FILE }}
+          draft: false
+          prerelease: false
