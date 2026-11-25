@@ -29,22 +29,22 @@ jobs:
           cache: true
 
       - name: Install Dependencies
-        run: flutter pub get
-
-      - name: Build Release APK
-        run: flutter build apk --release --dart-define=API_BASE_URL=https://api.dinoyocraft.my.id
-
-      - name: Rename APK Artifact
         run: |
-          TAG_NAME="${GITHUB_REF_NAME:-v1.0.0}"
-          cp build/app/outputs/flutter-apk/app-release.apk "DinoyoCraft-${TAG_NAME}.apk"
-          echo "APK_FILE=DinoyoCraft-${TAG_NAME}.apk" >> "$GITHUB_ENV"
+          chmod +x android/gradlew
+          flutter pub get
+
+      - name: Build Release APKs (Universal & ARM64)
+        run: |
+          flutter build apk --release --dart-define=API_BASE_URL=https://api.dinoyocraft.my.id
+          cp build/app/outputs/flutter-apk/app-release.apk "DinoyoCraft-${GITHUB_REF_NAME:-v1.0.0}.apk"
+          flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=https://api.dinoyocraft.my.id
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "DinoyoCraft-${GITHUB_REF_NAME:-v1.0.0}-arm64-v8a.apk"
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: DinoyoCraft-APK
-          path: ${{ env.APK_FILE }}
+          path: DinoyoCraft-*.apk
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -57,9 +57,11 @@ jobs:
             - Realtime chat & notifikasi (Pusher + Firebase Cloud Messaging)
             - Login Email, OTP 2FA, & Google Sign-In siap pakai
 
-            ### Cara Install di Android
-            1. Unduh file **${{ env.APK_FILE }}** di bawah pada bagian **Assets**.
-            2. Buka file APK di HP Android (izinkan instalasi dari browser/file manager bila diminta).
-          files: ${{ env.APK_FILE }}
+            ### Pilih File APK
+            - **`DinoyoCraft-${{ github.ref_name }}-arm64-v8a.apk`** *(Direkomendasikan — ukuran ringan ~28 MB untuk hampir semua HP Android modern)*
+            - **`DinoyoCraft-${{ github.ref_name }}.apk`** *(Universal — mendukung seluruh arsitektur ARM64, ARMv7, dan emulator x86_64)*
+          files: |
+            DinoyoCraft-${{ github.ref_name }}-arm64-v8a.apk
+            DinoyoCraft-${{ github.ref_name }}.apk
           draft: false
           prerelease: false
