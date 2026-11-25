@@ -22,6 +22,13 @@ jobs:
           distribution: "temurin"
           java-version: "21"
 
+      - name: Accept Android SDK Licenses
+        run: |
+          SDK_MGR="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          if [ -x "$SDK_MGR" ]; then
+            yes | "$SDK_MGR" --licenses > /dev/null || true
+          fi
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -36,7 +43,12 @@ jobs:
 
       - name: Build Release APK
         run: |
-          flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=https://api.dinoyocraft.my.id
+          set -o pipefail
+          if ! flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=https://api.dinoyocraft.my.id 2>&1 | tee build.log; then
+            SUMMARY=$(tail -n 30 build.log | tr '\n' ' ' | cut -c1-900)
+            echo "::error title=Flutter Build Error::$SUMMARY"
+            exit 1
+          fi
           TAG="${GITHUB_REF_NAME:-v1.0.0}"
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "DinoyoCraft-${TAG}-arm64-v8a.apk"
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "DinoyoCraft-${TAG}-armeabi-v7a.apk"
