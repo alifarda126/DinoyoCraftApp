@@ -30,15 +30,17 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          sed -i 's/\r$//' android/gradlew
           chmod +x android/gradlew
           flutter pub get
 
-      - name: Build Release APKs (Universal & ARM64)
+      - name: Build Release APK
         run: |
-          flutter build apk --release --dart-define=API_BASE_URL=https://api.dinoyocraft.my.id
-          cp build/app/outputs/flutter-apk/app-release.apk "DinoyoCraft-${GITHUB_REF_NAME:-v1.0.0}.apk"
           flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=https://api.dinoyocraft.my.id
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "DinoyoCraft-${GITHUB_REF_NAME:-v1.0.0}-arm64-v8a.apk"
+          TAG="${GITHUB_REF_NAME:-v1.0.0}"
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "DinoyoCraft-${TAG}-arm64-v8a.apk"
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "DinoyoCraft-${TAG}-armeabi-v7a.apk"
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk "DinoyoCraft-${TAG}-x86_64.apk"
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
@@ -58,10 +60,12 @@ jobs:
             - Login Email, OTP 2FA, & Google Sign-In siap pakai
 
             ### Pilih File APK
-            - **`DinoyoCraft-${{ github.ref_name }}-arm64-v8a.apk`** *(Direkomendasikan — ukuran ringan ~28 MB untuk hampir semua HP Android modern)*
-            - **`DinoyoCraft-${{ github.ref_name }}.apk`** *(Universal — mendukung seluruh arsitektur ARM64, ARMv7, dan emulator x86_64)*
+            - **`DinoyoCraft-${{ github.ref_name }}-arm64-v8a.apk`** *(Direkomendasikan — untuk hampir semua HP Android modern 64-bit)*
+            - **`DinoyoCraft-${{ github.ref_name }}-armeabi-v7a.apk`** *(Untuk HP Android 32-bit lama)*
+            - **`DinoyoCraft-${{ github.ref_name }}-x86_64.apk`** *(Untuk Emulator Android di PC/Laptop)*
           files: |
             DinoyoCraft-${{ github.ref_name }}-arm64-v8a.apk
-            DinoyoCraft-${{ github.ref_name }}.apk
+            DinoyoCraft-${{ github.ref_name }}-armeabi-v7a.apk
+            DinoyoCraft-${{ github.ref_name }}-x86_64.apk
           draft: false
           prerelease: false
