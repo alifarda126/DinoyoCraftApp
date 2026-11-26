@@ -14,6 +14,7 @@ import '../../core/services/auth_session.dart';
 import '../../core/services/pusher_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/gallery_picker_sheet.dart';
 import '../../core/widgets/image_preview_dialog.dart';
@@ -3213,13 +3214,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   }
 
   Widget _buildInputBar() {
+    final bottomInset = DcBottomNav.systemNavInset(context);
     return Container(
       color: AppColors.surfaceSubtle,
       padding: EdgeInsets.fromLTRB(
         16,
         10,
         16,
-        10 + MediaQuery.paddingOf(context).bottom,
+        10 + bottomInset,
       ),
       child: Row(
         children: [

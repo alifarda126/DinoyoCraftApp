@@ -50,6 +50,7 @@ class PhotoPickerService {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetCtx) => SafeArea(
+        maintainBottomViewPadding: true,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
           child: Column(

@@ -111,6 +111,7 @@ class GalleryPickerSheet extends StatefulWidget {
               ),
               child: SafeArea(
                 top: false,
+                maintainBottomViewPadding: true,
                 child: GalleryPickerSheet(
                   title: title,
                   scrollController: scrollController,
@@ -333,6 +334,7 @@ class _GalleryPickerSheetState extends State<GalleryPickerSheet> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetCtx) => SafeArea(
+        maintainBottomViewPadding: true,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(

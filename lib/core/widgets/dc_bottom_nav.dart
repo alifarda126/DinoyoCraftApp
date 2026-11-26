@@ -59,6 +59,17 @@ class DcBottomNav extends StatelessWidget {
     return rawBottom.clamp(8.0, 28.0);
   }
 
+  /// Inset bawah aman untuk layar penuh, sticky bottom bar, maupun modal bottom sheet
+  /// pada navigasi gestur maupun navigasi 3 tombol Android (edge-to-edge).
+  static double systemNavInset(BuildContext context) {
+    if (MediaQuery.viewInsetsOf(context).bottom > 0) {
+      return MediaQuery.paddingOf(context).bottom;
+    }
+    final viewPad = MediaQuery.viewPaddingOf(context).bottom;
+    final pad = MediaQuery.paddingOf(context).bottom;
+    return viewPad > pad ? viewPad : pad;
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomPad = getBottomPadding(context);

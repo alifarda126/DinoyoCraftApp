@@ -639,6 +639,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: AppColors.bg,
         appBar: _buildHeader(),
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: Form(
             key: _formKey,
             child: CustomScrollView(

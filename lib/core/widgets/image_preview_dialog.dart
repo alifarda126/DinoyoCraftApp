@@ -210,7 +210,11 @@ class _ImagePreviewDialogState extends State<ImagePreviewDialog> {
             // Petunjuk di bawah bila preview avatar profil
             if (widget.isAvatar)
               Positioned(
-                bottom: MediaQuery.paddingOf(context).bottom + 24,
+                bottom:
+                    (MediaQuery.viewPaddingOf(context).bottom > 0
+                        ? MediaQuery.viewPaddingOf(context).bottom
+                        : MediaQuery.paddingOf(context).bottom) +
+                    24,
                 left: 24,
                 right: 24,
                 child: Center(

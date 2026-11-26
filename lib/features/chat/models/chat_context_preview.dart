@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../../core/app_text.dart';
 import '../../../core/assets.dart';
 import '../../../core/network/api_client.dart';
 import '../../../data/mock_data.dart';
@@ -120,22 +121,22 @@ class OrderChatPreview {
         : (parsedOrderId > 0 ? '#DNC-$parsedOrderId' : '#DNC');
 
     final defaultStatusLabel = switch (rawStatus) {
-      'pending' => 'Menunggu Pembayaran',
-      'paid' => 'Dibayar • Perlu Dikemas',
-      'packed' => 'Dikemas Penjual',
-      'shipped' => 'Sedang Dikirim',
-      'completed' => 'Pesanan Selesai',
-      'cancelled' => 'Dibatalkan',
-      _ => 'Pesanan Aktif',
+      'pending' => 'Menunggu Pembayaran'.tr,
+      'paid' => 'Dibayar • Perlu Dikemas'.tr,
+      'packed' => 'Dikemas Penjual'.tr,
+      'shipped' => 'Sedang Dikirim'.tr,
+      'completed' => 'Pesanan Selesai'.tr,
+      'cancelled' => 'Dibatalkan'.tr,
+      _ => 'Pesanan Aktif'.tr,
     };
 
     final defaultSectionLabel = switch (rawStatus) {
-      'pending' => 'Konfirmasi Pembayaran',
-      'paid' || 'packed' => 'Produk Dikemas',
-      'shipped' => 'Pesanan Dikirim',
-      'completed' => 'Pesanan Selesai',
-      'cancelled' => 'Pesanan Dibatalkan',
-      _ => 'Detail Pesanan',
+      'pending' => 'Konfirmasi Pembayaran'.tr,
+      'paid' || 'packed' => 'Produk Dikemas'.tr,
+      'shipped' => 'Pesanan Dikirim'.tr,
+      'completed' => 'Pesanan Selesai'.tr,
+      'cancelled' => 'Pesanan Dibatalkan'.tr,
+      _ => 'Detail Pesanan'.tr,
     };
 
     final tracking = (json['tracking_number'] ?? '').toString().trim();
@@ -277,22 +278,22 @@ class OrderChatPreview {
     }
 
     final statusLabel = switch (status) {
-      'pending' => 'Menunggu Pembayaran',
-      'paid' => 'Dibayar • Menunggu Dikemas',
-      'packed' => 'Dikemas Penjual',
-      'shipped' => 'Sedang Dikirim',
-      'completed' => 'Pesanan Selesai',
-      'cancelled' => 'Pesanan Dibatalkan',
-      _ => 'Pesanan Aktif',
+      'pending' => 'Menunggu Pembayaran'.tr,
+      'paid' => 'Dibayar • Menunggu Dikemas'.tr,
+      'packed' => 'Dikemas Penjual'.tr,
+      'shipped' => 'Sedang Dikirim'.tr,
+      'completed' => 'Pesanan Selesai'.tr,
+      'cancelled' => 'Pesanan Dibatalkan'.tr,
+      _ => 'Pesanan Aktif'.tr,
     };
 
     final sectionLabel = switch (status) {
-      'pending' => 'Konfirmasi Pembayaran',
-      'paid' || 'packed' => 'Produk Dikemas',
-      'shipped' => 'Pesanan Dikirim',
-      'completed' => 'Pesanan Selesai',
-      'cancelled' => 'Pesanan Dibatalkan',
-      _ => 'Detail Pesanan',
+      'pending' => 'Konfirmasi Pembayaran'.tr,
+      'paid' || 'packed' => 'Produk Dikemas'.tr,
+      'shipped' => 'Pesanan Dikirim'.tr,
+      'completed' => 'Pesanan Selesai'.tr,
+      'cancelled' => 'Pesanan Dibatalkan'.tr,
+      _ => 'Detail Pesanan'.tr,
     };
 
     final prodIdStr = first?['product_id']?.toString() ?? '';

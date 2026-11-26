@@ -46,7 +46,347 @@ abstract final class AppText {
       return lower;
     }
 
+    // 5. Fallback pola dinamis (interpolasi angka / kode pesanan / nama)
+    final dynamicTranslated = _translateDynamic(trimmed);
+    if (dynamicTranslated != null) {
+      final startIdx = text.indexOf(trimmed);
+      final leading = text.substring(0, startIdx);
+      final trailing = text.substring(startIdx + trimmed.length);
+      return '$leading$dynamicTranslated$trailing';
+    }
+
     return text;
+  }
+
+  static String? _translateDynamic(String s) {
+    RegExpMatch? m;
+
+    if ((m = RegExp(r'^(\d+)\s+Baru$').firstMatch(s)) != null) {
+      return '${m![1]} New';
+    }
+    if ((m = RegExp(r'^(\d+)\s+Pesanan$').firstMatch(s)) != null) {
+      final n = m![1]!;
+      return n == '1' ? '1 Order' : '$n Orders';
+    }
+    if ((m = RegExp(r'^(\d+)\s+Penjual Terpilih$').firstMatch(s)) != null) {
+      final n = m![1]!;
+      return n == '1' ? '1 Selected Seller' : '$n Selected Sellers';
+    }
+    if ((m = RegExp(r'^\+\s*(\d+)\s+produk lainnya$').firstMatch(s)) != null) {
+      final n = m![1]!;
+      return '+ $n more ${n == '1' ? 'item' : 'items'}';
+    }
+    if ((m = RegExp(r'^Jumlah:\s*(\d+)(x?)$').firstMatch(s)) != null) {
+      return 'Qty: ${m![1]}${m[2]}';
+    }
+    if ((m = RegExp(r'^Total\s*\((\d+)\s+Produk\):?$').firstMatch(s)) != null) {
+      final n = m![1]!;
+      final colon = s.endsWith(':') ? ':' : '';
+      return 'Total ($n ${n == '1' ? 'Item' : 'Items'})$colon';
+    }
+    if ((m = RegExp(r'^Rincian Pesanan\s*\((\d+)\s+Barang\)$').firstMatch(s)) !=
+        null) {
+      final n = m![1]!;
+      return 'Order Details ($n ${n == '1' ? 'Item' : 'Items'})';
+    }
+    if ((m = RegExp(r'^Varian:\s*(.+)$').firstMatch(s)) != null) {
+      return 'Variant: ${m![1]}';
+    }
+    if ((m = RegExp(r'^Variasi:\s*(.+)$').firstMatch(s)) != null) {
+      return 'Variation: ${m![1]}';
+    }
+    if ((m = RegExp(r'^Resi:\s*(.+)$').firstMatch(s)) != null) {
+      return 'Tracking No: ${m![1]}';
+    }
+    if ((m = RegExp(r'^Pengiriman:\s*(.+)$').firstMatch(s)) != null) {
+      return 'Shipping: ${m![1]}';
+    }
+    if ((m = RegExp(r'^Batas akhir:\s*(.+)$').firstMatch(s)) != null) {
+      return 'Deadline: ${m![1]}';
+    }
+    if ((m = RegExp(r'^Buka Aplikasi\s+(.+)$').firstMatch(s)) != null) {
+      return 'Open ${m![1]} App';
+    }
+    if ((m = RegExp(
+          r'^Buka aplikasi\s+(.+),\s*pilih menu Scan QR lalu arahkan atau unggah QRIS di atas\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Open ${m![1]} app, select Scan QR, then scan or upload the QRIS code above.';
+    }
+    if ((m = RegExp(r'^Nomor VA\s+(.+)\s+berhasil disalin!$').firstMatch(s)) !=
+        null) {
+      return '${m![1]} VA number copied!';
+    }
+    if ((m = RegExp(
+          r'^Tautan aplikasi\s+(.+)\s+belum tersedia\. Gunakan QR atau coba muat ulang\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return '${m![1]} app link is unavailable. Please use QR or reload.';
+    }
+    if ((m = RegExp(
+          r'^Tekan tombol di atas untuk langsung diarahkan ke aplikasi\s+(.+)\s+dan konfirmasikan pembayaran sebelum batas waktu berakhir\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Tap the button above to open ${m![1]} directly and confirm payment before the deadline.';
+    }
+    if ((m = RegExp(
+          r'^Tidak dapat membuka aplikasi\s+(.+)\s+di perangkat ini\. Pindai QR atau gunakan Simulator Midtrans Sandbox\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Unable to open ${m![1]} on this device. Scan the QR code or use the Midtrans Sandbox Simulator.';
+    }
+    if ((m = RegExp(
+          r'^Pesanan #(.+) akan dibatalkan\. Tindakan ini tidak dapat diurungkan\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order #${m![1]} will be canceled. This action cannot be undone.';
+    }
+    if ((m = RegExp(r'^Pesanan #(.+) berhasil dibatalkan\.$').firstMatch(s)) !=
+        null) {
+      return 'Order #${m![1]} has been canceled.';
+    }
+    if ((m = RegExp(
+          r'^Pesanan #(.+) selesai! Dana diteruskan ke penjual\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order #${m![1]} completed! Funds have been released to the seller.';
+    }
+    if ((m = RegExp(
+          r'^Pastikan produk pesanan #(.+) sudah diterima dengan baik\. Setelah dikonfirmasi, pesanan selesai dan dana masuk ke saldo aktif penjual\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Make sure order #${m![1]} has been received in good condition. Once confirmed, the order is completed and funds are released to the seller.';
+    }
+    if ((m = RegExp(
+          r'^Pembayaran pesanan #(.+) telah (?:berhasil )?dikonfirmasi\.\s*(.*)$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Payment for order #${m![1]} has been confirmed. The seller will process your order shortly.';
+    }
+    if ((m = RegExp(
+          r'^Pesanan #(.+) sedang dikemas oleh pengrajin\. Mohon tunggu hingga pesanan dikirim\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order #${m![1]} is being packed by the artisan. Please wait until it is shipped.';
+    }
+    if ((m = RegExp(
+          r'^Pesanan #(.+) telah dikirim! No\. Resi:\s*(.+)$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order #${m![1]} has been shipped! Tracking No: ${m[2]}';
+    }
+    if ((m = RegExp(
+          r'^Pesanan #(.+) sedang dalam perjalanan menuju alamat Anda\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order #${m![1]} is on its way to your address.';
+    }
+    if ((m = RegExp(
+          r'^Pesanan #(.+) telah diterima dan selesai\. Terima kasih telah berbelanja di DinoyoCraft!$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order #${m![1]} has been received and completed. Thank you for shopping at DinoyoCraft!';
+    }
+    if ((m = RegExp(
+          r'^Mohon maaf, pesanan #(.+) telah dibatalkan\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Sorry, order #${m![1]} has been canceled.';
+    }
+    if ((m = RegExp(r'^Update Status Pesanan #(.+)$').firstMatch(s)) != null) {
+      return 'Order #${m![1]} Status Update';
+    }
+    if ((m = RegExp(
+          r'^Status pesanan #(.+) diperbarui menjadi\s+(.+)\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order #${m![1]} status updated to ${m[2]}.';
+    }
+    if ((m = RegExp(r'^Pesan Baru dari\s+(.+)$').firstMatch(s)) != null) {
+      return 'New Message from ${m![1]}';
+    }
+    if ((m = RegExp(r'^Mulai obrolan dengan\s+(.+)$').firstMatch(s)) != null) {
+      return 'Start a chat with ${m![1]}';
+    }
+    if ((m = RegExp(r'^Terakhir dilihat\s+(.+)$').firstMatch(s)) != null) {
+      return 'Last seen ${m![1]}';
+    }
+    if ((m = RegExp(r'^Terakhir diubah\s+(\d+)\s+hari lalu$').firstMatch(s)) !=
+        null) {
+      final n = m![1]!;
+      return 'Last changed $n ${n == '1' ? 'day' : 'days'} ago';
+    }
+    if ((m = RegExp(r'^Terakhir diubah\s+(\d+)\s+bulan lalu$').firstMatch(s)) !=
+        null) {
+      final n = m![1]!;
+      return 'Last changed $n ${n == '1' ? 'month' : 'months'} ago';
+    }
+    if ((m = RegExp(r'^(\d+)\s+menit lalu$').firstMatch(s)) != null) {
+      return '${m![1]}m ago';
+    }
+    if ((m = RegExp(r'^(\d+)\s+jam lalu$').firstMatch(s)) != null) {
+      return '${m![1]}h ago';
+    }
+    if ((m = RegExp(r'^(\d+)\s+hari lalu$').firstMatch(s)) != null) {
+      return '${m![1]}d ago';
+    }
+    if ((m = RegExp(
+          r'^Belum ada ulasan dengan bintang\s+(\d+)$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'No ${m![1]}-star reviews yet';
+    }
+    if ((m = RegExp(r'^Ulasan oleh\s+(.+)$').firstMatch(s)) != null) {
+      return 'Review by ${m![1]}';
+    }
+    if ((m = RegExp(
+          r'^Username profil dinoyocraft\.my\.id/@(.+)$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Profile username dinoyocraft.my.id/@${m![1]}';
+    }
+    if ((m = RegExp(
+          r'^Alamat "(.+)" berhasil disalin ke clipboard\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Address "${m![1]}" copied to clipboard.';
+    }
+    if ((m = RegExp(r'^Alamat "(.+)" berhasil diperbarui\.$').firstMatch(s)) !=
+        null) {
+      return 'Address "${m![1]}" updated successfully.';
+    }
+    if ((m = RegExp(r'^Alamat "(.+)" berhasil ditambahkan\.$').firstMatch(s)) !=
+        null) {
+      return 'Address "${m![1]}" added successfully.';
+    }
+    if ((m = RegExp(r'^Alamat "(.+)" dijadikan alamat utama\.$').firstMatch(s)) !=
+        null) {
+      return 'Address "${m![1]}" set as primary address.';
+    }
+    if ((m = RegExp(
+          r'^Sesi "(.+)" akan dicabut dan perangkat tersebut otomatis ter-logout dari akun Anda\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Session "${m![1]}" will be revoked and that device will be logged out automatically.';
+    }
+    if ((m = RegExp(
+          r'^Untuk mengonfirmasi penonaktifan Autentikasi 2 Langkah, kami akan mengirimkan kode verifikasi OTP ke email terdaftar Anda \((.+)\)\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'To confirm disabling Two-Factor Authentication, we will send an OTP verification code to your registered email (${m![1]}).';
+    }
+    if ((m = RegExp(
+          r'^Akun Anda login melalui Google\. Ketik persis alamat email \((.+)\) untuk konfirmasi keamanan\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Your account signed in via Google. Type your exact email address (${m![1]}) to confirm.';
+    }
+    if ((m = RegExp(
+          r'^Anda masih memiliki (\d+) pesanan aktif yang sedang berjalan\..*$',
+        ).firstMatch(s)) !=
+        null) {
+      final n = m![1]!;
+      return 'You still have $n active ${n == '1' ? 'order' : 'orders'} in progress. Please complete or cancel them before requesting account deletion.';
+    }
+    if ((m = RegExp(
+          r'^Apakah kamu yakin ingin menghapus "(.+)" dari keranjang\?$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Are you sure you want to remove "${m![1]}" from your cart?';
+    }
+    if ((m = RegExp(r'^"(.+)" dihapus dari keranjang$').firstMatch(s)) !=
+        null) {
+      return '"${m![1]}" removed from cart';
+    }
+    if ((m = RegExp(
+          r'^Stok tersisa (\d+) buah untuk varian ini$',
+        ).firstMatch(s)) !=
+        null) {
+      return '${m![1]} left in stock for this variant';
+    }
+    if ((m = RegExp(r'^Stok tersisa (\d+) buah$').firstMatch(s)) != null) {
+      return '${m![1]} left in stock';
+    }
+    if ((m = RegExp(r'^Kampung Wisata Keramik Dinoyo,\s*(.+)$').firstMatch(s)) !=
+        null) {
+      return 'Dinoyo Ceramic Tourism Village, ${m![1]}';
+    }
+
+    // Scripted chat bot & store replies with dynamic store/product/order names
+    if ((m = RegExp(
+          r'^(.+) melayani pembuatan keramik custom \(desain motif, glasir khusus, ukiran nama/logo\)\. Silakan chat langsung dengan penjual untuk berkonsultasi detailnya ya! 🏺$',
+        ).firstMatch(s)) !=
+        null) {
+      return '${m![1]} accepts custom ceramic orders (patterns, custom glazes, name/logo engravings). Chat directly with the seller to consult on details! 🏺';
+    }
+    if ((m = RegExp(
+          r'^Halo Kak! Selamat datang di (.+)\. Saya Asisten Bot Toko siap membantu pertanyaan seputar produk keramik atau pengiriman sebelum terhubung dengan Penjual! 😊$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Hello! Welcome to ${m![1]}. I am the Store Bot Assistant, ready to help with ceramic product or shipping questions before connecting you with the Seller! 😊';
+    }
+    if ((m = RegExp(
+          r'^Halo Kak! Produk keramik di (.+) sebagian besar ready stock dan siap dikirim\..*$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Hello! Most ceramic products at ${m![1]} are in stock and ready to ship. Each piece is crafted from Dinoyo clay with high-temperature firing. Need specific variant stock info? Chat directly with the seller below! 👍';
+    }
+    if ((m = RegExp(
+          r'^Halo Kak! Saya Mas Dinoyo dari (.+)\. Maaf tadi masih mengecek pembakaran di workshop\. Ada yang bisa saya bantu secara langsung terkait produk atau pesanan Kakak\? 😊$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Hello! I am the artisan from ${m![1]}. Sorry, I was checking the kiln at the workshop earlier. How can I assist you directly with our products or your order? 😊';
+    }
+    if ((m = RegExp(
+          r'^Halo Kak! Informasi pesanan (.+) \((.+)\) sudah saya catat\..*$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Hello! I have noted order ${m![1]} (${m[2]}). Please share your question or issue, or tap the button below to connect directly with Customer Service.';
+    }
+    if ((m = RegExp(
+          r'^Halo Kak! Informasi pesanan (.+) \((.+)\) sudah saya terima\..*$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Hello! I have received the details for order ${m![1]} (${m[2]}). The Bot Assistant can help check shipping/packaging info, or tap Chat Seller below to speak directly with the store.';
+    }
+    if ((m = RegExp(
+          r'^Halo Kak! Terima kasih sudah membagikan info (.+)\. Ada kendala atau pertanyaan terkait produk ini.*$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Hello! Thank you for sharing ${m![1]}. Do you have any questions or issues regarding this product before connecting to Customer Service?';
+    }
+    if ((m = RegExp(
+          r'^Halo Kak! Terima kasih sudah menanyakan (.+)\. Karya keramik ini ready stock.*$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Hello! Thank you for asking about ${m![1]}. This ceramic piece is handcrafted by Dinoyo artisans. Need glaze color options or packaging details? Tap below to chat directly with the seller! 😊';
+    }
+
+    // Error prefixes ("Gagal ...: $msg")
+    const errorPrefixes = <String, String>{
+      'Gagal login dengan Google: ': 'Google sign-in failed: ',
+      'Gagal membatalkan pesanan: ': 'Failed to cancel order: ',
+      'Gagal memilih akun Google: ': 'Failed to select Google account: ',
+      'Gagal mengirim ulang OTP: ': 'Failed to resend OTP: ',
+      'Gagal mengonfirmasi pesanan: ': 'Failed to confirm order: ',
+      'Gagal mengubah kata sandi: ': 'Failed to change password: ',
+      'Gagal menyelesaikan pesanan: ': 'Failed to complete order: ',
+      'Gagal menyimpan: ': 'Failed to save: ',
+      'Gagal verifikasi OTP: ': 'OTP verification failed: ',
+      'Gagal mengirim OTP: ': 'Failed to send OTP: ',
+      'Gagal mencabut sesi: ': 'Failed to revoke session: ',
+      'Gagal menyimpan alamat: ': 'Failed to save address: ',
+      'Gagal menghapus alamat: ': 'Failed to delete address: ',
+      'Gagal mengubah alamat utama: ': 'Failed to update primary address: ',
+    };
+    for (final entry in errorPrefixes.entries) {
+      if (s.startsWith(entry.key)) {
+        final rest = s.substring(entry.key.length);
+        return '${entry.value}${_dict[rest] ?? rest}';
+      }
+    }
+
+    return null;
   }
 
   static const _lookup = <String, Map<String, String>>{
@@ -826,6 +1166,589 @@ abstract final class AppText {
         'Describe your reason for reporting this store in detail...',
     'Terima kasih, laporan toko berhasil dikirim dan akan segera ditinjau oleh tim DinoyoCraft.':
         'Thank you, your store report has been submitted and will be reviewed by the DinoyoCraft team.',
+
+    // ── Tambahan Lengkap Seluruh Modul Aplikasi (Orders, Payment, Auth, Workshop, Settings, Legal, FAQ, Chat) ──
+    '(estimasi 7–14 hari). Cocok untuk pemula, keluarga & komunitas.':
+        '(estimated 7–14 days). Suitable for beginners, families & communities.',
+    'Sesi 2 jam: pengenalan tanah liat, teknik dasar throwing/handbuilding, glazing intro, dan hasil karya bisa dibawa pulang setelah pembakaran (estimasi 7–14 hari). Cocok untuk pemula, keluarga & komunitas.':
+        '2-hour session: clay introduction, basic throwing/handbuilding techniques, glazing intro, and pieces can be taken home after firing (estimated 7–14 days). Suitable for beginners, families & communities.',
+    'Jadwal Operasional Workshop': 'Workshop Operating Hours',
+    'Kampung Wisata Keramik Dinoyo': 'Dinoyo Ceramic Tourism Village',
+    'Contact Person & Lokasi': 'Contact Person & Location',
+    'Buka di Google Maps': 'Open in Google Maps',
+
+    // Kategori Produk Backend & Umum
+    'Keramik': 'Ceramics',
+    'Keramik Dekoratif': 'Decorative Ceramics',
+    'Peralatan Makan': 'Tableware',
+    'Pot Tanaman': 'Plant Pots',
+    'Vas': 'Vases',
+    'Cangkir': 'Cups',
+    'Piring': 'Plates',
+    'Mangkuk': 'Bowls',
+    'Teko': 'Teapots',
+    'Guci': 'Urns & Jars',
+    'Suvenir': 'Souvenirs',
+    'Hiasan': 'Ornaments',
+    'Patung': 'Figurines',
+    'Kategori': 'Category',
+    'Standar': 'Standard',
+    'Varian Standar': 'Standard Variant',
+    'Pelanggan': 'Customer',
+    'Toko Keramik': 'Ceramic Store',
+    'Produk Pesanan': 'Ordered Item',
+    'Stok Habis': 'Out of Stock',
+    'Stok produk habis': 'Product out of stock',
+    'Stok Pengrajin: ': 'Artisan Stock: ',
+    'Belum ada deskripsi produk dari pengrajin.':
+        'No product description from the artisan yet.',
+    'Belum ada ulasan pembeli untuk produk ini.':
+        'No customer reviews for this product yet.',
+
+    // Pesanan, Pelacakan & Riwayat Transaksi (Profile & Tracking Sheet)
+    'Dibayar': 'Paid',
+    'Dibatalkan': 'Canceled',
+    'Pesanan Dibatalkan': 'Order Canceled',
+    'Pesanan Diterima': 'Order Received',
+    'Pesanan Diterima & Selesai': 'Order Received & Completed',
+    'Pesanan Dibuat': 'Order Placed',
+    'Pembayaran Diterima': 'Payment Received',
+    'Pembayaran Berhasil': 'Payment Successful',
+    'Pesanan Sedang Dikirim': 'Order Shipped',
+    'Sedang Dikemas Penjual': 'Being Packed by Seller',
+    'Dibayar • Menunggu Dikemas': 'Paid • Waiting to Pack',
+    'Dibayar • Perlu Dikemas': 'Paid • Ready to Pack',
+    'Pesanan Aktif': 'Active Order',
+    'Konfirmasi Pembayaran': 'Payment Confirmation',
+    'Produk Dikemas': 'Items Packed',
+    'Pesanan Dikirim': 'Order Shipped',
+    'Detail Pesanan': 'Order Details',
+    'Lacak Pesanan': 'Track Order',
+    'Hubungi Penjual': 'Contact Seller',
+    'Hubungi Penjual Terkait Pesanan Ini':
+        'Contact Seller About This Order',
+    'Penjual sedang menyiapkan pesanan Anda.':
+        'The seller is preparing your order.',
+    'Paket sedang dalam perjalanan menuju alamat Anda.':
+        'Your package is on the way to your address.',
+    'Pesanan telah diterima. Terima kasih telah berbelanja!':
+        'Order has been received. Thank you for shopping!',
+    'Selesaikan pembayaran agar pesanan\nsegera diproses penjual.':
+        'Complete payment so the seller\ncan process your order right away.',
+    'Pesanan berhasil dibatalkan.': 'Order canceled successfully.',
+    'Pesanan ini telah dibatalkan dan tidak diproses.':
+        'This order has been canceled and was not processed.',
+    'Belum ada pesanan di sini': 'No orders here yet',
+    'Yuk jelajahi keramik buatan pengrajin Dinoyo!':
+        'Let\'s explore handcrafted ceramics by Dinoyo artisans!',
+    'Total Tagihan:': 'Total Bill:',
+    'Total': 'Total',
+    'Subtotal': 'Subtotal',
+    'Checkout': 'Checkout',
+    'Konfirmasi Pesanan Diterima?': 'Confirm Order Received?',
+    'Pastikan produk sudah diterima dengan baik. Setelah dikonfirmasi, pesanan selesai dan dana masuk ke saldo aktif penjual.':
+        'Make sure your items have arrived in good condition. Once confirmed, the order is completed and funds are released to the seller.',
+    'Belum': 'Not Yet',
+    'Ya, Pesanan Diterima': 'Yes, Order Received',
+    'Cek posisi paket di situs kurir:':
+        'Track package on courier website:',
+    'CekResi (auto)': 'CekResi (auto)',
+    'Live': 'Live',
+    'Resi:': 'Tracking No:',
+    'Nomor resi disalin': 'Tracking number copied',
+    'Resi tersalin — tempel di situs kurir bila kolomnya masih kosong':
+        'Tracking number copied — paste it on the courier page if blank',
+    'Ringkasan Paket': 'Package Summary',
+    'Tidak dapat membuka browser': 'Unable to open browser',
+
+    // Catatan Timeline Backend
+    'Pesanan dibuat oleh pembeli': 'Order placed by buyer',
+    'Pembayaran berhasil dikonfirmasi': 'Payment confirmed',
+    'Pesanan sedang dikemas oleh pengrajin':
+        'Order is being packed by the artisan',
+    'Pesanan diserahkan ke kurir ekspedisi':
+        'Order handed over to shipping courier',
+    'Pesanan diterima oleh pembeli': 'Order received by buyer',
+
+    // Checkout & Pembayaran Midtrans
+    'Pembayaran': 'Payment',
+    'Pembayaran Berhasil!': 'Payment Successful!',
+    'PILIHAN METODE PEMBAYARAN': 'PAYMENT METHOD OPTIONS',
+    'PILIH BANK VIRTUAL ACCOUNT': 'SELECT VIRTUAL ACCOUNT BANK',
+    'PILIH DOMPET DIGITAL (E-WALLET)': 'SELECT E-WALLET',
+    'Selesaikan pembayaran dalam': 'Complete payment within',
+    'Waktu Pembayaran Habis': 'Payment Time Expired',
+    'Batas waktu pembayaran sudah kedaluwarsa.':
+        'Payment time limit has expired.',
+    'Tagihan telah kedaluwarsa dan stok produk telah dikembalikan.':
+        'The invoice has expired and product stock has been restored.',
+    'Keluar dari Pembayaran?': 'Leave Payment?',
+    'Anda bisa menyimpan pesanan untuk dibayar nanti sebelum batas waktu berakhir, atau membatalkan pesanan sekarang.':
+        'You can save this order to pay later before the deadline, or cancel the order now.',
+    'Bayar Nanti': 'Pay Later',
+    'Bayar Nanti / Batalkan': 'Pay Later / Cancel',
+    'Lanjut Bayar': 'Continue Payment',
+    'Belanja Lagi': 'Shop Again',
+    'Lihat Status Pesanan': 'View Order Status',
+    'Status Pesanan': 'Order Status',
+    'No. Pesanan': 'Order No.',
+    'Total Dibayar': 'Total Paid',
+    'Instan': 'Instant',
+    'Verifikasi Otomatis': 'Auto Verification',
+    'Cek Status Pembayaran': 'Check Payment Status',
+    'Memeriksa Pembayaran...': 'Checking Payment...',
+    'Menghubungkan ke Midtrans Sandbox': 'Connecting to Midtrans Sandbox',
+    'Bayar QRIS (Sandbox)': 'Pay QRIS (Sandbox)',
+    'Buka Aplikasi': 'Open App',
+    'Cara Bayar Lewat Aplikasi': 'How to Pay via App',
+    'Salin': 'Copy',
+    'Salin / Panduan QR': 'Copy / QR Guide',
+    'Kode QR belum tersedia': 'QR code not available yet',
+    'Kode Perusahaan (Biller Code)': 'Company Code (Biller Code)',
+    'Kode Pembayaran (Bill Key)': 'Payment Code (Bill Key)',
+    'Bill Key Mandiri berhasil disalin!': 'Mandiri Bill Key copied!',
+    'Kode Perusahaan Mandiri disalin!': 'Mandiri Biller Code copied!',
+    'Nominal total pembayaran disalin!': 'Total payment amount copied!',
+    'Nomor pesanan disalin!': 'Order number copied!',
+    'Payload QRIS disalin! Anda juga bisa screenshot QR di atas.':
+        'QRIS payload copied! You can also screenshot the QR code above.',
+    'Silakan screenshot gambar QR di atas untuk diunggah dari galeri.':
+        'Please screenshot the QR image above to upload from your gallery.',
+    'Pindai QR menggunakan aplikasi m-Banking atau e-Wallet apapun (BCA, Mandiri, BRI, GoPay, OVO, ShopeePay, DANA)':
+        'Scan QR using any m-Banking or e-Wallet app (BCA, Mandiri, BRI, GoPay, OVO, ShopeePay, DANA)',
+    'Screenshot QRIS di atas lalu pindai atau unggah gambar QR lewat menu Scan di aplikasi berikut:':
+        'Screenshot the QRIS code above, then scan or upload it via the Scan menu in these apps:',
+    'Untuk pembayaran via OVO atau DANA, silakan gunakan tab QRIS Instant di atas.':
+        'For payment via OVO or DANA, please use the QRIS Instant tab above.',
+    'Mode Sandbox: tekan tombol di atas untuk langsung diarahkan ke pembayaran Midtrans tanpa salin nomor VA secara manual.':
+        'Sandbox Mode: tap the button above to proceed directly to Midtrans payment without copying the VA number manually.',
+    'Mode pratinjau tanpa pesanan nyata. Buat pesanan dari Keranjang untuk menguji Midtrans Sandbox.':
+        'Preview mode without a live order. Create an order from Cart to test Midtrans Sandbox.',
+    'Pembayaran belum terkonfirmasi. Selesaikan transaksi di kanal pembayaran lalu cek kembali.':
+        'Payment is not confirmed yet. Complete the transaction in your payment app and check again.',
+    'Pembayaran telah dibatalkan atau gagal.':
+        'Payment was canceled or failed.',
+    'Gagal memuat data pembayaran.': 'Failed to load payment details.',
+    'Terima kasih! Pesanan Anda telah diverifikasi otomatis dan diteruskan ke pengrajin untuk segera dikemas.':
+        'Thank you! Your order has been automatically verified and forwarded to the artisan for packing.',
+    'Transaksi dibatalkan. Anda dapat membuat pesanan baru kapan saja.':
+        'Transaction canceled. You can place a new order anytime.',
+    'Pembayaran Nasional': 'National Standard Payment',
+    'Sentra Kerajinan Keramik Dinoyo Malang':
+        'Dinoyo Ceramic Craft Center Malang',
+    'Belum ada alamat pengiriman tersimpan': 'No saved delivery address yet',
+    'Tambah Alamat Pengiriman': 'Add Delivery Address',
+    'Tambahkan alamat pengiriman terlebih dahulu.':
+        'Please add a delivery address first.',
+    'Tambahkan alamat penerima agar pengrajin dapat mengirimkan pesanan keramik Anda.':
+        'Add a recipient address so the artisan can ship your ceramic order.',
+    'Alamat baru berhasil disimpan': 'New address saved successfully',
+    'Alamat wajib diisi': 'Address is required',
+    'Nomor telepon wajib diisi': 'Phone number is required',
+    'Nomor telepon tidak valid': 'Invalid phone number',
+    'Nama penerima tidak boleh kosong.': 'Recipient name cannot be empty.',
+    'Nomor telepon minimal 9 digit.':
+        'Phone number must be at least 9 digits.',
+    'Alamat lengkap minimal 5 karakter.':
+        'Full address must be at least 5 characters.',
+    'Maksimal 5 alamat tersimpan. Hapus atau ubah alamat yang ada.':
+        'Maximum 5 addresses saved. Delete or edit an existing address.',
+    'Contoh: Tolong bungkus dengan bubble wrap tebal dan kardus aman.':
+        'Example: Please wrap with extra bubble wrap and sturdy box.',
+    'Tidak ada produk': 'No items',
+    'Pilih produk untuk melanjutkan checkout.':
+        'Select items to proceed to checkout.',
+    'Tambahkan produk dari halaman Keranjang.':
+        'Add items from the Cart page.',
+
+    // Share Sheet, Gallery Picker & Connection Gate
+    'Bagikan': 'Share',
+    'Bagikan melalui': 'Share via',
+    'Bagikan langsung ke WhatsApp, Instagram, atau aplikasi lain':
+        'Share directly to WhatsApp, Instagram, or other apps',
+    'Salin Link': 'Copy Link',
+    'Salin tautan ke papan klip perangkat': 'Copy link to device clipboard',
+    'Tautan berhasil disalin ke clipboard': 'Link copied to clipboard',
+    'Izin Akses Galeri Diperlukan': 'Gallery Permission Required',
+    'Berikan izin akses agar aplikasi dapat memuat foto langsung dari galeri HP Anda.':
+        'Grant gallery permission so the app can load photos directly from your device.',
+    'Buka Pengaturan Izin': 'Open Permission Settings',
+    'Pilih Folder Galeri': 'Select Gallery Album',
+    'Galeri Sistem': 'System Gallery',
+    'Tidak ada foto ditemukan di galeri ini.':
+        'No photos found in this album.',
+    'Gagal memuat file foto asli dari galeri.':
+        'Failed to load original photo file from gallery.',
+    'Coba Lagi': 'Try Again',
+    'Muat Ulang': 'Reload',
+    'Tidak Ada Koneksi Internet': 'No Internet Connection',
+    'Tidak ada koneksi internet': 'No internet connection',
+    'Koneksi tersambung kembali': 'Back online',
+    'Koneksi internetmu terputus. Periksa Wi-Fi atau kuota datamu, lalu coba lagi.':
+        'Your internet connection is offline. Check your Wi-Fi or mobile data and try again.',
+    'Pastikan Wi-Fi atau data seluler aktif':
+        'Make sure Wi-Fi or mobile data is turned on',
+    'Coba pindah ke area dengan sinyal lebih kuat':
+        'Try moving to an area with a stronger signal',
+    'Aktifkan mode pesawat lalu matikan kembali':
+        'Turn Airplane Mode on and off again',
+    'Halaman akan terbuka otomatis saat koneksi kembali.':
+        'This page will reopen automatically once back online.',
+    'Server Tidak Dapat Dihubungi': 'Server Unreachable',
+    'Internetmu normal, tetapi server DinoyoCraft sedang tidak dapat dijangkau. Kemungkinan sedang dalam pemeliharaan.':
+        'Your internet is working, but the DinoyoCraft server is currently unreachable or under maintenance.',
+    'Tunggu beberapa saat lalu coba lagi':
+        'Wait a moment and try again',
+    'Pastikan server backend sedang berjalan':
+        'Make sure the backend server is running',
+    'Data pesananmu tetap aman dan tersinkron otomatis':
+        'Your order data stays safe and syncs automatically',
+    'Kami memeriksa koneksi ke server secara berkala...':
+        'Checking connection to the server periodically...',
+
+    // Auth, OTP, Forgot Password & New Password
+    'KARYA OTENTIK SENTRA KERAMIK DINOYO':
+        'AUTHENTIC CRAFTS OF DINOYO CERAMIC CENTER',
+    'Lupa Password?': 'Forgot Password?',
+    'Masukkan alamat email yang terdaftar pada akun DinoyoCraft Anda untuk menerima kode verifikasi OTP.':
+        'Enter the email address registered to your DinoyoCraft account to receive an OTP verification code.',
+    'Pastikan email aktif untuk menerima 6 digit kode OTP.':
+        'Make sure your email is active to receive the 6-digit OTP code.',
+    'Kirim Kode Verifikasi': 'Send Verification Code',
+    'Masuk Sekarang': 'Log In Now',
+    'Gagal mengirim kode OTP': 'Failed to send OTP code',
+    'Kode OTP telah dikirim ke email kamu':
+        'OTP code has been sent to your email',
+    'Kode OTP baru telah dikirim ke email kamu':
+        'A new OTP code has been sent to your email',
+    'Kode OTP baru telah dikirim ke email terdaftar Anda':
+        'A new OTP code has been sent to your registered email',
+    'Kode OTP login baru telah dikirim ke email Anda':
+        'A new login OTP code has been sent to your email',
+    'Kode OTP verifikasi masuk telah dikirim ke email Anda.':
+        'Login verification OTP code has been sent to your email.',
+    'Kode OTP salah': 'Invalid OTP code',
+    'Kode OTP salah.': 'Invalid OTP code.',
+    'Kode OTP terverifikasi. Silakan buat kata sandi baru.':
+        'OTP verified. Please create a new password.',
+    'Lengkapi 6 digit kode verifikasi':
+        'Please complete the 6-digit verification code',
+    'Aktivasi 2FA': 'Enable 2FA',
+    'Nonaktifkan 2FA': 'Disable 2FA',
+    'Nonaktifkan 2FA?': 'Disable 2FA?',
+    'Kirim OTP & Nonaktifkan': 'Send OTP & Disable',
+    'Verifikasi Keamanan': 'Security Verification',
+    'Verifikasi Lupa Password': 'Password Reset Verification',
+    'Verifikasi Akun': 'Account Verification',
+    'Masukkan kode verifikasi 6 digit yang telah kami kirimkan ke email untuk mengaktifkan 2FA:':
+        'Enter the 6-digit verification code sent to your email to enable 2FA:',
+    'Masukkan kode verifikasi 6 digit yang telah kami kirimkan ke email untuk konfirmasi nonaktifkan 2FA:':
+        'Enter the 6-digit verification code sent to your email to disable 2FA:',
+    'Masukkan kode verifikasi 6 digit yang telah kami\nkirimkan ke email':
+        'Enter the 6-digit verification code we\nsent to',
+    'email terdaftar Anda': 'your registered email',
+    'Belum menerima kode?': 'Didn\'t receive the code?',
+    'Kirim ulang kode dalam': 'Resend code in',
+    'Kirim ulang kode': 'Resend code',
+    'Konfirmasi': 'Confirm',
+    'Verifikasi & Aktifkan': 'Verify & Enable',
+    'Konfirmasi Nonaktifkan': 'Confirm Disable',
+    'Batalkan Verifikasi': 'Cancel Verification',
+    'Salah memasukkan email?': 'Entered the wrong email?',
+    'Ubah email': 'Change email',
+    'Ubah data pendaftaran': 'Edit registration info',
+    'Autentikasi 2 Langkah via Email berhasil diaktifkan.':
+        'Email Two-Factor Authentication enabled successfully.',
+    'Autentikasi 2 Langkah (2FA) berhasil dinonaktifkan.':
+        'Two-Factor Authentication (2FA) disabled successfully.',
+    'Verifikasi berhasil! Selamat datang kembali.':
+        'Verification successful! Welcome back.',
+    'Pendaftaran berhasil!': 'Registration successful!',
+    'Pendaftaran berhasil! Selamat datang di DinoyoCraft.':
+        'Registration successful! Welcome to DinoyoCraft.',
+    'Pendaftaran gagal': 'Registration failed',
+    'Login dengan Google berhasil!': 'Signed in with Google!',
+    'Login gagal': 'Sign-in failed',
+    'Login gagal: token tidak diterima dari server':
+        'Sign-in failed: no token received from server',
+    'Akun Google belum terdaftar. Mengalihkan ke pendaftaran...':
+        'Google account not registered yet. Redirecting to sign up...',
+    'Minimal 3 karakter': 'At least 3 characters',
+    'Username minimal 3 karakter': 'Username must be at least 3 characters',
+    'Hanya boleh huruf, angka, dan underscore (_)':
+        'Only letters, numbers, and underscores (_) allowed',
+    'Username hanya boleh huruf, angka, dan underscore (_)':
+        'Username may only contain letters, numbers, and underscores (_)',
+    'huruf kecil, angka, underscore': 'lowercase, numbers, underscore',
+    '✓ Username tersedia': '✓ Username available',
+    'Username sudah digunakan': 'Username is already taken',
+    'Username tidak tersedia atau format tidak valid.':
+        'Username is unavailable or invalid format.',
+    'Mengecek...': 'Checking...',
+    'Tidak Tersedia': 'Unavailable',
+    'Buat Kata Sandi Baru': 'Create New Password',
+    'Masukkan kata sandi saat ini terlebih dahulu, lalu buat kata sandi baru yang kuat untuk akun Anda.':
+        'Enter your current password first, then create a strong new password for your account.',
+    'Buat kata sandi baru yang kuat dan mudah diingat untuk mengamankan akun DinoyoCraft Anda.':
+        'Create a strong, memorable new password to secure your DinoyoCraft account.',
+    'Masukkan kata sandi saat ini': 'Enter current password',
+    'Kata sandi saat ini wajib diisi': 'Current password is required',
+    'Masukkan kata sandi baru': 'Enter new password',
+    'Kata sandi wajib diisi': 'Password is required',
+    'Ulangi kata sandi baru': 'Repeat new password',
+    'Konfirmasi kata sandi wajib diisi': 'Password confirmation is required',
+    'KRITERIA KATA SANDI:': 'PASSWORD CRITERIA:',
+    'Terpenuhi': 'Met',
+    'Belum Terpenuhi': 'Not Met Yet',
+    'Mengandung huruf besar dan angka':
+        'Contains an uppercase letter and a number',
+    'Cocok dengan konfirmasi kata sandi': 'Matches password confirmation',
+    'Harap penuhi kriteria kata sandi': 'Please meet all password criteria',
+    'Simpan Kata Sandi Baru': 'Save New Password',
+    'Kata sandi berhasil diperbarui!': 'Password updated successfully!',
+    'Kata sandi berhasil diubah. Silakan masuk kembali.':
+        'Password changed successfully. Please log in again.',
+    'Butuh bantuan lebih lanjut?': 'Need further assistance?',
+    'Hubungi kami': 'Contact us',
+
+    // Profile, Data Diri, Pengaturan & Hapus Akun
+    'Kelola informasi akun dan profil pelanggan Anda':
+        'Manage your account and customer profile information',
+    'Foto profil dipilih. Tekan Simpan Perubahan untuk mengunggah ke akun.':
+        'Profile photo selected. Tap Save Changes to upload to your account.',
+    'Akun Google • Ketuk untuk buat kata sandi':
+        'Google Account • Tap to create password',
+    'Perbarui kata sandi keamanan akun Anda':
+        'Update your account security password',
+    'Terakhir diubah hari ini': 'Last changed today',
+    'Terakhir diubah kemarin': 'Last changed yesterday',
+    'International English localization':
+        'International English localization',
+    'Tampilan terang bersih khas keramik Dinoyo':
+        'Clean light appearance inspired by Dinoyo ceramics',
+    'Nuansa gelap nyaman untuk penggunaan malam hari':
+        'Comfortable dark appearance for nighttime use',
+    'Menyesuaikan mode tampilan sistem perangkat Anda':
+        'Matches your device system display mode',
+    'Kelola perangkat yang aktif mengakses akun Anda':
+        'Manage devices currently signed in to your account',
+    'PERANGKAT SAAT INI': 'CURRENT DEVICE',
+    'Aktif Saat Ini': 'Active Now',
+    'PERANGKAT LAIN YANG TERHUBUNG': 'OTHER CONNECTED DEVICES',
+    'Perangkat ini terdaftar sebagai sesi utama Anda. Anda dapat mencabut token sesi di perangkat lain kapan saja.':
+        'This device is registered as your primary session. You can revoke other device sessions anytime.',
+    'Hapus Sesi Perangkat?': 'Remove Device Session?',
+    'Hapus & Logout': 'Remove & Log Out',
+    'Keluar': 'Log Out',
+    'Keluar Semua': 'Log Out All',
+    'Keluar dari Semua Perangkat Lain?': 'Log Out of All Other Devices?',
+    'Semua sesi perangkat lain yang terhubung akan dicabut dan seluruh perangkat tersebut otomatis ter-logout.':
+        'All connected sessions on other devices will be revoked and logged out automatically.',
+    'Berhasil keluar dari semua perangkat lain. Semua perangkat tersebut otomatis logout.':
+        'Successfully logged out of all other devices.',
+    'Seluruh sesi di perangkat lain berhasil dikeluarkan.':
+        'All sessions on other devices have been logged out.',
+    'Bersihkan Cache?': 'Clear Cache?',
+    'Cache aplikasi sudah bersih (0 B).': 'App cache is already clean (0 B).',
+    'Keluar dari Akun?': 'Log Out of Account?',
+    'Anda harus login kembali untuk mengakses keranjang dan riwayat transaksi kerajinan keramik Anda.':
+        'You will need to sign in again to access your cart and ceramic order history.',
+    'Anda telah berhasil keluar dari akun.':
+        'You have logged out successfully.',
+    'Notifikasi pesanan & pengiriman diaktifkan.':
+        'Order & shipping notifications enabled.',
+    'Notifikasi pesanan & pengiriman dinonaktifkan.':
+        'Order & shipping notifications disabled.',
+    'Notifikasi via WhatsApp diaktifkan.':
+        'WhatsApp notifications enabled.',
+    'Notifikasi via WhatsApp dinonaktifkan.':
+        'WhatsApp notifications disabled.',
+    'Ajukan Penghapusan Akun': 'Request Account Deletion',
+    'Ajukan Hapus Akun?': 'Request Account Deletion?',
+    'Kirim Pengajuan': 'Submit Request',
+    'Mengirim Pengajuan...': 'Submitting Request...',
+    'Memproses...': 'Processing...',
+    'Menunggu Peninjauan Admin': 'Awaiting Admin Review',
+    'Tim Admin DinoyoCraft sedang meninjau permohonan penghapusan akun Anda. Selama belum diproses, Anda masih dapat membatalkan pengajuan ini.':
+        'The DinoyoCraft Admin team is reviewing your account deletion request. While pending, you can still cancel this request.',
+    'Alasan yang diajukan:': 'Submitted reason:',
+    'Batalkan Pengajuan Hapus Akun': 'Cancel Account Deletion Request',
+    'Pengajuan penghapusan akun berhasil dikirim ke Admin.':
+        'Account deletion request submitted to Admin.',
+    'Pengajuan penghapusan akun berhasil dibatalkan.':
+        'Account deletion request canceled.',
+    'Permohonan penghapusan akun Anda akan dikirim ke tim Admin DinoyoCraft untuk ditinjau. Jika disetujui, akun akan dinonaktifkan secara permanen.':
+        'Your account deletion request will be sent to the DinoyoCraft Admin team for review. Once approved, your account will be permanently deactivated.',
+    'Pilih alasan penghapusan akun': 'Please select a reason for deletion',
+    'Tuliskan alasan lainnya...': 'Write your reason...',
+    'Ketik Email Akun untuk Konfirmasi': 'Type Account Email to Confirm',
+    'Ketik alamat email akun Google Anda':
+        'Type your Google account email address',
+    'permanen setelah disetujui Admin': 'permanent once approved by Admin',
+    '. Seluruh akses akun, data profil, serta riwayat belanja DinoyoCraft kamu akan dinonaktifkan.':
+        '. All account access, profile data, and DinoyoCraft shopping history will be deactivated.',
+    'Penghapusan Akun Disetujui': 'Account Deletion Approved',
+    'Pengajuan penghapusan akun DinoyoCraft Anda telah disetujui oleh Admin.':
+        'Your DinoyoCraft account deletion request has been approved by Admin.',
+
+    // Reviews, Notifications, Chat & ClayBot
+    'Baru saja': 'Just now',
+    'Kemarin': 'Yesterday',
+    'Ulasan Produk': 'Product Reviews',
+    'ulasan': 'reviews',
+    'pembeli merekomendasikan produk studio ini':
+        'of buyers recommend this studio\'s products',
+    'Jadilah pembeli pertama yang memberikan ulasan':
+        'Be the first buyer to leave a review',
+    'Belum ada ulasan untuk ditampilkan': 'No reviews to display yet',
+    'Pembeli memberikan penilaian bintang tanpa komentar tertulis.':
+        'Buyer left a star rating without a written comment.',
+    'Ulasan berhasil dikirim. Terima kasih!':
+        'Review submitted successfully. Thank you!',
+    'Mengirim Ulasan...': 'Submitting Review...',
+    'Mengirim...': 'Submitting...',
+    'Gagal mengirim ulasan. Periksa koneksi Anda.':
+        'Failed to submit review. Check your connection.',
+    'Gagal mengirim laporan. Periksa koneksi Anda.':
+        'Failed to submit report. Check your connection.',
+    'ID produk tidak ditemukan pada pesanan ini.':
+        'Product ID was not found on this order.',
+    'Pilih hal yang paling kamu sukai:': 'Pick what you liked the most:',
+    'Pesan Toko': 'Store Messages',
+    'Promo & Voucher': 'Promos & Vouchers',
+    'INFO KEAMANAN': 'SECURITY INFO',
+    'PEMBERITAHUAN': 'NOTIFICATION',
+    'PESAN TOKO': 'STORE MESSAGE',
+    'PESANAN & PENGIRIMAN': 'ORDER & SHIPPING',
+    'PROMO SPESIAL': 'SPECIAL PROMO',
+    'Notifikasi transaksi dan info akun akan muncul di sini.':
+        'Transaction notifications and account updates will appear here.',
+    'Belum ada percakapan dengan toko.': 'No conversations with stores yet.',
+    'Customer Service Resmi': 'Official Customer Service',
+    'Pengrajin Dinoyo': 'Dinoyo Artisan',
+    'Pengrajin DinoyoCraft': 'DinoyoCraft Artisan',
+    'Online • Siap melayani': 'Online • Ready to help',
+    'Offline': 'Offline',
+    'Hapus Preview Pesanan': 'Remove Order Preview',
+    'Percakapan berhasil dihapus.': 'Conversation cleared.',
+    'Mascot Tembikar DinoyoCraft': 'DinoyoCraft Pottery Mascot',
+    'Si Clay Keramik (8 Stiker)': 'Si Clay Ceramics (8 Stickers)',
+    'Stiker Si Clay': 'Si Clay Sticker',
+    'Stiker ChatBot': 'ChatBot Sticker',
+    'Ketuk untuk kirim': 'Tap to send',
+    'Terima Kasih': 'Thank You',
+    'Ada Diskon?': 'Any Discount?',
+    'Kirim Foto Produk': 'Send Product Photo',
+    'Tulis pesan kamu...': 'Write your message...',
+    'ClayBot sedang mengetik...': 'ClayBot is typing...',
+    'ClayBot memiliki batasan tertentu, cerdaslah dalam bertanya...':
+        'ClayBot may make mistakes, ask thoughtfully...',
+    'Terima kasih Kak, foto produknya sudah kami terima! Tim Customer Service sedang memeriksanya.':
+        'Thank you, we have received the product photo! Our Customer Service team is reviewing it.',
+    'Untuk terhubung langsung dengan Customer Service DinoyoCraft secara realtime, silakan masuk ke akun kamu terlebih dahulu ya 😊':
+        'To connect directly with DinoyoCraft Customer Service in real time, please log in to your account first 😊',
+    'Maaf, layanan Live Chat CS sedang tidak terjangkau saat ini. Silakan hubungi csdinoyocraft@gmail.com atau coba sesaat lagi ya.':
+        'Sorry, Live Chat CS is currently unreachable. Please contact csdinoyocraft@gmail.com or try again shortly.',
+    'Layanan Live Chat CS sedang sibuk. Coba lagi sesaat.':
+        'Live Chat CS is currently busy. Please try again shortly.',
+    'Live Chat Customer Service': 'Live Chat Customer Service',
+    'Menghubungkan CS...': 'Connecting to CS...',
+    'Email: csdinoyocraft@gmail.com\nWhatsApp: +62 812-3456-7890\nJam operasional: 09.00–18.00 WIB':
+        'Email: csdinoyocraft@gmail.com\nWhatsApp: +62 812-3456-7890\nOperating hours: 09:00–18:00 WIB',
+    'Halo Kak! Saya Asisten Bot Customer Service DinoyoCraft. Sebelum terhubung ke tim CS, ada yang bisa saya bantu seputar pesanan, pembayaran, akun, atau pengiriman? 😊':
+        'Hello! I am the DinoyoCraft Customer Service Bot Assistant. Before connecting to our CS team, how can I help with your order, payment, account, or shipping? 😊',
+    'Halo Kak! Saya Asisten Bot Customer Service DinoyoCraft. Saya siap membantu pertanyaan seputar produk keramik, pesanan (#DNC/ORD), pembayaran Midtrans, pemulihan akun (csdinoyocraft@gmail.com), dan workshop. Jika butuh tim CS langsung, klik tombol di bawah ya!':
+        'Hello! I am the DinoyoCraft Customer Service Bot Assistant. I can help with ceramic products, orders (#DNC/ORD), Midtrans payments, account recovery (csdinoyocraft@gmail.com), and workshops. Tap below if you need our live CS team!',
+    'Halo Kak! Saya tim Customer Service DinoyoCraft. Ada kendala atau pertanyaan yang bisa saya bantu secara langsung? 😊':
+        'Hello! I am from the DinoyoCraft Customer Service team. How can I assist you directly today? 😊',
+    'Halo Kak! Pesanmu sudah kami terima. Penjual saat ini sedang di workshop keramik. Saya sebagai Asisten Bot Toko siap membantu menjawab pertanyaan seputar keramik. Jika butuh respons langsung dari pemilik toko, silakan tekan tombol di bawah ya! 🙏':
+        'Hello! We received your message. The seller is currently at the ceramic workshop. As the Store Bot Assistant, I can help answer ceramic questions, or tap the button below for a direct reply from the store owner! 🙏',
+    'Baik Kak, pertanyaan Kakak sudah saya catat langsung. Kualitas tembikar dan keramik Dinoyo kami utamakan selalu. Jika ingin memesan, silakan langsung checkout atau kabari saya jika butuh varian custom ya! 🙌':
+        'Got it! I have noted your question. We always prioritize authentic Dinoyo ceramic quality. Feel free to checkout directly or let me know if you need a custom variant! 🙌',
+    'Foto lampiran berhasil kami terima kak! Silakan jelaskan kendala atau kebutuhanmu, atau klik Chat dengan Customer Service di bawah untuk bantuan langsung dari tim CS. 📸':
+        'Attachment photo received! Please describe your issue or request, or tap Chat with Customer Service below for direct help from our CS team. 📸',
+    'Foto referensi berhasil kami terima kak! Ada model keramik serupa yang ingin ditanyakan ketersediaannya? Asisten bot siap membantu, atau hubungi penjual langsung jika butuh custom keramik! 📸🏺':
+        'Reference photo received! Would you like to check availability for a similar ceramic design? Our bot assistant can help, or contact the seller directly for custom ceramics! 📸🏺',
+    'Harga di etalase kami merupakan harga pengrajin lokal tangan pertama. Untuk pemesanan grosir atau souvenir acara dalam jumlah banyak, Kakak bisa nego langsung dengan penjual lewat tombol di bawah! 🏷️':
+        'Our catalog prices are direct first-hand artisan prices. For wholesale or bulk event souvenir orders, you can negotiate directly with the seller via the button below! 🏷️',
+    'Untuk pengiriman luar kota, toko kami menggunakan proteksi ekstra: bubble wrap tebal berlapis dan rangka kayu pelindung. Kami juga memberikan garansi ganti baru jika produk retak di perjalanan! 📦🛡️':
+        'For intercity shipping, our store uses extra protection: multi-layer thick bubble wrap and wooden crate framing, backed by a full replacement warranty if damaged in transit! 📦🛡️',
+    'Terima kasih stikernya kak! Ada yang bisa kami bantu mengenai pesanan atau koleksi keramik DinoyoCraft hari ini? 🎨✨':
+        'Thanks for the sticker! How can we help with your order or DinoyoCraft ceramic collection today? 🎨✨',
+
+    // FAQ (Help Screen)
+    'Bagaimana cara memesan produk?': 'How do I order a product?',
+    'Pilih produk dari Beranda atau tab Produk, tap tombol +, lalu lanjutkan ke Checkout untuk menyelesaikan pembayaran.':
+        'Choose a product from Home or the Products tab, tap +, then proceed to Checkout to complete your payment.',
+    'Apakah bisa pickup di toko?': 'Can I pick up my order at the store?',
+    'Ya. Pilih opsi ambil di toko pada checkout jika tersedia, atau hubungi studio terkait melalui ClayBot.':
+        'Yes. Choose the store pickup option at checkout if available, or contact the studio via ClayBot or Store Chat.',
+    'Berapa lama pengiriman ke luar kota?':
+        'How long does intercity shipping take?',
+    'Estimasi 2–5 hari kerja tergantung kurir (Regular/Hemat/Express) dan destinasi pengiriman.':
+        'Estimated 2–5 business days depending on the courier service (Regular/Economy/Express) and destination.',
+    'Apakah produk bisa dikustom?': 'Can ceramic products be customized?',
+    'Beberapa studio menerima custom order. Hubungi ClayBot atau WhatsApp studio untuk konfirmasi desain dan estimasi harga.':
+        'Several studios accept custom orders. Chat with the store or ClayBot to confirm your design and price estimate.',
+    'Bagaimana cara reservasi workshop?': 'How do I book a pottery workshop?',
+    'Buka tab Workshop, baca detail pengalaman, lalu tap Reservasi via WhatsApp untuk menjadwalkan sesi.':
+        'Open the Workshop tab, review the session details, and tap Reserve via WhatsApp to schedule your visit.',
+    'Metode pembayaran apa saja yang tersedia?':
+        'What payment methods are supported?',
+    'DinoyoCraft mendukung pembayaran via Midtrans Sandbox: QRIS, Virtual Account (BCA, Mandiri, BRI, BNI, Permata), serta E-Wallet (GoPay & ShopeePay).':
+        'DinoyoCraft supports payments via Midtrans: QRIS, Virtual Accounts (BCA, Mandiri, BRI, BNI, Permata), and E-Wallets (GoPay & ShopeePay).',
+
+    // Legal Sheets (Kebijakan Privasi, Syarat & Ketentuan, Garansi)
+    'Terakhir diperbarui: 1 Oktober 2026': 'Last updated: October 1, 2026',
+    'Komitmen Perlindungan Privasi': 'Privacy Protection Commitment',
+    'DinoyoCraft berkomitmen menjaga dan menghormati privasi seluruh pengguna, pembeli, serta mitra perajin keramik di kawasan Dinoyo Malang. Data Anda dikelola secara aman sesuai peraturan perlindungan data yang berlaku di Indonesia.':
+        'DinoyoCraft is committed to protecting and respecting the privacy of all users, buyers, and ceramic artisan partners in Dinoyo, Malang. Your data is securely managed in accordance with applicable Indonesian data protection regulations.',
+    'Data yang Dikumpulkan': 'Data We Collect',
+    'Kami mengumpulkan informasi yang Anda berikan secara sukarela, seperti nama lengkap, nomor WhatsApp, alamat tujuan pengiriman pesanan tembikar, serta riwayat interaksi dan transaksi pesanan.':
+        'We collect information you voluntarily provide, such as full name, WhatsApp number, pottery shipping addresses, and order interaction and transaction history.',
+    'Penggunaan Informasi': 'Use of Information',
+    'Data Anda digunakan secara eksklusif untuk memproses pesanan kerajinan keramik, koordinasi kurir ekspedisi dengan packing aman, pembaruan nomor resi, serta layanan pelanggan.':
+        'Your data is used exclusively to process ceramic orders, coordinate safe-packaged courier deliveries, update tracking numbers, and provide customer support.',
+    'Keamanan Transaksi & Akun': 'Transaction & Account Security',
+    'Semua kata sandi dienkripsi dengan standar hash industri. Kami tidak pernah membagikan atau menjual data pribadi Anda kepada pihak ketiga manapun untuk kepentingan komersial.':
+        'All passwords are encrypted using industry-standard hashing. We never sell or share your personal data with third parties for commercial purposes.',
+    'Hak Pengguna': 'User Rights',
+    'Anda berhak memperbarui data diri, mengatur preferensi notifikasi, atau meminta penutupan dan penghapusan akun kapan saja melalui menu Kelola Pengaturan.':
+        'You have the right to update personal information, configure notification preferences, or request account deletion anytime via Manage Settings.',
+    'Ketentuan berbelanja & bertransaksi di DinoyoCraft':
+        'Shopping & transaction terms on DinoyoCraft',
+    'Ketentuan Akun': 'Account Terms',
+    'Pengguna wajib memberikan informasi yang akurat saat membuat akun dan bertanggung jawab penuh menjaga kerahasiaan kata sandi serta aktivitas yang terjadi pada akun tersebut.':
+        'Users must provide accurate information when creating an account and are fully responsible for maintaining password confidentiality and account activity.',
+    'Pemesanan & Pembayaran': 'Ordering & Payment',
+    'Seluruh harga tertera dalam mata uang Rupiah (IDR). Pesanan akan diproses oleh pengrajin Dinoyo setelah pembayaran terverifikasi secara resmi melalui metode transfer atau e-wallet yang tersedia.':
+        'All prices are listed in Indonesian Rupiah (IDR). Orders are processed by Dinoyo artisans once payment is officially verified via available transfer, QRIS, or e-wallet methods.',
+    'Karakteristik Produk Keramik Hand-made':
+        'Handcrafted Ceramic Characteristics',
+    'Produk keramik Dinoyo merupakan karya seni kerajinan tangan. Sedikit perbedaan dalam corak glasir, dimensi (toleransi 1-2 cm), atau tekstur adalah ciri khas keaslian tembikar lokal dan bukan cacat produksi.':
+        'Dinoyo ceramics are handcrafted works of art. Slight variations in glaze pattern, dimensions (1–2 cm tolerance), or texture reflect authentic local pottery craftsmanship rather than manufacturing defects.',
+    'Pengiriman & Pembatalan': 'Shipping & Cancellation',
+    'Setiap produk dikemas menggunakan standar pengemasan barang pecah belah. Pembatalan pesanan hanya dapat disetujui jika toko perajin belum memulai proses produksi khusus atau pengemasan paket.':
+        'Every item is packed using fragile-goods protection standards. Order cancellations can only be approved before the artisan begins custom production or package packing.',
+    'Hak Kekayaan Intelektual': 'Intellectual Property Rights',
+    'Seluruh foto katalog, logo, identitas merek, dan desain karya kerajinan keramik di platform ini dilindungi oleh hak kekayaan intelektual milik perajin sentra keramik Dinoyo.':
+        'All catalog photos, logos, brand identities, and ceramic craft designs on this platform are protected intellectual property of Dinoyo ceramic artisans.',
+    'Garansi Barang Pecah Belah': 'Fragile Goods Warranty',
+    '100% Proteksi Pengiriman Keramik DinoyoCraft':
+        '100% DinoyoCraft Ceramic Shipping Protection',
+    'Pusat Bantuan & Klaim': 'Help & Warranty Claims Center',
+    'Jaminan Proteksi 100% Tanpa Risiko': '100% Risk-Free Protection Guarantee',
+    'Kami memahami kerentanan barang tembikar dan keramik. Setiap pesanan kerajinan di DinoyoCraft dilindungi garansi penggantian penuh jika terjadi kerusakan atau pecah selama proses pengantaran ekspedisi.':
+        'We understand the delicate nature of pottery and ceramics. Every DinoyoCraft order is backed by a full replacement warranty in case of breakage during courier delivery.',
+    'Syarat Wajib Video Unboxing': 'Mandatory Unboxing Video Requirement',
+    'Untuk memvalidasi klaim asuransi ekspedisi, pembeli wajib merekam video unboxing secara utuh tanpa jeda (no pause/no edit) sejak paket masih tersegel rapi hingga isi barang diperiksa.':
+        'To validate shipping insurance claims, buyers must record an uninterrupted, unedited unboxing video starting from the sealed package until the item is inspected.',
+    'Batas Waktu Pengajuan Klaim': 'Claim Submission Window',
+    'Permohonan klaim garansi harus diajukan maksimal 1 x 24 jam setelah status resi menunjukkan paket telah berhasil diterima oleh penerima.':
+        'Warranty claims must be submitted within 24 hours after the tracking status shows the package was delivered.',
+    'Pilihan Solusi Penggantian': 'Replacement & Refund Options',
+    'Pembeli dapat memilih antara: (a) Pengiriman unit keramik baru secara gratis tanpa biaya ongkir tambahan, ATAU (b) Pengembalian dana penuh (100% refund) sesuai nominal pesanan.':
+        'Buyers may choose between: (a) Free replacement unit shipped at no extra shipping cost, OR (b) A full 100% refund of the order amount.',
   };
 
   /// Cache lowercase untuk pencarian cepat case-insensitive

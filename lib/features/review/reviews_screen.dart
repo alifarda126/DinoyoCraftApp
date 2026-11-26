@@ -65,7 +65,7 @@ class _ReviewItem {
 }
 
 class _ReviewsScreenState extends State<ReviewsScreen> {
-  static const List<String> _months = [
+  static const List<String> _monthsId = [
     'Jan',
     'Feb',
     'Mar',
@@ -78,6 +78,20 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     'Okt',
     'Nov',
     'Des',
+  ];
+  static const List<String> _monthsEn = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   bool _loading = true;
@@ -95,10 +109,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
   }
 
   String _formatDate(dynamic raw) {
-    if (raw == null) return 'Baru saja';
+    if (raw == null) return 'Baru saja'.tr;
     final parsed = DateTime.tryParse(raw.toString())?.toLocal();
     if (parsed == null) return raw.toString();
-    return '${parsed.day} ${_months[parsed.month - 1]} ${parsed.year}';
+    final months = AppText.isEnglish ? _monthsEn : _monthsId;
+    return '${parsed.day} ${months[parsed.month - 1]} ${parsed.year}';
   }
 
   Future<void> _fetchReviews() async {
@@ -130,16 +145,16 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
         String variantLabel = '';
         if (variantRaw.isNotEmpty && prodName.isNotEmpty) {
           variantLabel = variantRaw.toLowerCase().startsWith('varian')
-              ? '$variantRaw - $prodName'
-              : 'Varian: $variantRaw - $prodName';
+              ? '${variantRaw.tr} - $prodName'
+              : '${'Varian: $variantRaw'.tr} - $prodName';
         } else if (variantRaw.isNotEmpty) {
           variantLabel = variantRaw.toLowerCase().startsWith('varian')
-              ? variantRaw
-              : 'Varian: $variantRaw';
+              ? variantRaw.tr
+              : 'Varian: $variantRaw'.tr;
         } else if (prodName.isNotEmpty) {
           variantLabel = prodName;
         } else {
-          variantLabel = 'Varian Standar';
+          variantLabel = 'Varian Standar'.tr;
         }
 
         final sellerReply = (r['seller_reply'] ?? '').toString().trim();
@@ -147,7 +162,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
 
         return _ReviewItem(
           id: (r['id'] ?? '').toString(),
-          name: (r['user_name'] ?? 'Pelanggan').toString(),
+          name: (r['user_name'] ?? 'Pelanggan'.tr).toString(),
           avatarUrl:
               rawAvatar.isNotEmpty ? ApiClient.resolveImageUrl(rawAvatar) : null,
           date: _formatDate(r['created_at']),
@@ -155,7 +170,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
           variant: variantLabel,
           text: (r['comment'] ?? '').toString().trim().isNotEmpty
               ? (r['comment']).toString().trim()
-              : 'Pembeli memberikan penilaian bintang tanpa komentar tertulis.',
+              : 'Pembeli memberikan penilaian bintang tanpa komentar tertulis.'.tr,
           helpful: (num.tryParse('${r['helpful_count'] ?? 0}') ?? 0).toInt(),
           photos: photos,
           reply: sellerReply.isNotEmpty ? sellerReply : null,
@@ -232,6 +247,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bg,
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: Column(
             children: [
               SizedBox(

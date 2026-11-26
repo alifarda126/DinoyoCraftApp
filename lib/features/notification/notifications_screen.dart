@@ -7,6 +7,7 @@ import '../../core/network/api_client.dart';
 import '../../core/services/auth_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/models/fcm_notification_model.dart';
 import '../../core/services/fcm_service.dart';
 import '../../data/mock_data.dart';
@@ -188,7 +189,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final screenH = mediaQuery.size.height;
-    final bottomPad = mediaQuery.padding.bottom;
+    final bottomPad = DcBottomNav.systemNavInset(context);
 
     // Tinggi tetap (fixed) konsisten seperti tampilan awal:
     // Muat pas sekitar 3 kartu notifikasi pertama dan tidak menyusut/turun saat filter ditekan.
@@ -509,7 +510,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  item.title,
+                  item.title.tr,
                   style: GoogleFonts.plusJakartaSans(
                     color: _textDark,
                     fontSize: 14,
@@ -519,7 +520,7 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
                 if (item.body.isNotEmpty) ...[
                   const SizedBox(height: 5),
                   Text(
-                    item.body,
+                    item.body.tr,
                     style: GoogleFonts.plusJakartaSans(
                       color: _textDesc,
                       fontSize: 12,

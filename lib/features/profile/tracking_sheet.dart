@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/app_text.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../chat/models/chat_context_preview.dart';
 
 /// Sheet pelacakan pesanan — timeline status yang DIAMBIL DARI BACKEND
@@ -124,10 +125,15 @@ class _OrderTrackingSheetState extends State<OrderTrackingSheet> {
         '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} WIB';
   }
 
-  String _monthName(int m) => const [
-        'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-        'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-      ][m - 1];
+  String _monthName(int m) => AppText.isEnglish
+      ? const [
+          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        ][m - 1]
+      : const [
+          'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+          'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+        ][m - 1];
 
   @override
   Widget build(BuildContext context) {
@@ -251,8 +257,8 @@ class _OrderTrackingSheetState extends State<OrderTrackingSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Resi: ${_order!['tracking_number']}'
-                        '${_order?['shipping_method'] != null ? ' • ${_order!['shipping_method']}' : ''}',
+                        '${'Resi:'.tr} ${_order!['tracking_number']}'
+                        '${_order?['shipping_method'] != null ? ' • ${_order!['shipping_method'].toString().tr}' : ''}',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
@@ -348,8 +354,12 @@ class _OrderTrackingSheetState extends State<OrderTrackingSheet> {
                         ),
                       )
                     : SingleChildScrollView(
-                        padding:
-                            const EdgeInsets.fromLTRB(20, 4, 20, 28),
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          4,
+                          20,
+                          24 + DcBottomNav.systemNavInset(context),
+                        ),
                         child: cancelled
                             ? _cancelledBox()
                             : Column(
@@ -773,7 +783,7 @@ class _OrderTrackingSheetState extends State<OrderTrackingSheet> {
                   if (entry?['note']?.toString().isNotEmpty ?? false) ...[
                     const SizedBox(height: 2),
                     Text(
-                      entry!['note'].toString(),
+                      entry!['note'].toString().tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11.5,
                         fontStyle: FontStyle.italic,

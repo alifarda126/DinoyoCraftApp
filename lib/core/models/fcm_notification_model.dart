@@ -1,5 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 
+import '../app_text.dart';
+
 /// Kategori notifikasi untuk klasifikasi pesan dari Backend.
 enum FcmNotificationCategory {
   transaction,
@@ -11,14 +13,14 @@ enum FcmNotificationCategory {
   String get displayName {
     switch (this) {
       case FcmNotificationCategory.transaction:
-        return 'Transaksi & Pesanan';
+        return 'Transaksi & Pesanan'.tr;
       case FcmNotificationCategory.chat:
-        return 'Pesan Toko';
+        return 'Pesan Toko'.tr;
       case FcmNotificationCategory.promo:
-        return 'Promo & Voucher';
+        return 'Promo & Voucher'.tr;
       case FcmNotificationCategory.account:
       case FcmNotificationCategory.system:
-        return 'Info Akun';
+        return 'Info Akun'.tr;
     }
   }
 
@@ -153,10 +155,20 @@ class FcmNotificationModel {
 
   String get timeLabel {
     final diff = DateTime.now().difference(createdAt);
-    if (diff.inMinutes < 1) return 'Baru saja';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} mnt lalu';
-    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
-    return '${diff.inDays} hari lalu';
+    if (diff.inMinutes < 1) return 'Baru saja'.tr;
+    if (diff.inMinutes < 60) {
+      return AppText.isEnglish
+          ? '${diff.inMinutes}m ago'
+          : '${diff.inMinutes} mnt lalu';
+    }
+    if (diff.inHours < 24) {
+      return AppText.isEnglish
+          ? '${diff.inHours}h ago'
+          : '${diff.inHours} jam lalu';
+    }
+    return AppText.isEnglish
+        ? '${diff.inDays}d ago'
+        : '${diff.inDays} hari lalu';
   }
 }
 

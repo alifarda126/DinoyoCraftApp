@@ -284,7 +284,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           Opacity(
                             opacity: subOpacity,
                             child: Text(
-                              'KARYA OTENTIK SENTRA KERAMIK DINOYO',
+                              'KARYA OTENTIK SENTRA KERAMIK DINOYO'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
@@ -534,6 +534,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
           // ── Elemen Teks dan Tombol Onboarding ──
           SafeArea(
+            maintainBottomViewPadding: true,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
               child: Column(

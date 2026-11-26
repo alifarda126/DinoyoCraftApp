@@ -254,6 +254,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         child: SafeArea(
           top: false,
+          maintainBottomViewPadding: true,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,13 +401,13 @@ class _AlamatScreenState extends State<AlamatScreen> {
     final fullText =
         '${addr.recipient} (${addr.phone})\n${addr.address}${addr.courierNote != null ? '\nCatatan: ${addr.courierNote}' : ''}';
     Clipboard.setData(ClipboardData(text: fullText));
-    _showFeedback('Alamat "${addr.label}" berhasil disalin ke clipboard.');
+    _showFeedback('Alamat "${addr.label.tr}" berhasil disalin ke clipboard.'.tr);
   }
 
   void _openAddressFormSheet({int? editIndex, Alamat? existing}) {
     if (editIndex == null && _addresses.length >= 5) {
       _showFeedback(
-        'Maksimal 5 alamat tersimpan. Hapus atau ubah alamat yang ada.',
+        'Maksimal 5 alamat tersimpan. Hapus atau ubah alamat yang ada.'.tr,
       );
       return;
     }
@@ -455,6 +456,7 @@ class _AlamatScreenState extends State<AlamatScreen> {
               ),
               child: SafeArea(
                 top: false,
+                maintainBottomViewPadding: true,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -773,21 +775,21 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                 if (r.isEmpty) {
                                   setModalState(() {
                                     errorMessage =
-                                        'Nama penerima tidak boleh kosong.';
+                                        'Nama penerima tidak boleh kosong.'.tr;
                                   });
                                   return;
                                 }
                                 if (p.length < 9) {
                                   setModalState(() {
                                     errorMessage =
-                                        'Nomor telepon minimal 9 digit.';
+                                        'Nomor telepon minimal 9 digit.'.tr;
                                   });
                                   return;
                                 }
                                 if (a.length < 5) {
                                   setModalState(() {
                                     errorMessage =
-                                        'Alamat lengkap minimal 5 karakter.';
+                                        'Alamat lengkap minimal 5 karakter.'.tr;
                                   });
                                   return;
                                 }
@@ -820,8 +822,8 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                   await _loadAddresses();
                                   _showFeedback(
                                     isEditing
-                                        ? 'Alamat "$selectedLabel" berhasil diperbarui.'
-                                        : 'Alamat "$selectedLabel" berhasil ditambahkan.',
+                                        ? 'Alamat "${selectedLabel.tr}" berhasil diperbarui.'.tr
+                                        : 'Alamat "${selectedLabel.tr}" berhasil ditambahkan.'.tr,
                                   );
                                 } catch (e) {
                                   setModalState(() {

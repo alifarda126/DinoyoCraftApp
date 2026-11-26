@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../app_text.dart';
 import '../models/fcm_notification_model.dart';
 import '../network/api_client.dart';
 import '../router/app_router.dart';
@@ -162,7 +163,7 @@ class FcmNotificationBanner extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          notification.title,
+                          notification.title.tr,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
@@ -174,7 +175,7 @@ class FcmNotificationBanner extends StatelessWidget {
                         if (notification.body.isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(
-                            notification.body,
+                            notification.body.tr,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.plusJakartaSans(
@@ -307,11 +308,11 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
       unawaited(
         _handleForcedAccountLogout(
           title: (title != null && title.isNotEmpty)
-              ? title
-              : 'Penghapusan Akun Disetujui',
+              ? title.tr
+              : 'Penghapusan Akun Disetujui'.tr,
           body: (body != null && body.isNotEmpty)
-              ? body
-              : 'Pengajuan penghapusan akun DinoyoCraft Anda telah disetujui oleh Admin.',
+              ? body.tr
+              : 'Pengajuan penghapusan akun DinoyoCraft Anda telah disetujui oleh Admin.'.tr,
           showTrayAndBanner: true,
         ),
       );
@@ -320,8 +321,8 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
     ApiClient.onAccountForceLogout = (reason) {
       unawaited(
         _handleForcedAccountLogout(
-          title: 'Penghapusan Akun Disetujui',
-          body: reason,
+          title: 'Penghapusan Akun Disetujui'.tr,
+          body: reason.tr,
           showTrayAndBanner: true,
         ),
       );

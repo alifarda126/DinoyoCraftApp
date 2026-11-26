@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,16 +7,52 @@ import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/widgets/dc_button.dart';
 
-class WorkshopScreen extends StatelessWidget {
+class WorkshopScreen extends StatefulWidget {
   const WorkshopScreen({super.key});
 
+  @override
+  State<WorkshopScreen> createState() => _WorkshopScreenState();
+}
+
+class _WorkshopScreenState extends State<WorkshopScreen> {
   static const String _phoneNumber = '+62 812-3553-1979';
   static const String _waNumber = '6281235531979';
   static const String _email = 'kreasikeramikdinoyo58@gmail.com';
   static const String _address =
       'Jl. Mt Haryono 9 No.336, Dinoyo, Kec. Lowokwaru, Kota Malang, Jawa Timur 65144, Indonesia';
+
+  static const List<String> _banners = AppAssets.workshopBanners;
+  static const int _kInitialPage = 2500;
+
+  late final PageController _pageCtrl =
+      PageController(initialPage: _kInitialPage);
+  int _bannerPage = _kInitialPage;
+  Timer? _bannerTimer;
+
+  int get _activeBannerIndex =>
+      ((_bannerPage % _banners.length) + _banners.length) % _banners.length;
+
+  @override
+  void initState() {
+    super.initState();
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted || !_pageCtrl.hasClients) return;
+      _pageCtrl.nextPage(
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerTimer?.cancel();
+    _pageCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _openWhatsApp(BuildContext context) async {
     final message = Uri.encodeComponent(
@@ -65,6 +102,7 @@ class WorkshopScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topHeaderHeight = DcAppHeader.totalHeight(context);
+    final navBottomPad = DcBottomNav.getBottomPadding(context);
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
@@ -78,7 +116,7 @@ class WorkshopScreen extends StatelessWidget {
         slivers: [
           SliverPinnedDcHeader(),
           SliverPadding(
-            padding: const EdgeInsets.only(bottom: 100),
+            padding: EdgeInsets.only(bottom: 84 + navBottomPad),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 Padding(
@@ -97,44 +135,111 @@ class WorkshopScreen extends StatelessWidget {
                       const SizedBox(height: 14),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(18),
-                        child: Stack(
-                          children: [
-                            AspectRatio(
-                              aspectRatio: 16 / 10,
-                              child: Image.asset(
-                                AppAssets.workshopHero,
-                                fit: BoxFit.cover,
+                        child: AspectRatio(
+                          aspectRatio: 16 / 10,
+                          child: Stack(
+                            children: [
+                              PageView.builder(
+                                controller: _pageCtrl,
+                                onPageChanged: (i) =>
+                                    setState(() => _bannerPage = i),
+                                itemBuilder: (context, i) {
+                                  final bannerIndex =
+                                      ((i % _banners.length) +
+                                              _banners.length) %
+                                          _banners.length;
+                                  return Image.asset(
+                                    _banners[bannerIndex],
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                  );
+                                },
                               ),
-                            ),
-                            Positioned.fill(
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.transparent,
-                                      Colors.black.withValues(alpha: 0.65),
-                                    ],
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withValues(alpha: 0.72),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            Positioned(
-                              left: 16,
-                              right: 16,
-                              bottom: 16,
-                              child: Text(
-                                'Rasakan pengalaman membentuk tanah liat bersama pengrajin Dinoyo'.tr,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.white,
-                                  height: 1.35,
+                              Positioned(
+                                left: 16,
+                                right: 16,
+                                bottom: 30,
+                                child: IgnorePointer(
+                                  child: Text(
+                                    'Rasakan pengalaman membentuk tanah liat bersama pengrajin Dinoyo'
+                                        .tr,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.white,
+                                      height: 1.35,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                              Positioned(
+                                bottom: 10,
+                                left: 0,
+                                right: 0,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: List.generate(
+                                    _banners.length,
+                                    (i) => GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTap: () {
+                                        final currentDot = _activeBannerIndex;
+                                        final diff = i - currentDot;
+                                        if (diff != 0 &&
+                                            _pageCtrl.hasClients) {
+                                          _pageCtrl.animateToPage(
+                                            _bannerPage + diff,
+                                            duration: const Duration(
+                                              milliseconds: 300,
+                                            ),
+                                            curve: Curves.easeInOut,
+                                          );
+                                        }
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 3,
+                                        ),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 250,
+                                          ),
+                                          width:
+                                              _activeBannerIndex == i ? 20 : 6,
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                            color: _activeBannerIndex == i
+                                                ? Colors.white
+                                                : Colors.white.withValues(
+                                                    alpha: 0.55,
+                                                  ),
+                                            borderRadius:
+                                                BorderRadius.circular(3),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 18),

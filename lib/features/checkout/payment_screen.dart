@@ -847,6 +847,7 @@ class _PaymentScreenState extends State<PaymentScreen>
           padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
           child: SafeArea(
             top: false,
+            maintainBottomViewPadding: true,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1978,6 +1979,7 @@ class _PaymentScreenState extends State<PaymentScreen>
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
           child: SafeArea(
             top: false,
+            maintainBottomViewPadding: true,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,

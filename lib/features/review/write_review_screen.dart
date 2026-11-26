@@ -11,6 +11,7 @@ import '../../core/network/api_client.dart';
 import '../../core/services/photo_picker_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 
@@ -751,12 +752,13 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
   // ── Sticky submit bar ──────────────────────────────────────────────────
   Widget _buildSubmitBar() {
+    final bottomInset = DcBottomNav.systemNavInset(context);
     return Container(
       padding: EdgeInsets.fromLTRB(
         20,
         12,
         20,
-        12 + MediaQuery.paddingOf(context).bottom,
+        12 + (bottomInset > 0 ? bottomInset : 10),
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,

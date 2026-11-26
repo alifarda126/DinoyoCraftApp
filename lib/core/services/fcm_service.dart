@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../data/mock_data.dart';
+import '../app_text.dart';
 import '../models/fcm_notification_model.dart';
 import '../network/api_client.dart';
 import '../storage/local_storage.dart';
@@ -465,11 +466,13 @@ class FcmService {
     final rawTitle = event['title']?.toString().trim();
     final rawBody = (event['message'] ?? event['body'])?.toString().trim();
     final title = (rawTitle != null && rawTitle.isNotEmpty)
-        ? rawTitle
-        : (fallbackTitles[status] ?? 'Update Status Pesanan #$orderId');
+        ? rawTitle.tr
+        : (fallbackTitles[status] ?? 'Update Status Pesanan #$orderId').tr;
     final body = (rawBody != null && rawBody.isNotEmpty)
-        ? rawBody
-        : (fallbackBodies[status] ?? 'Status pesanan #$orderId diperbarui menjadi $status.');
+        ? rawBody.tr
+        : (fallbackBodies[status] ??
+                  'Status pesanan #$orderId diperbarui menjadi $status.')
+              .tr;
 
     final model = FcmNotificationModel(
       id: 'rt_${orderId}_${status}_${DateTime.now().millisecondsSinceEpoch}',

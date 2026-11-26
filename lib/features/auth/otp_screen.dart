@@ -446,7 +446,7 @@ class _OtpScreenState extends State<OtpScreen> {
             Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
             SizedBox(width: 10),
             Text(
-              'Kembali',
+              'Kembali'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -544,6 +544,7 @@ class _OtpScreenState extends State<OtpScreen> {
         backgroundColor: AppColors.bg,
         appBar: _buildHeader(),
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(26, 56, 26, 24),
             child: Column(
@@ -562,14 +563,14 @@ class _OtpScreenState extends State<OtpScreen> {
                 // ── Judul + deskripsi ──
                 Text(
                   _isEnable2fa
-                      ? 'Aktivasi 2FA'
+                      ? 'Aktivasi 2FA'.tr
                       : _isDisable2fa
-                      ? 'Nonaktifkan 2FA'
+                      ? 'Nonaktifkan 2FA'.tr
                       : isLogin
-                      ? 'Verifikasi Keamanan'
+                      ? 'Verifikasi Keamanan'.tr
                       : isForgot
-                      ? 'Verifikasi Lupa Password'
-                      : 'Verifikasi Akun',
+                      ? 'Verifikasi Lupa Password'.tr
+                      : 'Verifikasi Akun'.tr,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 22,
@@ -589,10 +590,10 @@ class _OtpScreenState extends State<OtpScreen> {
                     children: [
                       TextSpan(
                         text: _isEnable2fa
-                            ? 'Masukkan kode verifikasi 6 digit yang telah kami kirimkan ke email untuk mengaktifkan 2FA:\n'
+                            ? '${'Masukkan kode verifikasi 6 digit yang telah kami kirimkan ke email untuk mengaktifkan 2FA:'.tr}\n'
                             : _isDisable2fa
-                            ? 'Masukkan kode verifikasi 6 digit yang telah kami kirimkan ke email untuk konfirmasi nonaktifkan 2FA:\n'
-                            : 'Masukkan kode verifikasi 6 digit yang telah kami\nkirimkan ke email ',
+                            ? '${'Masukkan kode verifikasi 6 digit yang telah kami kirimkan ke email untuk konfirmasi nonaktifkan 2FA:'.tr}\n'
+                            : '${'Masukkan kode verifikasi 6 digit yang telah kami\nkirimkan ke email'.tr} ',
                       ),
                       WidgetSpan(
                         alignment: PlaceholderAlignment.middle,
@@ -634,7 +635,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
                 // ── Hitung mundur kirim ulang ──
                 Text(
-                  'Belum menerima kode?',
+                  'Belum menerima kode?'.tr,
                   textAlign: TextAlign.center,
                   style: grayStyle,
                 ),
@@ -647,7 +648,7 @@ class _OtpScreenState extends State<OtpScreen> {
                         color: AppColors.ink,
                       ),
                       children: [
-                        TextSpan(text: 'Kirim ulang kode dalam '),
+                        TextSpan(text: '${'Kirim ulang kode dalam'.tr} '),
                         TextSpan(
                           text: _timerText,
                           style: GoogleFonts.robotoMono(
@@ -665,7 +666,7 @@ class _OtpScreenState extends State<OtpScreen> {
                     onTap: _resend,
                     behavior: HitTestBehavior.opaque,
                     child: Text(
-                      'Kirim ulang kode',
+                      'Kirim ulang kode'.tr,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
@@ -729,7 +730,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       onTap: _back,
                       behavior: HitTestBehavior.opaque,
                       child: Text(
-                        'Batalkan Verifikasi',
+                        'Batalkan Verifikasi'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -742,7 +743,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                 ] else ...[
                   Text(
-                    'Salah memasukkan email?',
+                    'Salah memasukkan email?'.tr,
                     textAlign: TextAlign.center,
                     style: grayStyle,
                   ),
@@ -752,7 +753,9 @@ class _OtpScreenState extends State<OtpScreen> {
                       onTap: _back,
                       behavior: HitTestBehavior.opaque,
                       child: Text(
-                        isForgot ? 'Ubah email' : 'Ubah data pendaftaran',
+                        isForgot
+                            ? 'Ubah email'.tr
+                            : 'Ubah data pendaftaran'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,

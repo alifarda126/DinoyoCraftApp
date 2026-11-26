@@ -71,6 +71,7 @@ class StickerPickerSheet extends StatelessWidget {
       ),
       builder: (sheetCtx) => SafeArea(
         top: false,
+        maintainBottomViewPadding: true,
         child: StickerPickerSheet(
           onSelected: (sticker) {
             Navigator.of(sheetCtx).pop();

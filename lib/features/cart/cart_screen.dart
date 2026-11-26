@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/app_text.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/widgets/dc_cached_image.dart';
 import '../../data/mock_data.dart';
 
@@ -228,8 +229,16 @@ class _CartScreenState extends State<CartScreen> {
             ),
             SafeArea(
               top: false,
+              maintainBottomViewPadding: true,
               child: Container(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  12,
+                  20,
+                  12 + (DcBottomNav.systemNavInset(context) > 0 && MediaQuery.paddingOf(context).bottom == 0
+                      ? DcBottomNav.systemNavInset(context)
+                      : 0),
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   boxShadow: [
@@ -505,7 +514,7 @@ class _CartSheetState extends State<_CartSheet> {
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final screenH = mediaQuery.size.height;
-    final bottomPad = mediaQuery.padding.bottom;
+    final bottomPad = DcBottomNav.systemNavInset(context);
 
     // Tinggi senada modal Notifikasi.
     final modalH = (screenH * 0.64).clamp(500.0, 620.0) + bottomPad;

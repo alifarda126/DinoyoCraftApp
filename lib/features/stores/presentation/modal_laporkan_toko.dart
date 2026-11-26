@@ -146,6 +146,7 @@ class _ModalLaporkanTokoState extends State<ModalLaporkanToko> {
       ),
       child: SafeArea(
         top: false,
+        maintainBottomViewPadding: true,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

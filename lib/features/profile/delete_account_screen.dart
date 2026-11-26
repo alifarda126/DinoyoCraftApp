@@ -268,6 +268,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bg,
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: Column(
             children: [
               SizedBox(

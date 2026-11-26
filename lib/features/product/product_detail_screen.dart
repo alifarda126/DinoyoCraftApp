@@ -93,6 +93,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bg,
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: Column(
             children: [
               _TopBar(
@@ -486,10 +487,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       initials: _reviewerInitials(rev.userName),
                                       date: (rev.createdAt ?? '').length >= 10
                                           ? rev.createdAt!.substring(0, 10)
-                                          : 'Baru saja',
+                                          : 'Baru saja'.tr,
                                       variantLabel: rev.variant.isNotEmpty
                                           ? rev.variant
-                                          : 'Standar',
+                                          : 'Standar'.tr,
                                       variantProduct: product.name,
                                       text: rev.comment,
                                       helpfulCount: rev.helpfulCount,

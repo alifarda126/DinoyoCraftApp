@@ -315,6 +315,7 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: AppColors.bg,
         appBar: _buildHeader(),
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: Form(
             key: _formKey,
             child: CustomScrollView(

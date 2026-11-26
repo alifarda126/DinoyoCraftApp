@@ -16,6 +16,7 @@ import '../../core/network/api_client.dart';
 import '../../core/services/auth_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/widgets/gallery_picker_sheet.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 import '../../core/widgets/sticker_picker_sheet.dart';
@@ -564,8 +565,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    // viewPadding.bottom = gesture navigation bar height (Android)
-    final gestureNavBar = MediaQuery.viewPaddingOf(context).bottom;
+    final gestureNavBar = DcBottomNav.systemNavInset(context);
     final screenH = MediaQuery.sizeOf(context).height;
 
     return Container(
@@ -805,10 +805,10 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                 14,
                 10,
                 14,
-                // Keyboard inset ATAU gesture nav bar (whichever is taller)
+                // Keyboard inset ATAU system nav bar (mendukung penuh navigasi 3 tombol)
                 10 + (bottomInset > 0
                     ? bottomInset.clamp(0.0, 400.0)
-                    : gestureNavBar.clamp(0.0, 48.0))),
+                    : gestureNavBar.clamp(0.0, 84.0))),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -946,7 +946,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'ClayBot memiliki batasan tertentu, cerdaslah dalam bertanya...',
+                  'ClayBot memiliki batasan tertentu, cerdaslah dalam bertanya...'.tr,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 10,
                     color: AppColors.textMuted,
@@ -1057,7 +1057,7 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
                       ),
                     ),
                     child: Text(
-                      msg.text,
+                      msg.text.tr,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         height: 1.5,

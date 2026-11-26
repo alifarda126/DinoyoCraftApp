@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
@@ -52,7 +53,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           if (mounted) {
             AppTopToast.info(
               response['message']?.toString() ??
-                  'Kode OTP telah dikirim ke email kamu',
+                  'Kode OTP telah dikirim ke email kamu'.tr,
             );
             final uri = Uri(
               path: '/verify-otp',
@@ -63,7 +64,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         } else {
           if (mounted) {
             AppTopToast.error(
-              response['message']?.toString() ?? 'Gagal mengirim kode OTP',
+              response['message']?.toString() ?? 'Gagal mengirim kode OTP'.tr,
             );
           }
         }
@@ -98,7 +99,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
             SizedBox(width: 10),
             Text(
-              'Kembali',
+              'Kembali'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -134,6 +135,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         backgroundColor: AppColors.bg,
         appBar: _buildHeader(),
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
@@ -160,7 +162,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                           // ── Judul ──
                           Text(
-                            'Lupa Password?',
+                            'Lupa Password?'.tr,
                             textAlign: TextAlign.center,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 24,
@@ -173,8 +175,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                           // ── Deskripsi ──
                           Text(
-                            'Masukkan alamat email yang terdaftar pada akun '
-                            'DinoyoCraft Anda untuk menerima kode verifikasi OTP.',
+                            'Masukkan alamat email yang terdaftar pada akun DinoyoCraft Anda untuk menerima kode verifikasi OTP.'
+                                .tr,
                             textAlign: TextAlign.center,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 13,
@@ -186,18 +188,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                           // ── Field email ──
                           DcTextField(
-                            label: 'Email',
-                            hint: 'Masukkan email kamu',
+                            label: 'Email'.tr,
+                            hint: 'Masukkan email kamu'.tr,
                             controller: _email,
                             leadingIconPath: AppAssets.iconEmail,
                             keyboardType: TextInputType.emailAddress,
                             validator: (v) => (v == null || v.trim().isEmpty)
-                                ? 'Email wajib diisi'
+                                ? 'Email wajib diisi'.tr
                                 : null,
                           ),
                           SizedBox(height: 6),
                           Text(
-                            'Pastikan email aktif untuk menerima 6 digit kode OTP.',
+                            'Pastikan email aktif untuk menerima 6 digit kode OTP.'
+                                .tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               color: AppColors.textMuted,
@@ -231,7 +234,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                         ),
                                       )
                                     : Text(
-                                        'Kirim Kode Verifikasi',
+                                        'Kirim Kode Verifikasi'.tr,
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
@@ -258,7 +261,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   horizontal: 12,
                                 ),
                                 child: Text(
-                                  'atau',
+                                  'atau'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     color: AppColors.textMuted,
@@ -291,7 +294,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 ),
                               ),
                               child: Text(
-                                'Masuk Sekarang',
+                                'Masuk Sekarang'.tr,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -316,9 +319,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                     color: AppColors.textSecondary,
                                   ),
                                   children: [
-                                    TextSpan(text: 'Butuh Bantuan? '),
+                                    TextSpan(text: '${'Butuh Bantuan?'.tr} '),
                                     TextSpan(
-                                      text: 'Customer Service',
+                                      text: 'Customer Service'.tr,
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,

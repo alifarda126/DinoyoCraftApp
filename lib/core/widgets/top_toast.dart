@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../app_text.dart';
+
 /// Jenis tampilan notifikasi popup atas.
 enum TopToastType { success, info, error }
 
@@ -40,7 +42,7 @@ abstract final class AppTopToast {
     _controller.add(
       _TopToastItem(
         id: ++_seq,
-        message: trimmed,
+        message: AppText.tr(trimmed),
         type: type,
         duration: duration,
       ),

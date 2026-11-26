@@ -80,6 +80,7 @@ Future<void> showShareLinkOptionsSheet(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         child: SafeArea(
           top: false,
+          maintainBottomViewPadding: true,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,

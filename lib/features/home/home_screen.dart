@@ -8,6 +8,7 @@ import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/category_chip.dart';
 import '../../core/widgets/dc_app_header.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
 
@@ -304,7 +305,12 @@ class _HomeScreenState extends State<HomeScreen> {
         if (picks.isEmpty)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                24,
+                20,
+                84 + DcBottomNav.getBottomPadding(context),
+              ),
               child: Text(
                 'Tidak ada produk yang cocok.'.tr,
                 style: GoogleFonts.plusJakartaSans(
@@ -316,7 +322,12 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         else
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              0,
+              20,
+              84 + DcBottomNav.getBottomPadding(context),
+            ),
             sliver: SliverGrid(
               // Ratio & spacing disamakan dengan grid di halaman Produk
               // agar ukuran kartu konsisten antar halaman.

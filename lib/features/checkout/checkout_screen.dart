@@ -12,6 +12,7 @@ import '../../core/network/api_client.dart';
 import '../../core/services/auth_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/widgets/dc_cached_image.dart';
 import '../../data/mock_data.dart';
 
@@ -255,6 +256,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) {
           return SafeArea(
+            maintainBottomViewPadding: true,
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(ctx).size.height * 0.8,
@@ -935,7 +937,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   icon: Icons.inventory_2_outlined,
                   title: '${'Produk yang Dibeli'.tr} ($totalQty)',
                   trailing: Text(
-                    '${_items.length} Penjual Terpilih',
+                    '${_items.length} Penjual Terpilih'.tr,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -959,9 +961,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                         SizedBox(height: 10),
                         Text(
-                          _isDirectBuy
-                              ? 'Tidak ada produk'
-                              : 'Keranjangmu kosong',
+                          (_isDirectBuy
+                                  ? 'Tidak ada produk'
+                                  : 'Keranjangmu kosong')
+                              .tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -970,9 +973,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          _isDirectBuy
-                              ? 'Pilih produk untuk melanjutkan checkout.'
-                              : 'Tambahkan produk dari halaman Keranjang.',
+                          (_isDirectBuy
+                                  ? 'Pilih produk untuk melanjutkan checkout.'
+                                  : 'Tambahkan produk dari halaman Keranjang.')
+                              .tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             color: AppColors.textSecondary,
@@ -1059,7 +1063,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                       ),
                                     ),
                                     child: Text(
-                                      'Variasi: ${item.variant}',
+                                      'Variasi: ${item.variant}'.tr,
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w500,
@@ -1200,7 +1204,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     decoration: InputDecoration(
                       hintText:
-                          'Contoh: Tolong bungkus dengan bubble wrap tebal dan kardus aman.',
+                          'Contoh: Tolong bungkus dengan bubble wrap tebal dan kardus aman.'
+                              .tr,
                       hintStyle: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         height: 1.5,
@@ -1270,8 +1275,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             child: SafeArea(
               top: false,
+              maintainBottomViewPadding: true,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  12,
+                  16,
+                  12 + (DcBottomNav.systemNavInset(context) > 0 && MediaQuery.paddingOf(context).bottom == 0
+                      ? DcBottomNav.systemNavInset(context)
+                      : 0),
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -2153,6 +2166,7 @@ class _AddressFormState extends State<_AddressForm> {
       ),
       child: SafeArea(
         top: false,
+        maintainBottomViewPadding: true,
         child: Form(
           key: _formKey,
           child: Column(
@@ -2180,9 +2194,10 @@ class _AddressFormState extends State<_AddressForm> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isEdit
-                                ? 'Ubah Alamat Pengiriman'
-                                : 'Tambah Alamat Baru',
+                            (isEdit
+                                    ? 'Ubah Alamat Pengiriman'
+                                    : 'Tambah Alamat Baru')
+                                .tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -2191,7 +2206,8 @@ class _AddressFormState extends State<_AddressForm> {
                           ),
                           SizedBox(height: 2),
                           Text(
-                            'Pastikan rincian alamat tepat untuk kurir keramik',
+                            'Pastikan rincian alamat tepat untuk kurir keramik'
+                                .tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: AppColors.textSecondary,
@@ -2225,7 +2241,7 @@ class _AddressFormState extends State<_AddressForm> {
                             Theme.of(context).brightness == Brightness.dark ||
                                 AppColors.isDark;
                         return ChoiceChip(
-                          label: Text(opt),
+                          label: Text(opt.tr),
                           labelPadding: const EdgeInsets.symmetric(
                             horizontal: 10,
                           ),
@@ -2256,7 +2272,7 @@ class _AddressFormState extends State<_AddressForm> {
                     SizedBox(height: 16),
 
                     // Nama Penerima
-                    _sectionLabel('NAMA PENERIMA'),
+                    _sectionLabel('NAMA PENERIMA'.tr),
                     TextFormField(
                       controller: _name,
                       textCapitalization: TextCapitalization.words,
@@ -2265,17 +2281,17 @@ class _AddressFormState extends State<_AddressForm> {
                         color: AppColors.ink,
                       ),
                       decoration: _dec(
-                        'Masukkan nama lengkap penerima',
+                        'Masukkan nama lengkap penerima'.tr,
                         Icons.person_outline_rounded,
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Nama wajib diisi'
+                          ? 'Nama wajib diisi'.tr
                           : null,
                     ),
                     SizedBox(height: 14),
 
                     // Nomor Telepon / WhatsApp
-                    _sectionLabel('NOMOR TELEPON / WHATSAPP'),
+                    _sectionLabel('NOMOR TELEPON / WHATSAPP'.tr),
                     TextFormField(
                       controller: _phone,
                       keyboardType: TextInputType.phone,
@@ -2289,9 +2305,9 @@ class _AddressFormState extends State<_AddressForm> {
                       ),
                       validator: (v) {
                         final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
-                        if (digits.isEmpty) return 'Nomor telepon wajib diisi';
+                        if (digits.isEmpty) return 'Nomor telepon wajib diisi'.tr;
                         if (digits.length < 9) {
-                          return 'Nomor telepon tidak valid';
+                          return 'Nomor telepon tidak valid'.tr;
                         }
                         return null;
                       },
@@ -2299,7 +2315,7 @@ class _AddressFormState extends State<_AddressForm> {
                     SizedBox(height: 14),
 
                     // Alamat Lengkap
-                    _sectionLabel('ALAMAT LENGKAP'),
+                    _sectionLabel('ALAMAT LENGKAP'.tr),
                     TextFormField(
                       controller: _address,
                       minLines: 3,
@@ -2310,18 +2326,19 @@ class _AddressFormState extends State<_AddressForm> {
                         color: AppColors.ink,
                       ),
                       decoration: _dec(
-                        'Nama jalan, nomor rumah, RT/RW, kelurahan, '
-                        'kecamatan, kota & kode pos',
+                        ('Nama jalan, nomor rumah, RT/RW, kelurahan, '
+                                'kecamatan, kota & kode pos')
+                            .tr,
                         Icons.location_on_outlined,
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Alamat wajib diisi'
+                          ? 'Alamat wajib diisi'.tr
                           : null,
                     ),
                     SizedBox(height: 14),
 
                     // Catatan untuk Kurir
-                    _sectionLabel('CATATAN UNTUK KURIR (OPSIONAL)'),
+                    _sectionLabel('CATATAN UNTUK KURIR (OPSIONAL)'.tr),
                     TextFormField(
                       controller: _note,
                       minLines: 2,
@@ -2331,7 +2348,7 @@ class _AddressFormState extends State<_AddressForm> {
                         color: AppColors.ink,
                       ),
                       decoration: _dec(
-                        'cth: Pagar hitam depan studio keramik, titip satpam',
+                        'cth: Pagar hitam depan studio keramik, titip satpam'.tr,
                         Icons.note_outlined,
                       ),
                     ),
@@ -2340,8 +2357,8 @@ class _AddressFormState extends State<_AddressForm> {
                     // Toggle: Titik Peta GPS
                     _toggleCard(
                       icon: Icons.pin_drop_outlined,
-                      title: 'Verifikasi Titik Peta GPS',
-                      subtitle: 'Mempermudah kurir melacak alamat akurat',
+                      title: 'Verifikasi Titik Peta GPS'.tr,
+                      subtitle: 'Mempermudah kurir melacak alamat akurat'.tr,
                       value: _verifiedPin,
                       onChanged: (v) => setState(() => _verifiedPin = v),
                     ),
@@ -2350,8 +2367,8 @@ class _AddressFormState extends State<_AddressForm> {
                     // Toggle: Jadikan Alamat Utama
                     _toggleCard(
                       icon: Icons.star_outline_rounded,
-                      title: 'Jadikan Alamat Utama',
-                      subtitle: 'Alamat prioritas saat checkout belanjaan',
+                      title: 'Jadikan Alamat Utama'.tr,
+                      subtitle: 'Alamat prioritas saat checkout belanjaan'.tr,
                       value: _isPrimary,
                       onChanged: (v) => setState(() => _isPrimary = v),
                     ),
@@ -2375,7 +2392,8 @@ class _AddressFormState extends State<_AddressForm> {
                             shape: AppColors.stadiumButtonShape,
                           ),
                           child: Text(
-                            isEdit ? 'Simpan Perubahan' : 'Simpan Alamat Baru',
+                            (isEdit ? 'Simpan Perubahan' : 'Simpan Alamat Baru')
+                                .tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,

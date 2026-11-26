@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/auth_session.dart';
@@ -110,7 +111,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
               }
               AppTopToast.success(
                 response['message']?.toString() ??
-                    'Kata sandi berhasil diperbarui!',
+                    'Kata sandi berhasil diperbarui!'.tr,
               );
             }
             return;
@@ -129,14 +130,14 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
           if (mounted) {
             AppTopToast.success(
               response['message']?.toString() ??
-                  'Kata sandi berhasil diubah. Silakan masuk kembali.',
+                  'Kata sandi berhasil diubah. Silakan masuk kembali.'.tr,
             );
             context.go('/login');
           }
         } catch (e) {
           if (mounted) {
             final msg = e.toString().replaceFirst('Exception: ', '');
-            AppTopToast.error('Gagal mengubah kata sandi: $msg');
+            AppTopToast.error('Gagal mengubah kata sandi: $msg'.tr);
           }
         } finally {
           if (mounted) {
@@ -144,7 +145,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
           }
         }
       } else {
-        AppTopToast.error('Harap penuhi kriteria kata sandi');
+        AppTopToast.error('Harap penuhi kriteria kata sandi'.tr);
       }
     }
   }
@@ -167,7 +168,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
             Icon(Icons.arrow_back_rounded, size: 22, color: AppColors.ink),
             SizedBox(width: 10),
             Text(
-              'Kembali',
+              'Kembali'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -228,6 +229,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
         backgroundColor: AppColors.bg,
         appBar: _buildHeader(),
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
@@ -255,8 +257,8 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                           // ── Judul ──
                           Text(
                             _isAuthenticatedChangePassword
-                                ? 'Ubah Kata Sandi'
-                                : 'Buat Kata Sandi Baru',
+                                ? 'Ubah Kata Sandi'.tr
+                                : 'Buat Kata Sandi Baru'.tr,
                             textAlign: TextAlign.center,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 24,
@@ -271,8 +273,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                           Text(
                             _requiresCurrentPassword
                                 ? 'Masukkan kata sandi saat ini terlebih dahulu, lalu buat kata sandi baru yang kuat untuk akun Anda.'
-                                : 'Buat kata sandi baru yang kuat dan mudah diingat '
-                                      'untuk mengamankan akun DinoyoCraft Anda.',
+                                      .tr
+                                : 'Buat kata sandi baru yang kuat dan mudah diingat untuk mengamankan akun DinoyoCraft Anda.'
+                                      .tr,
                             textAlign: TextAlign.center,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 13,
@@ -284,13 +287,13 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
                           if (_requiresCurrentPassword) ...[
                             DcTextField(
-                              label: 'Kata Sandi Saat Ini',
-                              hint: 'Masukkan kata sandi saat ini',
+                              label: 'Kata Sandi Saat Ini'.tr,
+                              hint: 'Masukkan kata sandi saat ini'.tr,
                               controller: _currentPassword,
                               leadingIconPath: AppAssets.iconLock,
                               obscureText: true,
                               validator: (v) => (v == null || v.isEmpty)
-                                  ? 'Kata sandi saat ini wajib diisi'
+                                  ? 'Kata sandi saat ini wajib diisi'.tr
                                   : null,
                             ),
                             SizedBox(height: 16),
@@ -298,26 +301,26 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
                           // ── Field Kata Sandi Baru ──
                           DcTextField(
-                            label: 'Kata Sandi Baru',
-                            hint: 'Masukkan kata sandi baru',
+                            label: 'Kata Sandi Baru'.tr,
+                            hint: 'Masukkan kata sandi baru'.tr,
                             controller: _password,
                             leadingIconPath: AppAssets.iconLock,
                             obscureText: true,
                             validator: (v) => (v == null || v.isEmpty)
-                                ? 'Kata sandi wajib diisi'
+                                ? 'Kata sandi wajib diisi'.tr
                                 : null,
                           ),
                           SizedBox(height: 16),
 
                           // ── Field Konfirmasi Kata Sandi ──
                           DcTextField(
-                            label: 'Konfirmasi Kata Sandi Baru',
-                            hint: 'Ulangi kata sandi baru',
+                            label: 'Konfirmasi Kata Sandi Baru'.tr,
+                            hint: 'Ulangi kata sandi baru'.tr,
                             controller: _confirmPassword,
                             leadingIconPath: AppAssets.iconLock,
                             obscureText: true,
                             validator: (v) => (v == null || v.isEmpty)
-                                ? 'Konfirmasi kata sandi wajib diisi'
+                                ? 'Konfirmasi kata sandi wajib diisi'.tr
                                 : null,
                           ),
                           SizedBox(height: 20),
@@ -339,7 +342,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                   children: [
                                     Flexible(
                                       child: Text(
-                                        'KRITERIA KATA SANDI:',
+                                        'KRITERIA KATA SANDI:'.tr,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.plusJakartaSans(
@@ -352,8 +355,8 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                     SizedBox(width: 12),
                                     Text(
                                       _isCriteriaMet
-                                          ? 'Terpenuhi'
-                                          : 'Belum Terpenuhi',
+                                          ? 'Terpenuhi'.tr
+                                          : 'Belum Terpenuhi'.tr,
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 12,
                                         color: _isCriteriaMet
@@ -365,15 +368,15 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                 ),
                                 SizedBox(height: 12),
                                 _buildCriterion(
-                                  'Minimal 8 karakter',
+                                  'Minimal 8 karakter'.tr,
                                   _isMinLength,
                                 ),
                                 _buildCriterion(
-                                  'Mengandung huruf besar dan angka',
+                                  'Mengandung huruf besar dan angka'.tr,
                                   _hasUpperAndNumber,
                                 ),
                                 _buildCriterion(
-                                  'Cocok dengan konfirmasi kata sandi',
+                                  'Cocok dengan konfirmasi kata sandi'.tr,
                                   _isMatch,
                                 ),
                               ],
@@ -409,7 +412,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                         ),
                                       )
                                     : Text(
-                                        'Simpan Kata Sandi Baru',
+                                        'Simpan Kata Sandi Baru'.tr,
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
@@ -428,7 +431,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                             child: Column(
                               children: [
                                 Text(
-                                  'Butuh bantuan lebih lanjut?',
+                                  'Butuh bantuan lebih lanjut?'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     color: AppColors.textMuted,
@@ -439,7 +442,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                                   onTap: () => context.push('/help'),
                                   behavior: HitTestBehavior.opaque,
                                   child: Text(
-                                    'Hubungi kami',
+                                    'Hubungi kami'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w800,

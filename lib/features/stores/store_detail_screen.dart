@@ -143,6 +143,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bg,
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: Column(
             children: [
               // ── App bar: back + judul (rata kiri) + titik 3 ──

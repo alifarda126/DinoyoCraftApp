@@ -8,6 +8,7 @@ import '../../../core/assets.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/cart_fly_animation.dart';
+import '../../../core/widgets/dc_bottom_nav.dart';
 import '../../../core/widgets/dc_cached_image.dart';
 import '../../../core/widgets/image_preview_dialog.dart';
 import '../../../data/mock_data.dart';
@@ -127,7 +128,7 @@ class _ModalPilihVariasiState extends State<_ModalPilihVariasi> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final bottomPad = DcBottomNav.systemNavInset(context);
     final hasVariants = _variants.isNotEmpty;
     final selected = _selectedVariant;
     final stok = _stokTersedia;

@@ -12,6 +12,7 @@ import '../../core/network/api_client.dart';
 import '../../core/services/auth_session.dart';
 import '../../core/services/photo_picker_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/widgets/dc_cached_image.dart';
 import '../../data/mock_data.dart';
 
@@ -155,20 +156,35 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
     } catch (_) {}
   }
 
-  static String _monthName(int m) => const [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'Mei',
-    'Jun',
-    'Jul',
-    'Agu',
-    'Sep',
-    'Okt',
-    'Nov',
-    'Des',
-  ][m - 1];
+  static String _monthName(int m) => AppText.isEnglish
+      ? const [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
+        ][m - 1]
+      : const [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'Mei',
+          'Jun',
+          'Jul',
+          'Agu',
+          'Sep',
+          'Okt',
+          'Nov',
+          'Des',
+        ][m - 1];
 
   /// Simpan ke backend (PUT /auth/profile, termasuk multipart avatar jika foto diubah) lalu perbarui sesi lokal.
   Future<void> _saveProfile() async {
@@ -367,7 +383,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
                       focusNode: _phoneFocus,
                       suffix: value.text.isEmpty
                           ? null
-                          : _buildVerifiedSuffix(
+                          : _buildEditSuffix(
                               onEdit: () => _phoneFocus.requestFocus(),
                             ),
                     ),
@@ -451,20 +467,35 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
       },
     );
     if (picked != null) {
-      final months = [
-        'Januari',
-        'Februari',
-        'Maret',
-        'April',
-        'Mei',
-        'Juni',
-        'Juli',
-        'Agustus',
-        'September',
-        'Oktober',
-        'November',
-        'Desember',
-      ];
+      final months = AppText.isEnglish
+          ? const [
+              'January',
+              'February',
+              'March',
+              'April',
+              'May',
+              'June',
+              'July',
+              'August',
+              'September',
+              'October',
+              'November',
+              'December',
+            ]
+          : const [
+              'Januari',
+              'Februari',
+              'Maret',
+              'April',
+              'Mei',
+              'Juni',
+              'Juli',
+              'Agustus',
+              'September',
+              'Oktober',
+              'November',
+              'Desember',
+            ];
       setState(() {
         _birthController.text =
             '${picked.day} ${months[picked.month - 1]} ${picked.year}';
@@ -709,6 +740,24 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
     );
   }
 
+  Widget _buildEditSuffix({required VoidCallback onEdit}) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 14),
+      child: GestureDetector(
+        onTap: onEdit,
+        behavior: HitTestBehavior.opaque,
+        child: Text(
+          'Ubah'.tr,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.ink,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildVerifiedSuffix({VoidCallback? onEdit}) {
     return Padding(
       padding: const EdgeInsets.only(right: 12),
@@ -831,7 +880,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
       children: [
         Expanded(
           child: _genderButton(
-            label: 'Laki-laki',
+            label: 'Laki-laki'.tr,
             iconAsset: AppAssets.iconMale,
             selected: _isMale,
             onTap: () => setState(() => _isMale = true),
@@ -840,7 +889,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
         SizedBox(width: 10),
         Expanded(
           child: _genderButton(
-            label: 'Perempuan',
+            label: 'Perempuan'.tr,
             iconAsset: AppAssets.iconFemale,
             selected: !_isMale,
             onTap: () => setState(() => _isMale = false),
@@ -949,7 +998,7 @@ class _DataDiriScreenState extends State<DataDiriScreen> {
   }
 
   Widget _buildSaveBar() {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final bottomInset = DcBottomNav.systemNavInset(context);
     return Container(
       padding: EdgeInsets.fromLTRB(
         20,

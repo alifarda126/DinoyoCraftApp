@@ -112,10 +112,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 'customer service',
               }.contains(lowerStore);
           final displayName = isCs
-              ? 'Customer Service'
+              ? 'Customer Service'.tr
               : (rawStore.isNotEmpty
                     ? rawStore
-                    : (rawName.isNotEmpty ? rawName : 'Pengrajin Dinoyo'));
+                    : (rawName.isNotEmpty ? rawName : 'Pengrajin Dinoyo'.tr));
 
           normalizedForSync.add({
             'store_name': displayName,
@@ -172,7 +172,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               time: _formatChatTime(c['last_message_time']?.toString()),
               preview: effectivePreview.isNotEmpty
                   ? effectivePreview
-                  : 'Mulai obrolan dengan $displayName',
+                  : 'Mulai obrolan dengan $displayName'.tr,
               image: AppAssets.storeDinoyo,
               avatarUrl: avatarUrl,
               unread: unreadCount > 0,
@@ -182,8 +182,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
               contextLabel:
                   contextChip ??
                   (isCs
-                      ? 'Customer Service Resmi'
-                      : (role == 'mitra' ? 'Pengrajin DinoyoCraft' : 'Pesan')),
+                      ? 'Customer Service Resmi'.tr
+                      : (role == 'mitra'
+                            ? 'Pengrajin DinoyoCraft'.tr
+                            : 'Pesan'.tr)),
             ),
           );
         }
@@ -216,9 +218,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
         return '${two(dt.hour)}:${two(dt.minute)}';
       }
       if (diffDays == 1) {
-        return 'Kemarin';
+        return 'Kemarin'.tr;
       }
-      const months = [
+      const monthsId = [
         'Jan',
         'Feb',
         'Mar',
@@ -232,6 +234,21 @@ class _ChatListScreenState extends State<ChatListScreen> {
         'Nov',
         'Des',
       ];
+      const monthsEn = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      final months = AppText.isEnglish ? monthsEn : monthsId;
       return '${dt.day} ${months[dt.month - 1]}';
     } catch (_) {
       return '';
@@ -247,6 +264,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bg,
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxHeight < 54 || constraints.maxWidth < 96) {

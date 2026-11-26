@@ -33,6 +33,18 @@ abstract final class AppAssets {
   static const String storeDinoyo = 'assets/images/places/store_dinoyo.jpg';
   static const String storeRuangTanah = 'assets/images/places/store_ruang_tanah.jpg';
   static const String workshopHero = 'assets/images/places/workshop_hero.jpg';
+  static const String workshopHero2 = 'assets/images/places/workshop_hero2.jpeg';
+  static const String workshopHero3 = 'assets/images/places/workshop_hero3.jpeg';
+  static const String workshopHero4 = 'assets/images/places/workshop_hero4.jpeg';
+  static const String workshopHero5 = 'assets/images/places/workshop_hero5.jpeg';
+
+  static const List<String> workshopBanners = [
+    workshopHero,
+    workshopHero2,
+    workshopHero3,
+    workshopHero4,
+    workshopHero5,
+  ];
 
   // ── Auth & Account Images ──────────────────────────────────────────────────
   static const String iconLupaPassword = 'assets/images/auth/Icon_lupa_password.png';

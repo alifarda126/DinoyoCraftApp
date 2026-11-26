@@ -111,12 +111,13 @@ class _HelpScreenState extends State<HelpScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bg,
         body: SafeArea(
+          maintainBottomViewPadding: true,
           child: Column(
             children: [
               _buildHeader(),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
                   children: [
                     Text(
                       'Butuh Bantuan?'.tr,
@@ -183,7 +184,7 @@ class _HelpScreenState extends State<HelpScreen> {
                           tilePadding: EdgeInsets.zero,
                           childrenPadding: const EdgeInsets.only(bottom: 12),
                           title: Text(
-                            f.question,
+                            f.question.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -194,7 +195,7 @@ class _HelpScreenState extends State<HelpScreen> {
                             Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                f.answer,
+                                f.answer.tr,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 13,
                                   height: 1.5,
@@ -227,7 +228,8 @@ class _HelpScreenState extends State<HelpScreen> {
                           ),
                           SizedBox(height: 8),
                           Text(
-                            'Email: csdinoyocraft@gmail.com\nWhatsApp: +62 812-3456-7890\nJam operasional: 09.00–18.00 WIB',
+                            'Email: csdinoyocraft@gmail.com\nWhatsApp: +62 812-3456-7890\nJam operasional: 09.00–18.00 WIB'
+                                .tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 13,
                               height: 1.5,

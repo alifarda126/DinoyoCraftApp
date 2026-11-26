@@ -7,6 +7,7 @@ import '../../core/app_text.dart';
 import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/widgets/dc_cached_image.dart';
 import '../../data/mock_data.dart';
 
@@ -114,7 +115,12 @@ class _StoresScreenState extends State<StoresScreen> {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            84 + DcBottomNav.getBottomPadding(context),
+          ),
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,

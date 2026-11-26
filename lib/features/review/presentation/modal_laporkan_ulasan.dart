@@ -149,6 +149,7 @@ class _ModalLaporkanUlasanState extends State<ModalLaporkanUlasan> {
       ),
       child: SafeArea(
         top: false,
+        maintainBottomViewPadding: true,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -200,7 +201,7 @@ class _ModalLaporkanUlasanState extends State<ModalLaporkanUlasan> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Ulasan oleh ${widget.reviewerName}',
+                          'Ulasan oleh ${widget.reviewerName}'.tr,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(

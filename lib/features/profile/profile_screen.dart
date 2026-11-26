@@ -15,6 +15,7 @@ import '../../core/services/google_auth_service.dart';
 import '../../core/services/pusher_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/dc_app_header.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/image_preview_dialog.dart';
 import 'tracking_sheet.dart';
@@ -210,8 +211,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             SliverToBoxAdapter(
               child: Padding(
                 // Padding bawah disesuaikan agar elemen profil dapat leluasa bergulir
-                // dan terlihat secara jelas di balik navbar kaca (extendBody: true).
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 56),
+                // dan terlihat secara jelas di atas navbar kaca maupun navigasi 3 tombol.
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  8,
+                  16,
+                  84 + DcBottomNav.getBottomPadding(context),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -439,7 +445,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           // Sesuai desain: selalu "1 Pesanan" di ketiga tab.
           child: Text(
-            '${_tabOrders.length} Pesanan',
+            '${_tabOrders.length} Pesanan'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -933,8 +939,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ? 1
                       : _asInt(first['quantity']));
             final variantStr = variantRaw.isNotEmpty
-                ? 'Varian: $variantRaw ${qty}x'
-                : 'Jumlah: ${qty}x';
+                ? 'Varian: $variantRaw ${qty}x'.tr
+                : 'Jumlah: ${qty}x'.tr;
             final img = first == null ? '' : _itemFirstImage(first);
             final res = await context.push<bool>(
               '/review/write',
@@ -948,7 +954,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 'variant': variantStr,
                 'studioName': store,
                 if (img.isNotEmpty) 'productImage': img,
-                'receivedDate': 'Pesanan Selesai',
+                'receivedDate': 'Pesanan Selesai'.tr,
               },
             );
             if (res == true && mounted) {
@@ -1713,7 +1719,12 @@ class _ProfileScreenState extends State<ProfileScreen>
             Expanded(
               child: ListView(
                 controller: scrollCtrl,
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  16,
+                  16,
+                  20 + DcBottomNav.systemNavInset(ctx),
+                ),
                 children: [
                   if (_ordersLoading)
                     const Padding(

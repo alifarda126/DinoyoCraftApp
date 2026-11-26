@@ -124,7 +124,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
   void _showFeedback(String message, {bool isError = false}) {
     if (!mounted) return;
     AppTopToast.show(
-      message,
+      message.tr,
       type: isError ? TopToastType.error : TopToastType.success,
     );
   }
@@ -163,7 +163,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             borderRadius: BorderRadius.circular(18),
           ),
           title: Text(
-            'Nonaktifkan 2FA?',
+            'Nonaktifkan 2FA?'.tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 17,
               fontWeight: FontWeight.w800,
@@ -171,7 +171,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             ),
           ),
           content: Text(
-            'Untuk mengonfirmasi penonaktifan Autentikasi 2 Langkah, kami akan mengirimkan kode verifikasi OTP ke email terdaftar Anda ($_maskedEmail).',
+            'Untuk mengonfirmasi penonaktifan Autentikasi 2 Langkah, kami akan mengirimkan kode verifikasi OTP ke email terdaftar Anda ($_maskedEmail).'
+                .tr,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               height: 1.5,
@@ -182,7 +183,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             TextButton(
               onPressed: () => Navigator.pop(dialogCtx, false),
               child: Text(
-                'Batal',
+                'Batal'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary,
@@ -198,7 +199,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                 elevation: 0,
               ),
               child: Text(
-                'Kirim OTP & Nonaktifkan',
+                'Kirim OTP & Nonaktifkan'.tr,
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
@@ -251,6 +252,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             child: SafeArea(
               top: false,
+              maintainBottomViewPadding: true,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,6 +501,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
               child: SafeArea(
                 top: false,
+                maintainBottomViewPadding: true,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -522,7 +525,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Perangkat Terhubung',
+                                  'Perangkat Terhubung'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
@@ -531,7 +534,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 ),
                                 SizedBox(height: 4),
                                 Text(
-                                  'Kelola perangkat yang aktif mengakses akun Anda',
+                                  'Kelola perangkat yang aktif mengakses akun Anda'.tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     color: AppColors.textSecondary,
@@ -550,7 +553,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
 
                       // Section: Perangkat Ini
                       Text(
-                        'PERANGKAT SAAT INI',
+                        'PERANGKAT SAAT INI'.tr,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -614,7 +617,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                           ),
                                         ),
                                         child: Text(
-                                          'Aktif Saat Ini',
+                                          'Aktif Saat Ini'.tr,
                                           style: GoogleFonts.plusJakartaSans(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w700,
@@ -644,7 +647,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                       // Section: Perangkat Lain — hanya bila ada sesi lain
                       if (otherList.isNotEmpty) ...[
                         Text(
-                          'PERANGKAT LAIN YANG TERHUBUNG',
+                          'PERANGKAT LAIN YANG TERHUBUNG'.tr,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -718,7 +721,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                           ),
                                         ),
                                         title: Text(
-                                          'Hapus Sesi Perangkat?',
+                                          'Hapus Sesi Perangkat?'.tr,
                                           style: GoogleFonts.plusJakartaSans(
                                             fontSize: 17,
                                             fontWeight: FontWeight.w800,
@@ -726,7 +729,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                           ),
                                         ),
                                         content: Text(
-                                          'Sesi "${target.name}" akan dicabut dan perangkat tersebut otomatis ter-logout dari akun Anda.',
+                                          'Sesi "${target.name}" akan dicabut dan perangkat tersebut otomatis ter-logout dari akun Anda.'
+                                              .tr,
                                           style: GoogleFonts.plusJakartaSans(
                                             fontSize: 13,
                                             height: 1.5,
@@ -738,7 +742,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                             onPressed: () =>
                                                 Navigator.pop(dlgCtx),
                                             child: Text(
-                                              'Batal',
+                                              'Batal'.tr,
                                               style:
                                                   GoogleFonts.plusJakartaSans(
                                                     fontWeight: FontWeight.w600,
@@ -765,7 +769,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                               elevation: 0,
                                             ),
                                             child: Text(
-                                              'Hapus & Logout',
+                                              'Hapus & Logout'.tr,
                                               style:
                                                   GoogleFonts.plusJakartaSans(
                                                     fontWeight: FontWeight.w700,
@@ -787,7 +791,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                     ),
                                   ),
                                   child: Text(
-                                    'Keluar',
+                                    'Keluar'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
@@ -813,7 +817,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                     borderRadius: BorderRadius.circular(18),
                                   ),
                                   title: Text(
-                                    'Keluar dari Semua Perangkat Lain?',
+                                    'Keluar dari Semua Perangkat Lain?'.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 17,
                                       fontWeight: FontWeight.w800,
@@ -821,7 +825,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                     ),
                                   ),
                                   content: Text(
-                                    'Semua sesi perangkat lain yang terhubung akan dicabut dan seluruh perangkat tersebut otomatis ter-logout.',
+                                    'Semua sesi perangkat lain yang terhubung akan dicabut dan seluruh perangkat tersebut otomatis ter-logout.'
+                                        .tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 13,
                                       height: 1.5,
@@ -832,7 +837,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                     TextButton(
                                       onPressed: () => Navigator.pop(dlgCtx),
                                       child: Text(
-                                        'Batal',
+                                        'Batal'.tr,
                                         style: GoogleFonts.plusJakartaSans(
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.textSecondary,
@@ -857,7 +862,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                         elevation: 0,
                                       ),
                                       child: Text(
-                                        'Keluar Semua',
+                                        'Keluar Semua'.tr,
                                         style: GoogleFonts.plusJakartaSans(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13,
@@ -870,7 +875,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             },
                             icon: Icon(Icons.logout_rounded, size: 18),
                             label: Text(
-                              'Keluar dari Semua Perangkat Lain',
+                              'Keluar dari Semua Perangkat Lain'.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -904,7 +909,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Perangkat ini terdaftar sebagai sesi utama Anda. Anda dapat mencabut token sesi di perangkat lain kapan saja.',
+                                  'Perangkat ini terdaftar sebagai sesi utama Anda. Anda dapat mencabut token sesi di perangkat lain kapan saja.'
+                                      .tr,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     height: 1.4,
@@ -1004,6 +1010,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           child: SafeArea(
             top: false,
+            maintainBottomViewPadding: true,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1110,6 +1117,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           child: SafeArea(
             top: false,
+            maintainBottomViewPadding: true,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1198,7 +1206,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
   // ── 6. Bersihkan Cache ────────────────────────────────────────────────────
   void _clearCache() {
     if (_isCacheCleaned) {
-      _showFeedback('Cache aplikasi sudah bersih (0 B).');
+      _showFeedback('Cache aplikasi sudah bersih (0 B).'.tr);
       return;
     }
 
@@ -1207,7 +1215,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
-          'Bersihkan Cache?',
+          'Bersihkan Cache?'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 17,
             fontWeight: FontWeight.w800,
@@ -1215,9 +1223,11 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           ),
         ),
         content: Text(
-          'File sementara sebesar ${_settings.cacheLabel} berupa pratinjau '
-          'gambar keramik dan data offline akan dihapus. Ini tidak akan '
-          'menghapus data akun Anda.',
+          AppText.isEnglish
+              ? 'Temporary files (${_settings.cacheLabel}) such as ceramic image previews and offline data will be cleared. Your account data will not be deleted.'
+              : 'File sementara sebesar ${_settings.cacheLabel} berupa pratinjau '
+                    'gambar keramik dan data offline akan dihapus. Ini tidak akan '
+                    'menghapus data akun Anda.',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 13,
             height: 1.5,
@@ -1228,7 +1238,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
             child: Text(
-              'Batal',
+              'Batal'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
@@ -1242,7 +1252,11 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               await _settings.clearCache();
               if (mounted) {
                 setState(() {});
-                _showFeedback('Cache sebesar $cleared berhasil dibersihkan.');
+                _showFeedback(
+                  AppText.isEnglish
+                      ? '$cleared of cache cleared successfully.'
+                      : 'Cache sebesar $cleared berhasil dibersihkan.',
+                );
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1252,7 +1266,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               elevation: 0,
             ),
             child: Text(
-              'Bersihkan',
+              'Bersihkan'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
@@ -1350,7 +1364,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         },
         icon: Icon(Icons.help_outline_rounded, size: 16),
         label: Text(
-          'Pusat Bantuan & Klaim',
+          'Pusat Bantuan & Klaim'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -1407,6 +1421,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           ),
           child: SafeArea(
             top: false,
+            maintainBottomViewPadding: true,
             child: Column(
               children: [
                 Center(
@@ -1450,7 +1465,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              title,
+                              title.tr,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.plusJakartaSans(
@@ -1460,7 +1475,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               ),
                             ),
                             Text(
-                              subtitle,
+                              subtitle.tr,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.plusJakartaSans(
@@ -1519,7 +1534,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                                 SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    item.heading,
+                                    item.heading.tr,
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
@@ -1531,7 +1546,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              item.body,
+                              item.body.tr,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 height: 1.5,
@@ -1564,7 +1579,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             elevation: 0,
                           ),
                           child: Text(
-                            'Saya Mengerti',
+                            'Saya Mengerti'.tr,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -1590,7 +1605,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
-          'Keluar dari Akun?',
+          'Keluar dari Akun?'.tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 17,
             fontWeight: FontWeight.w800,
@@ -1598,7 +1613,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           ),
         ),
         content: Text(
-          'Anda harus login kembali untuk mengakses keranjang dan riwayat transaksi kerajinan keramik Anda.',
+          'Anda harus login kembali untuk mengakses keranjang dan riwayat transaksi kerajinan keramik Anda.'
+              .tr,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 13,
             height: 1.5,
@@ -1609,7 +1625,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
             child: Text(
-              'Batal',
+              'Batal'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
@@ -1626,7 +1642,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               if (mounted) {
                 context.go('/login');
               }
-              _showFeedback('Anda telah berhasil keluar dari akun.');
+              _showFeedback('Anda telah berhasil keluar dari akun.'.tr);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.danger,
@@ -1635,7 +1651,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
               elevation: 0,
             ),
             child: Text(
-              'Keluar',
+              'Keluar'.tr,
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
@@ -1789,6 +1805,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
         return Scaffold(
           backgroundColor: AppColors.bg,
           body: SafeArea(
+            maintainBottomViewPadding: true,
             child: Column(
               children: [
                 _buildHeader(),
@@ -1850,8 +1867,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             setState(() {});
                             _showFeedback(
                               next
-                                  ? 'Notifikasi pesanan & pengiriman diaktifkan.'
-                                  : 'Notifikasi pesanan & pengiriman dinonaktifkan.',
+                                  ? 'Notifikasi pesanan & pengiriman diaktifkan.'.tr
+                                  : 'Notifikasi pesanan & pengiriman dinonaktifkan.'.tr,
                             );
                           },
                           trailing: Switch(
@@ -1862,8 +1879,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               setState(() {});
                               _showFeedback(
                                 v
-                                    ? 'Notifikasi pesanan & pengiriman diaktifkan.'
-                                    : 'Notifikasi pesanan & pengiriman dinonaktifkan.',
+                                    ? 'Notifikasi pesanan & pengiriman diaktifkan.'.tr
+                                    : 'Notifikasi pesanan & pengiriman dinonaktifkan.'.tr,
                               );
                             },
                           ),
@@ -1878,8 +1895,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                             setState(() {});
                             _showFeedback(
                               next
-                                  ? 'Notifikasi via WhatsApp diaktifkan.'
-                                  : 'Notifikasi via WhatsApp dinonaktifkan.',
+                                  ? 'Notifikasi via WhatsApp diaktifkan.'.tr
+                                  : 'Notifikasi via WhatsApp dinonaktifkan.'.tr,
                             );
                           },
                           trailing: Switch(
@@ -1890,8 +1907,8 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
                               setState(() {});
                               _showFeedback(
                                 v
-                                    ? 'Notifikasi via WhatsApp diaktifkan.'
-                                    : 'Notifikasi via WhatsApp dinonaktifkan.',
+                                    ? 'Notifikasi via WhatsApp diaktifkan.'.tr
+                                    : 'Notifikasi via WhatsApp dinonaktifkan.'.tr,
                               );
                             },
                           ),

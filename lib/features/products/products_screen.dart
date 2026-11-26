@@ -7,6 +7,7 @@ import '../../core/assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/category_chip.dart';
 import '../../core/widgets/dc_app_header.dart';
+import '../../core/widgets/dc_bottom_nav.dart';
 import '../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
 
@@ -154,7 +155,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
         if (items.isEmpty)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 48, 20, 100),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                48,
+                20,
+                84 + DcBottomNav.getBottomPadding(context),
+              ),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -180,7 +186,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
           )
         else
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              8,
+              20,
+              84 + DcBottomNav.getBottomPadding(context),
+            ),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
