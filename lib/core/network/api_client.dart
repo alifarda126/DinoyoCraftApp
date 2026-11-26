@@ -79,6 +79,10 @@ class ApiClient {
 
   static String? _authToken;
 
+  /// Callback global ketika akun pengguna dinonaktifkan / dihapus Admin
+  /// atau seluruh sesi dicabut sehingga perlu auto-logout seketika.
+  static void Function(String reason)? onAccountForceLogout;
+
   static String? get authToken => _authToken ?? LocalStorage.getToken();
   static set authToken(String? token) => _authToken = token;
 
@@ -718,8 +722,24 @@ class ApiClient {
 
     if (response.statusCode == 401) {
       debugPrint('[ApiClient] 401 Unauthorized detected. Clearing cached session.');
+      final wasLoggedIn = LocalStorage.isLoggedIn;
       _authToken = null;
       LocalStorage.clearAuth();
+      if (wasLoggedIn) {
+        onAccountForceLogout?.call('Sesi akun Anda telah berakhir.');
+      }
+    } else if (response.statusCode == 403 && LocalStorage.isLoggedIn) {
+      final lowerMsg = (decoded is Map<String, dynamic>
+              ? (decoded['message'] ?? '').toString()
+              : '')
+          .toLowerCase();
+      if (lowerMsg.contains('dinonaktifkan') || lowerMsg.contains('dihapus')) {
+        debugPrint('[ApiClient] 403 Account deactivated detected. Forcing logout.');
+        _authToken = null;
+        onAccountForceLogout?.call(
+          'Pengajuan penghapusan akun DinoyoCraft Anda telah disetujui atau akun telah dinonaktifkan.',
+        );
+      }
     }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {

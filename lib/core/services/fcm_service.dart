@@ -238,6 +238,30 @@ class FcmService {
     _notificationModelController.add(model);
   }
 
+  /// Menampilkan notifikasi akun (tray sistem + banner in-app), misal saat penghapusan akun disetujui.
+  Future<void> showAccountSystemNotification({
+    required String title,
+    required String body,
+    Map<String, dynamic> data = const {},
+  }) async {
+    const dedupKey = 'account:deleted_logout';
+    if (_isRecentlyHandled(dedupKey)) return;
+    _markHandled(dedupKey);
+
+    final model = FcmNotificationModel(
+      id: 'acc-${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      body: body,
+      category: FcmNotificationCategory.account,
+      createdAt: DateTime.now(),
+      route: '/login',
+      data: data,
+    );
+    await _showTrayNotification(model);
+    _notificationsHistory.insert(0, model);
+    _notificationModelController.add(model);
+  }
+
   /// Simulasi notifikasi update status pesanan.
   void simulateOrderNotification({
     String orderId = 'DNC-001',

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/app_text.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/product_card.dart';
+import '../../core/widgets/share_link_sheet.dart';
 import '../../data/mock_data.dart';
 import 'presentation/modal_laporkan_toko.dart';
 
@@ -15,8 +16,13 @@ Color get _borderColor => AppColors.border;
 const double _padH = 24;
 
 class StoreDetailScreen extends StatefulWidget {
-const   StoreDetailScreen({super.key, required this.storeIndex});
+  const StoreDetailScreen({
+    super.key,
+    this.storeIndex = 0,
+    this.storeKey,
+  });
   final int storeIndex;
+  final String? storeKey;
 
   @override
   State<StoreDetailScreen> createState() => _StoreDetailScreenState();
@@ -25,6 +31,89 @@ const   StoreDetailScreen({super.key, required this.storeIndex});
 class _StoreDetailScreenState extends State<StoreDetailScreen> {
   String _query = '';
   final _searchController = TextEditingController();
+  Store? _liveStore;
+  List<Product>? _liveProducts;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStoreFromKeyIfNeeded();
+  }
+
+  Future<void> _loadStoreFromKeyIfNeeded() async {
+    final key = widget.storeKey?.trim() ?? '';
+    if (key.isEmpty) return;
+
+    // Jika dibuka dari dalam aplikasi lewat indeks lokal (mis. /store/0) dan MockData sudah terisi,
+    // gunakan MockData lokal kecuali key berupa slug nama toko atau ID toko yang belum ada.
+    final asInt = int.tryParse(key);
+    if (asInt != null &&
+        MockData.stores.isNotEmpty &&
+        asInt >= 0 &&
+        asInt < MockData.stores.length) {
+      return;
+    }
+
+    try {
+      final res = await ApiClient.get('/mitra/$key/public');
+      if (res['success'] == true && res['data'] is Map<String, dynamic>) {
+        final dataMap = res['data'] as Map<String, dynamic>;
+        final fetchedStore = Store.fromJson(dataMap);
+        final rawProds = dataMap['products'];
+        final fetchedProducts = <Product>[];
+        if (rawProds is List) {
+          for (final p in rawProds) {
+            if (p is Map<String, dynamic>) {
+              final prod = Product.fromJson(p);
+              MockData.upsertProduct(prod);
+              fetchedProducts.add(prod);
+            }
+          }
+        }
+        if (mounted) {
+          setState(() {
+            _liveStore = fetchedStore;
+            _liveProducts = fetchedProducts;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Store _resolveStore() {
+    if (_liveStore != null) return _liveStore!;
+    final key = widget.storeKey?.trim() ?? '';
+    if (key.isNotEmpty && MockData.stores.isNotEmpty) {
+      final asInt = int.tryParse(key);
+      if (asInt != null) {
+        if (asInt >= 0 && asInt < MockData.stores.length) {
+          return MockData.stores[asInt];
+        }
+        final byId = MockData.stores.where((s) => s.id == asInt).firstOrNull;
+        if (byId != null) return byId;
+      } else {
+        final tailMatch = RegExp(r'-(\d+)$').firstMatch(key);
+        final tailId = int.tryParse(tailMatch?.group(1) ?? '');
+        if (tailId != null && tailId > 0) {
+          final byTailId =
+              MockData.stores.where((s) => s.id == tailId).firstOrNull;
+          if (byTailId != null) return byTailId;
+        }
+        final cleanSlug = slugifyUrlSegment(
+          key.replaceAll(RegExp(r'-\d+$'), ''),
+        );
+        if (cleanSlug.isNotEmpty) {
+          final bySlug = MockData.stores
+              .where((s) => slugifyUrlSegment(s.name) == cleanSlug)
+              .firstOrNull;
+          if (bySlug != null) return bySlug;
+        }
+      }
+    }
+    return MockData.stores.isNotEmpty
+        ? MockData.stores[widget.storeIndex.clamp(0, MockData.stores.length - 1)]
+        : MockData.fallbackStore;
+  }
 
   @override
   void dispose() {
@@ -35,15 +124,15 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = AppColors.isDark;
-    final store = MockData.stores.isNotEmpty
-        ? MockData.stores[widget.storeIndex.clamp(0, MockData.stores.length - 1)]
-        : MockData.fallbackStore;
-    final products = MockData.products.where((product) {
-      if (store.id > 0 && product.mitraId > 0) {
-        return product.mitraId == store.id;
-      }
-      return product.studio.trim().toLowerCase() == store.name.trim().toLowerCase();
-    }).toList();
+    final store = _resolveStore();
+    final products = _liveProducts ??
+        MockData.products.where((product) {
+          if (store.id > 0 && product.mitraId > 0) {
+            return product.mitraId == store.id;
+          }
+          return product.studio.trim().toLowerCase() ==
+              store.name.trim().toLowerCase();
+        }).toList();
     final allProducts = products;
     final shownProducts = allProducts
         .where((p) => p.name.toLowerCase().contains(_query.toLowerCase()))
@@ -110,22 +199,16 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                           if (value == 'home') {
                             context.go('/home');
                           } else if (value == 'share') {
-                            Clipboard.setData(
-                              ClipboardData(
-                                text:
-                                    'https://dinoyocraft.my.id/store/${widget.storeIndex}',
-                              ),
+                            final shareUrl = buildStoreShareUrl(
+                              storeName: store.name,
+                              storeId: store.id,
+                              fallbackIndex: widget.storeIndex,
                             );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                content: Text(
-                                  'Tautan profil toko disalin ke clipboard'.tr,
-                                ),
-                              ),
+                            await showShareLinkOptionsSheet(
+                              context,
+                              title: store.name,
+                              subtitle: store.location,
+                              url: shareUrl,
                             );
                           } else if (value == 'help') {
                             context.push('/help');

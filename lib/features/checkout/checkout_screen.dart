@@ -785,28 +785,35 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Flexible(
-                                      child: Text(
-                                        _currentAddress!.name,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.ink,
-                                        ),
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              _currentAddress!.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.ink,
+                                              ),
+                                            ),
+                                          ),
+                                          if (_currentAddress!.isPrimary || _selected == 0) ...[
+                                            const SizedBox(width: 8),
+                                            const _Badge('UTAMA'),
+                                          ],
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 8),
+                                            child: _labelBadge(_currentAddress!.label),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    if (_currentAddress!.isPrimary || _selected == 0) ...[
-                                      SizedBox(width: 8),
-                                      const _Badge('UTAMA'),
-                                    ],
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 8),
-                                      child: _labelBadge(_currentAddress!.label),
-                                    ),
-                                    Spacer(),
+                                    const SizedBox(width: 8),
                                     InkWell(
                                       onTap: _showAddressPicker,
                                       borderRadius: BorderRadius.circular(6),
@@ -823,7 +830,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                               size: 14,
                                               color: AppColors.ink,
                                             ),
-                                            SizedBox(width: 4),
+                                            const SizedBox(width: 4),
                                             Text(
                                               'Ubah Alamat'.tr,
                                               style: GoogleFonts.plusJakartaSans(

@@ -10,6 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_back_scope.dart';
 import '../../core/widgets/dc_cached_image.dart';
 import '../../core/widgets/image_preview_dialog.dart';
+import '../../core/widgets/share_link_sheet.dart';
 import '../../core/network/api_client.dart';
 import '../../data/mock_data.dart';
 import '../review/presentation/modal_laporkan_ulasan.dart';
@@ -61,15 +62,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
-  void _toast(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
   @override
   Widget build(BuildContext context) {
+    final targetRaw = widget.productId.trim();
+    final targetSlug = slugifyUrlSegment(
+      targetRaw.replaceAll(RegExp(r'-\d+$'), ''),
+    );
+    final tailIdMatch = RegExp(r'-(\d+)$').firstMatch(targetRaw);
+    final tailId = tailIdMatch?.group(1);
+
     final product = _liveProduct ??
         MockData.products.firstWhere(
-          (item) => item.id == widget.productId,
+          (item) =>
+              item.id == targetRaw ||
+              (tailId != null && item.id == tailId) ||
+              (targetSlug.isNotEmpty &&
+                  slugifyUrlSegment(item.name) == targetSlug),
           orElse: () => MockData.products.isNotEmpty
               ? MockData.products.first
               : MockData.fallbackProduct,
@@ -96,12 +104,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   }
                 },
                 onShare: () {
-                  Clipboard.setData(
-                    ClipboardData(
-                      text: 'https://dinoyocraft.my.id/product/${widget.productId}',
-                    ),
+                  final shareUrl = buildProductShareUrl(
+                    productId: product.id,
+                    productName: product.name,
                   );
-                  _toast('Tautan produk disalin ke clipboard');
+                  showShareLinkOptionsSheet(
+                    context,
+                    title: product.name,
+                    subtitle: MockData.formatPrice(product.price),
+                    url: shareUrl,
+                  );
                 },
                 onReport: () async {
                   final messenger = ScaffoldMessenger.of(context);

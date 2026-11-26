@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/fcm_notification_model.dart';
+import '../network/api_client.dart';
+import '../router/app_router.dart';
 import '../services/auth_session.dart';
 import '../services/fcm_service.dart';
 import '../services/pusher_service.dart';
@@ -136,14 +137,19 @@ class FcmNotificationBanner extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 5),
-                            Text(
-                              notification.category.displayName,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: iconColor,
+                            Flexible(
+                              child: Text(
+                                notification.category.displayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: iconColor,
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 8),
                             const Spacer(),
                             Text(
                               notification.timeLabel,
@@ -237,9 +243,11 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
   StreamSubscription? _fcmSub;
   StreamSubscription? _orderSub;
   StreamSubscription? _chatSub;
+  StreamSubscription? _accountSub;
   Timer? _dismissTimer;
   FcmNotificationModel? _currentNotification;
   bool _wasLoggedIn = false;
+  bool _handlingForcedLogout = false;
 
   static const Set<String> _shellBranches = {
     '/home',
@@ -279,7 +287,45 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
     // Dengarkan notifikasi masuk dari FCM service
     _fcmSub = FcmService.instance.notificationModelStream.listen((notif) {
       showNotification(notif);
+      final notifType = notif.data['type']?.toString() ?? '';
+      final forceLogout = notif.data['force_logout']?.toString() == 'true';
+      if (notifType == 'account_deleted' || forceLogout) {
+        unawaited(
+          _handleForcedAccountLogout(
+            title: notif.title,
+            body: notif.body,
+            showTrayAndBanner: false,
+          ),
+        );
+      }
     });
+
+    // Dengarkan event penghapusan akun / force logout realtime via Pusher
+    _accountSub = PusherService.instance.accountEventStream.listen((event) {
+      final title = event['title']?.toString().trim();
+      final body = event['message']?.toString().trim();
+      unawaited(
+        _handleForcedAccountLogout(
+          title: (title != null && title.isNotEmpty)
+              ? title
+              : 'Penghapusan Akun Disetujui',
+          body: (body != null && body.isNotEmpty)
+              ? body
+              : 'Pengajuan penghapusan akun DinoyoCraft Anda telah disetujui oleh Admin.',
+          showTrayAndBanner: true,
+        ),
+      );
+    });
+
+    ApiClient.onAccountForceLogout = (reason) {
+      unawaited(
+        _handleForcedAccountLogout(
+          title: 'Penghapusan Akun Disetujui',
+          body: reason,
+          showTrayAndBanner: true,
+        ),
+      );
+    };
 
     // Global Pusher fallback: pastikan status pembayaran -> dikemas -> dikirim ->
     // diterima & chat baru tetap memicu tray + badge walau tidak di halaman Profil.
@@ -328,6 +374,42 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
       unawaited(PusherService.instance.subscribeToUserOrders(uid));
     }
     unawaited(MockData.refreshUnreadCounts());
+    unawaited(_verifyActiveAccountSession());
+  }
+
+  Future<void> _verifyActiveAccountSession() async {
+    if (!AuthSession.isLoggedIn || _handlingForcedLogout) return;
+    try {
+      await ApiClient.get('/auth/profile');
+    } catch (_) {
+      // Jika HTTP 401 / 403 dinonaktifkan, ApiClient.onAccountForceLogout sudah menanganinya otomatis.
+    }
+  }
+
+  Future<void> _handleForcedAccountLogout({
+    required String title,
+    required String body,
+    required bool showTrayAndBanner,
+  }) async {
+    if (_handlingForcedLogout) return;
+    _handlingForcedLogout = true;
+    try {
+      if (showTrayAndBanner) {
+        await FcmService.instance.showAccountSystemNotification(
+          title: title,
+          body: body,
+        );
+      }
+      await PusherService.instance.disconnect();
+      await AuthSession.signOut();
+      try {
+        appRouter.go('/login');
+      } catch (_) {}
+    } finally {
+      Future<void>.delayed(const Duration(seconds: 2), () {
+        _handlingForcedLogout = false;
+      });
+    }
   }
 
   @override
@@ -342,10 +424,12 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
     WidgetsBinding.instance.removeObserver(this);
     AuthSession.instance.removeListener(_onAuthSessionChanged);
     FcmService.instance.setNotificationRouteHandler(null);
+    ApiClient.onAccountForceLogout = null;
     _dismissTimer?.cancel();
     _fcmSub?.cancel();
     _orderSub?.cancel();
     _chatSub?.cancel();
+    _accountSub?.cancel();
     _animController.dispose();
     super.dispose();
   }
@@ -379,7 +463,7 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
 
   void _navigateToRoute(String route) {
     try {
-      final router = GoRouter.of(context);
+      final router = appRouter;
       final normalized = route.trim();
       if (_shellBranches.contains(normalized)) {
         router.go(normalized);

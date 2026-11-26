@@ -298,11 +298,30 @@ final GoRouter appRouter = GoRouter(
       },
     ),
     GoRoute(
+      path: '/produk/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return _live(() => ProductDetailScreen(productId: id));
+      },
+    ),
+    GoRoute(
       path: '/store/:index',
       builder: (context, state) {
-        final index =
-            int.tryParse(state.pathParameters['index'] ?? '') ?? 0;
-        return _live(() => StoreDetailScreen(storeIndex: index));
+        final raw = state.pathParameters['index'] ?? '0';
+        final index = int.tryParse(raw) ?? 0;
+        return _live(
+          () => StoreDetailScreen(storeIndex: index, storeKey: raw),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/toko/:index',
+      builder: (context, state) {
+        final raw = state.pathParameters['index'] ?? '0';
+        final index = int.tryParse(raw) ?? 0;
+        return _live(
+          () => StoreDetailScreen(storeIndex: index, storeKey: raw),
+        );
       },
     ),
     GoRoute(

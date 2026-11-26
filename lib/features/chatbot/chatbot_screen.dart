@@ -421,6 +421,8 @@ class _ClayBotSheetState extends State<_ClayBotSheet> {
       final res = await ApiClient.post('/ai/chat', {
         'message': trimmed,
         'locale': AppSettings.instance.locale == 'en' ? 'en' : 'id',
+        'role_context': 'claybot',
+        'save_to_chat': false,
         'history': historyPayload,
       });
       final reply = (res['data']?['reply'] ?? '').toString().trim();

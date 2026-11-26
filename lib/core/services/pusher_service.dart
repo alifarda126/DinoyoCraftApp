@@ -141,6 +141,8 @@ class PusherService {
       StreamController<Map<String, dynamic>>.broadcast();
   final StreamController<Map<String, dynamic>> _orderEventStreamController =
       StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<Map<String, dynamic>> _accountEventStreamController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   final Map<String, List<void Function(PusherChatMessage)>> _chatListeners = {};
   final Set<String> _subscribedChannels = {};
@@ -160,6 +162,10 @@ class PusherService {
   /// Stream event status pembayaran & pesanan realtime (`order-paid`, `order-status-changed`).
   Stream<Map<String, dynamic>> get orderEventStream =>
       _orderEventStreamController.stream;
+
+  /// Stream event keamanan akun realtime (`account-deleted`, `force-logout`).
+  Stream<Map<String, dynamic>> get accountEventStream =>
+      _accountEventStreamController.stream;
 
   /// Status koneksi realtime saat ini.
   PusherConnectionState get connectionState => _connectionState;
@@ -439,6 +445,13 @@ class PusherService {
     } else if (eventName == 'order-paid' ||
         eventName == 'order-status-changed') {
       _orderEventStreamController.add({
+        'event': eventName,
+        'channel': event.channelName,
+        ...dataMap,
+      });
+    } else if (eventName == 'account-deleted' ||
+        eventName == 'force-logout') {
+      _accountEventStreamController.add({
         'event': eventName,
         'channel': event.channelName,
         ...dataMap,

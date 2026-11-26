@@ -357,7 +357,7 @@ class _PaymentScreenState extends State<PaymentScreen>
     var ticks = 0;
     _fastWebViewPollTimer = Timer.periodic(const Duration(seconds: 2), (t) {
       ticks++;
-      if (!mounted || _paidNotified || _isTerminalState || ticks > 90) {
+      if (!mounted || _paidNotified || _isTerminalState || ticks > 300) {
         t.cancel();
         return;
       }
@@ -1475,11 +1475,14 @@ class _PaymentScreenState extends State<PaymentScreen>
     final uri = Uri.tryParse(resolvedUrl);
     if (uri != null) {
       try {
-        // Pada Android 17+, Chrome eksternal memblokir IP lokal HTTP (REVOKED_COMPAT / ERR_TOO_MANY_RETRIES).
-        // Gunakan inAppWebView untuk HTTP lokal / simulator Midtrans agar terbuka di aplikasi
-        // dan langsung tertutup otomatis kembali ke layar sukses begitu status berubah PAID.
+        // Gunakan inAppWebView untuk semua halaman pembayaran/simulator Midtrans (baik E-Wallet,
+        // QRIS, maupun Virtual Account di host backend HTTPS maupun sandbox Midtrans) agar langsung
+        // tertutup otomatis kembali ke aplikasi begitu pembayaran terverifikasi PAID.
         final useInAppWebView = uri.scheme == 'http' ||
-            uri.host.contains('simulator.sandbox.midtrans.com');
+            uri.host.contains('simulator.sandbox.midtrans.com') ||
+            uri.host.contains('midtrans.com') ||
+            uri.host.contains('dinoyocraft.my.id') ||
+            uri.path.contains('/payments/sandbox-simulator');
         final mode = useInAppWebView
             ? LaunchMode.inAppWebView
             : LaunchMode.externalApplication;

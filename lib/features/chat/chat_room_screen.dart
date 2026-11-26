@@ -1042,6 +1042,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           'message': aiQuery,
           'original_message': trimmed,
           'role_context': isCs ? 'customer' : 'store_bot',
+          'save_to_chat': true,
           if (!isCs) 'store_name': _displayPartnerName,
           if (storeUserId != null && storeUserId.isNotEmpty && storeUserId != 'null') ...{
             'target_user_id': storeUserId,
