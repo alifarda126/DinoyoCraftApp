@@ -793,7 +793,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
             review.variant,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: const Color(0xFF9CA3AF),
             ),
           ),
           SizedBox(height: 8),
@@ -837,15 +837,13 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                   minimumSize: Size(0, 32),
                 ),
               ),
-              Spacer(),
-              Flexible(
+              const SizedBox(width: 12),
+              Expanded(
                 child: Text(
                   'Apakah ulasan ini bermanfaat?'.tr,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
+                    fontSize: 11.5,
+                    color: AppColors.textMuted,
                   ),
                 ),
               ),

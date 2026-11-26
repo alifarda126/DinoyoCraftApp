@@ -87,26 +87,56 @@ class FcmNotificationModel {
     final category = FcmNotificationCategory.fromString(type);
 
     String? route = rawData['route']?.toString();
-    if (route == null || route.isEmpty || route == '/chat') {
+    if (route == null || route.isEmpty || route == '/chat' || route == '/profile') {
       if (category == FcmNotificationCategory.transaction) {
-        route = '/profile';
+        final orderId = (rawData['order_id'] ?? rawData['orderId'] ?? '').toString().trim();
+        final status = (rawData['status'] ?? '').toString().trim().toLowerCase();
+        final tab = switch (status) {
+          'pending' => 'Belum Bayar',
+          'paid' || 'processing' || 'packed' => 'Dikemas',
+          'shipped' => 'Dikirim',
+          'completed' || 'delivered' => 'Diterima',
+          _ => null,
+        };
+        route = Uri(
+          path: '/profile',
+          queryParameters: {
+            'tab': ?tab,
+            if (orderId.isNotEmpty) 'trackOrderId': orderId,
+          },
+        ).toString();
       } else if (category == FcmNotificationCategory.chat) {
         final storeName = rawData['store_name']?.toString().trim() ??
             rawData['sender_name']?.toString().trim();
         final senderId = rawData['sender_id']?.toString().trim();
+        final isCs = rawData['is_cs']?.toString() == 'true' ||
+            rawData['is_cs']?.toString() == '1';
         if (storeName != null && storeName.isNotEmpty) {
           route = Uri(
             path: '/chat-room',
             queryParameters: {
               'store': storeName,
               if (senderId != null && senderId.isNotEmpty) 'userId': senderId,
+              if (isCs) 'isCs': '1',
             },
           ).toString();
         } else {
           route = '/messages';
         }
+      } else if (category == FcmNotificationCategory.account) {
+        final subtype = rawData['subtype']?.toString().toLowerCase() ?? '';
+        if (rawData['type']?.toString().toLowerCase() == 'account_deleted') {
+          route = '/login';
+        } else if (subtype.contains('device')) {
+          route = '/settings?open=devices';
+        } else {
+          route = '/settings';
+        }
       } else if (category == FcmNotificationCategory.promo) {
-        route = '/products';
+        final productId = rawData['product_id']?.toString().trim();
+        route = (productId != null && productId.isNotEmpty)
+            ? '/product/$productId'
+            : '/products';
       }
     }
 

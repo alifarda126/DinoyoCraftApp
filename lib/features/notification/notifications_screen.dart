@@ -96,14 +96,49 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
         if (rows is List) {
           _serverNotifs = rows
               .whereType<Map<String, dynamic>>()
-              .map((row) => FcmNotificationModel.fromJson({
-                    'id': row['id']?.toString(),
-                    'title': row['title']?.toString(),
-                    'body': row['message']?.toString(),
-                    'category': row['type']?.toString(),
-                    'is_read': row['is_read'] == 1 || row['is_read'] == true,
-                    'created_at': row['created_at']?.toString(),
-                  }))
+              .map((row) {
+                final type = (row['type']?.toString() ?? '').toLowerCase();
+                final title = row['title']?.toString() ?? '';
+                final msg = row['message']?.toString() ?? '';
+                final refId = row['reference_id']?.toString().trim() ?? '';
+                String resolvedRoute = '/profile';
+                if (type == 'order') {
+                  final lowerText = '$title $msg'.toLowerCase();
+                  String? tab;
+                  if (lowerText.contains('dikirim') || lowerText.contains('resi')) {
+                    tab = 'Dikirim';
+                  } else if (lowerText.contains('selesai') || lowerText.contains('diterima')) {
+                    tab = 'Diterima';
+                  } else if (lowerText.contains('dikemas') || lowerText.contains('pembayaran berhasil')) {
+                    tab = 'Dikemas';
+                  } else if (lowerText.contains('dibuat') || lowerText.contains('menunggu pembayaran')) {
+                    tab = 'Belum Bayar';
+                  }
+                  resolvedRoute = Uri(
+                    path: '/profile',
+                    queryParameters: {
+                      'tab': ?tab,
+                      if (refId.isNotEmpty && refId != 'null')
+                        'trackOrderId': refId,
+                    },
+                  ).toString();
+                } else if (type == 'account' || type == 'security') {
+                  final lowerTitle = title.toLowerCase();
+                  resolvedRoute = lowerTitle.contains('perangkat') ||
+                          lowerTitle.contains('device')
+                      ? '/settings?open=devices'
+                      : '/settings';
+                }
+                return FcmNotificationModel.fromJson({
+                  'id': row['id']?.toString(),
+                  'title': title,
+                  'body': msg,
+                  'category': row['type']?.toString(),
+                  'is_read': row['is_read'] == 1 || row['is_read'] == true,
+                  'created_at': row['created_at']?.toString(),
+                  'route': resolvedRoute,
+                });
+              })
               .toList();
         }
       }
@@ -554,7 +589,8 @@ class _NotificationsModalSheetState extends State<NotificationsModalSheet> {
       '/profile',
     };
 
-    if (shellBranches.contains(route)) {
+    final targetPath = Uri.tryParse(route)?.path ?? route;
+    if (shellBranches.contains(targetPath)) {
       router.go(route);
     } else {
       router.push(route);

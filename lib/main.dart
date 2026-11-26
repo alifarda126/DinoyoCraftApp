@@ -23,16 +23,7 @@ import 'core/widgets/keyboard_dismiss_wrapper.dart';
 import 'core/widgets/top_toast.dart';
 import 'data/mock_data.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await LocalStorage.init();
-  await ApiClient.init();
-  await AppSettings.instance.loadSavedPreferences();
-  unawaited(MockData.fetchPublicData());
-  if (!kIsWeb) {
-    AppSettings.instance.syncCacheSize();
-  }
-  // Pastikan Firebase Core siap sebelum memasang Crashlytics Global Error Handler
+Future<void> _initFirebaseAndPushServices() async {
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -53,14 +44,25 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('[Crashlytics] Safe initialization fallback: $e');
   }
+  await FcmService.instance.initialize();
+}
 
-  // Inisialisasi background services secara aman dan non-blocking
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await LocalStorage.init();
+  await ApiClient.init();
+  await AppSettings.instance.loadSavedPreferences();
+  unawaited(MockData.fetchPublicData());
+  if (!kIsWeb) {
+    AppSettings.instance.syncCacheSize();
+  }
+
+  // Render UI pertama secepat mungkin agar layar logo statis (bagi user yg sudah login)
+  // langsung tampil tanpa tertahan layar hitam selama inisialisasi Firebase.
+  unawaited(_initFirebaseAndPushServices());
   unawaited(ConnectivityService.instance.initialize());
-  // Saat perangkat (kembali) terhubung, katalog otomatis diambil ulang
-  // dari backend agar selalu data real, bukan cache/mock lama.
   MockData.hookConnectivity(ConnectivityService.instance.isOnlineNotifier);
   unawaited(AppInfoService.instance.initialize());
-  unawaited(FcmService.instance.initialize());
   unawaited(PusherService.instance.init());
   runApp(const DinoyoCraftApp());
 }

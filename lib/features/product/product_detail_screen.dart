@@ -1682,16 +1682,16 @@ class _ReviewCardState extends State<_ReviewCard> {
             TextSpan(
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12,
-                color: AppColors.textSecondary,
+                color: const Color(0xFF9CA3AF),
               ),
               children: [
-                TextSpan(text: 'Varian: ${review.variantLabel} - '),
+                TextSpan(text: '${'Varian'.tr}: ${review.variantLabel} - '),
                 TextSpan(
                   text: review.variantProduct,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF9CA3AF),
                   ),
                 ),
               ],
@@ -1712,18 +1712,15 @@ class _ReviewCardState extends State<_ReviewCard> {
 
           // ── Footer: Membantu ──
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _helpfulPill(),
-              Flexible(
+              const SizedBox(width: 12),
+              Expanded(
                 child: Text(
                   'Apakah ulasan ini bermanfaat?'.tr,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
+                    fontSize: 11.5,
+                    color: AppColors.textMuted,
                   ),
                 ),
               ),

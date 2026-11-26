@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../app_settings.dart';
 import '../services/auth_session.dart';
+import '../services/fcm_service.dart';
+import '../../features/auth/app_launch_splash_screen.dart';
 import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/new_password_screen.dart';
@@ -128,9 +130,21 @@ final GoRouter appRouter = GoRouter(
     final loggedIn = AuthSession.isLoggedIn;
     final loc = state.matchedLocation;
 
-    // Sudah login → onboarding & login tidak relevan lagi, langsung Home.
-    if (loggedIn && (loc == '/' || loc == '/login')) {
+    // Sudah login → saat pertama kali membuka aplikasi (cold-start), tampilkan
+    // layar logo statis singkat seperti Instagram sebelum masuk ke Beranda.
+    if (loggedIn && loc == '/') {
+      if (!AppLaunchSplashScreen.hasShownInitialSplash &&
+          !FcmService.instance.hasPendingInitialRoute) {
+        return '/launch';
+      }
+      AppLaunchSplashScreen.hasShownInitialSplash = true;
       return '/home';
+    }
+    if (loggedIn && loc == '/login') {
+      return '/home';
+    }
+    if (!loggedIn && loc == '/launch') {
+      return '/';
     }
     // Sesi hilang (logout / di-kick / token kedaluwarsa) → rute privat
     // dialihkan ke login; rute publik (katalog) tetap bisa dijelajahi tamu.
@@ -143,6 +157,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => _live(OnboardingScreen.new),
+    ),
+    GoRoute(
+      path: '/launch',
+      builder: (context, state) => const AppLaunchSplashScreen(),
     ),
     GoRoute(
       path: '/login',
@@ -250,6 +268,9 @@ final GoRouter appRouter = GoRouter(
               builder: (context, state) => _live(
                 () => ProfileScreen(
                   initialTab: state.uri.queryParameters['tab'],
+                  initialTrackOrderId:
+                      state.uri.queryParameters['trackOrderId'] ??
+                      state.uri.queryParameters['orderId'],
                 ),
               ),
             ),
@@ -343,7 +364,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => _live(
-        () => AccountSettingsScreen(type: AccountScreenType.settings),
+        () => AccountSettingsScreen(
+          type: AccountScreenType.settings,
+          initialOpenSection: state.uri.queryParameters['open'],
+        ),
       ),
     ),
     GoRoute(

@@ -16,6 +16,7 @@ abstract final class LocalStorage {
   static bool _cachedOrderNotif = true;
   static bool _cachedWhatsAppNotif = true;
   static String? _cachedLastBaseHost;
+  static String? _cachedLastDeviceUserId;
 
   static Future<File> _getFile() async {
     try {
@@ -46,6 +47,7 @@ abstract final class LocalStorage {
         _cachedFcmToken = data['fcm_token'] as String?;
         _cachedLocale = data['locale'] as String?;
         _cachedLastBaseHost = data['last_base_host'] as String?;
+        _cachedLastDeviceUserId = data['last_device_user_id']?.toString();
         if (data['order_notification'] is bool) {
           _cachedOrderNotif = data['order_notification'] as bool;
         }
@@ -98,6 +100,14 @@ abstract final class LocalStorage {
   static bool getOrderNotification() => _cachedOrderNotif;
   static bool getWhatsAppNotification() => _cachedWhatsAppNotif;
   static String? getLastBaseHost() => _cachedLastBaseHost;
+  static String? getLastDeviceUserId() => _cachedLastDeviceUserId;
+
+  static Future<void> saveLastDeviceUserId(String userId) async {
+    final trimmed = userId.trim();
+    if (trimmed.isEmpty || _cachedLastDeviceUserId == trimmed) return;
+    _cachedLastDeviceUserId = trimmed;
+    await _persist();
+  }
 
   static Future<void> saveLastBaseHost(String host) async {
     final normalized = host.trim().replaceAll(RegExp(r'/+$'), '');
@@ -141,6 +151,7 @@ abstract final class LocalStorage {
         'order_notification': _cachedOrderNotif,
         'whatsapp_notification': _cachedWhatsAppNotif,
         'last_base_host': _cachedLastBaseHost,
+        'last_device_user_id': _cachedLastDeviceUserId,
         'saved_at': DateTime.now().toIso8601String(),
       };
       await file.writeAsString(jsonEncode(payload), flush: true);

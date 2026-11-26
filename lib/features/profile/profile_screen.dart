@@ -28,9 +28,14 @@ import '../../data/mock_data.dart';
 /// Figma (ProfilPesananDikemas / ProfilPesananDikrim / ProfilPesananDiterima).
 /// Foto produk pesanan tetap memakai data project (MockData).
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key, this.initialTab});
+  const ProfileScreen({
+    super.key,
+    this.initialTab,
+    this.initialTrackOrderId,
+  });
 
   final String? initialTab;
+  final String? initialTrackOrderId;
 
   /// Global notifier/holder jika dipanggil dari luar (misal: tombol 'Bayar Nanti' di PaymentScreen).
   static final ValueNotifier<String?> selectedTabNotifier =
@@ -75,6 +80,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   List<Map<String, dynamic>> _orders = [];
   bool _ordersLoading = true;
   StreamSubscription<Map<String, dynamic>>? _orderEventSub;
+  final Set<int> _locallyReviewedOrderIds = {};
+  String? _handledTrackOrderId;
 
   Future<void> _fetchOrders() async {
     if (!AuthSession.isLoggedIn) {
@@ -92,7 +99,37 @@ class _ProfileScreenState extends State<ProfileScreen>
     } catch (_) {
       // Offline / sesi berakhir: pertahankan list terakhir.
     }
-    if (mounted) setState(() => _ordersLoading = false);
+    if (mounted) {
+      setState(() => _ordersLoading = false);
+      _maybeOpenDeepLinkedOrder();
+    }
+  }
+
+  void _maybeOpenDeepLinkedOrder() {
+    final rawTrackId = widget.initialTrackOrderId?.trim();
+    if (rawTrackId == null ||
+        rawTrackId.isEmpty ||
+        _handledTrackOrderId == rawTrackId) {
+      return;
+    }
+    final parsedId = int.tryParse(rawTrackId.replaceAll(RegExp(r'[^0-9]'), ''));
+    if (parsedId == null || parsedId <= 0) return;
+    _handledTrackOrderId = rawTrackId;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final match = _orders.cast<Map<String, dynamic>?>().firstWhere(
+            (o) => _asInt(o?['id']) == parsedId,
+            orElse: () => null,
+          );
+      final status = (match?['status'] ?? '').toString().toLowerCase();
+      if (status == 'pending' && match != null) {
+        setState(() => _orderTab = 'Belum Bayar');
+        _payOrderFromHistory(context, match);
+      } else {
+        _openTrackingAndRefresh(context, parsedId);
+      }
+    });
   }
 
   @override
@@ -157,6 +194,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (widget.initialTab != null && widget.initialTab != _orderTab) {
       setState(() => _orderTab = widget.initialTab!);
     }
+    if (widget.initialTrackOrderId != oldWidget.initialTrackOrderId) {
+      _handledTrackOrderId = null;
+    }
     _fetchOrders();
   }
 
@@ -216,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   16,
                   8,
                   16,
-                  84 + DcBottomNav.getBottomPadding(context),
+                  DcBottomNav.shellContentBottomPadding(context),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -912,61 +952,101 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
       );
     } else {
-      actions.add(
-        _actionButton(
-          label: 'Beri Ulasan'.tr,
-          bg: _btnLight,
-          fg: _text,
-          borderColor: _borderGray,
-          bold: true,
-          height: 40,
-          onTap: () async {
-            final items = (order['items'] as List? ?? [])
-                .whereType<Map>()
-                .map((e) => Map<String, dynamic>.from(e))
-                .toList();
-            final first = items.isNotEmpty ? items.first : null;
-            final prodId = first == null ? null : _asInt(first['product_id']);
-            final ordItemId = first == null
-                ? null
-                : _asInt(first['id'] ?? first['order_item_id']);
-            final prodName =
-                first?['product_name']?.toString() ?? 'Produk Keramik';
-            final variantRaw = (first?['variant'] ?? '').toString().trim();
-            final qty = first == null
-                ? 1
-                : (_asInt(first['quantity']) == 0
-                      ? 1
-                      : _asInt(first['quantity']));
-            final variantStr = variantRaw.isNotEmpty
-                ? 'Varian: $variantRaw ${qty}x'.tr
-                : 'Jumlah: ${qty}x'.tr;
-            final img = first == null ? '' : _itemFirstImage(first);
-            final res = await context.push<bool>(
-              '/review/write',
-              extra: {
-                'orderId': '#DNC-${order['id']}',
-                'productId': prodId != null && prodId > 0 ? prodId : null,
-                'orderItemId': ordItemId != null && ordItemId > 0
-                    ? ordItemId
-                    : null,
-                'productName': prodName,
-                'variant': variantStr,
-                'studioName': store,
-                if (img.isNotEmpty) 'productImage': img,
-                'receivedDate': 'Pesanan Selesai'.tr,
-              },
-            );
-            if (res == true && mounted) {
-              _fetchOrders();
-            }
-          },
-        ),
-      );
-      final items = order['items'] as List? ?? const [];
-      final productId = items.isNotEmpty
-          ? (((items.first as Map)['product_id']?.toString()) ?? '1')
+      final rawItems = (order['items'] as List? ?? [])
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+      final orderIdInt = _asInt(order['id']);
+      final firstItem = rawItems.isNotEmpty ? rawItems.first : null;
+      final firstProdId = firstItem == null ? null : _asInt(firstItem['product_id']);
+      final productId = (firstProdId != null && firstProdId > 0)
+          ? firstProdId.toString()
           : '1';
+      final isAlreadyReviewed =
+          _locallyReviewedOrderIds.contains(orderIdInt) ||
+          order['is_reviewed'] == true ||
+          order['has_review'] == true ||
+          (rawItems.isNotEmpty &&
+              rawItems.every(
+                (it) => it['is_reviewed'] == true || it['review_id'] != null,
+              ));
+
+      if (isAlreadyReviewed) {
+        actions.add(
+          _actionButton(
+            label: 'Lihat Ulasan'.tr,
+            icon: Icons.star_rounded,
+            bg: _btnLight,
+            fg: _text,
+            borderColor: _borderGray,
+            bold: true,
+            height: 40,
+            onTap: () {
+              final uri = Uri(
+                path: '/reviews',
+                queryParameters: {
+                  'productId': productId,
+                  'store': store,
+                },
+              );
+              context.push(uri.toString());
+            },
+          ),
+        );
+      } else {
+        actions.add(
+          _actionButton(
+            label: 'Beri Ulasan'.tr,
+            bg: _btnLight,
+            fg: _text,
+            borderColor: _borderGray,
+            bold: true,
+            height: 40,
+            onTap: () async {
+              final ordItemId = firstItem == null
+                  ? null
+                  : _asInt(firstItem['id'] ?? firstItem['order_item_id']);
+              final prodName =
+                  firstItem?['product_name']?.toString() ?? 'Produk Keramik';
+              final variantRaw =
+                  (firstItem?['variant'] ?? '').toString().trim();
+              final qty = firstItem == null
+                  ? 1
+                  : (_asInt(firstItem['quantity']) == 0
+                        ? 1
+                        : _asInt(firstItem['quantity']));
+              final variantStr = variantRaw.isNotEmpty
+                  ? 'Varian: $variantRaw ${qty}x'.tr
+                  : 'Jumlah: ${qty}x'.tr;
+              final img = firstItem == null ? '' : _itemFirstImage(firstItem);
+              final res = await context.push<bool>(
+                '/review/write',
+                extra: {
+                  'orderId': '#DNC-${order['id']}',
+                  'productId':
+                      firstProdId != null && firstProdId > 0 ? firstProdId : null,
+                  'orderItemId':
+                      ordItemId != null && ordItemId > 0 ? ordItemId : null,
+                  'productName': prodName,
+                  'variant': variantStr,
+                  'studioName': store,
+                  if (img.isNotEmpty) 'productImage': img,
+                  'receivedDate': 'Pesanan Selesai'.tr,
+                },
+              );
+              if (res == true && mounted) {
+                setState(() {
+                  if (orderIdInt > 0) {
+                    _locallyReviewedOrderIds.add(orderIdInt);
+                  }
+                });
+                _fetchOrders();
+              }
+            },
+          ),
+        );
+      }
+
       actions.add(
         _actionButton(
           label: 'Beli Lagi'.tr,

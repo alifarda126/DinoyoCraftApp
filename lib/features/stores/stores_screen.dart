@@ -119,7 +119,7 @@ class _StoresScreenState extends State<StoresScreen> {
             20,
             12,
             20,
-            84 + DcBottomNav.getBottomPadding(context),
+            DcBottomNav.shellContentBottomPadding(context),
           ),
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

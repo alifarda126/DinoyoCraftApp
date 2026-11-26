@@ -2249,6 +2249,7 @@ class _AddressFormState extends State<_AddressForm> {
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
                           selected: isSelected,
+                          checkmarkColor: isDark ? null : Colors.white,
                           selectedColor:
                               isDark ? Colors.white : AppColors.black,
                           backgroundColor: AppColors.inputBg,

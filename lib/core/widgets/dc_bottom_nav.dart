@@ -36,16 +36,25 @@ class DcBottomNav extends StatelessWidget {
   // Ruang ekstra di atas agar icon pop-up tidak terpotong
   static const double _overflowTop = 20.0;
 
+  static double _rawSystemBottomInset(BuildContext context) {
+    final view = View.maybeOf(context);
+    if (view != null) {
+      final dpr = view.devicePixelRatio > 0 ? view.devicePixelRatio : 1.0;
+      return view.viewPadding.bottom / dpr;
+    }
+    return MediaQuery.viewPaddingOf(context).bottom;
+  }
+
   /// Menghitung bottom padding yang adaptif untuk berbagai mode navigasi sistem:
   /// - Gestur swipe (rawBottom <= 28px): mempertahankan padding ideal seperti semula.
   /// - 3 gestur Android (3-button navigation, rawBottom >= 36px, biasanya 48px):
   ///   mengangkat navbar setinggi tombol navigasi + sedikit margin agar label
   ///   (Beranda, Produk, Toko, Workshop, Profil) tidak terpotong.
   /// - Web / desktop / no-inset (rawBottom < 8px): fallback 8px.
+  /// Menggunakan View.maybeOf(context) agar tidak terdampak injeksi padding
+  /// tinggi bottomNavigationBar dari Scaffold(extendBody: true).
   static double getBottomPadding(BuildContext context) {
-    final viewPad = MediaQuery.viewPaddingOf(context).bottom;
-    final pad = MediaQuery.paddingOf(context).bottom;
-    final rawBottom = viewPad > 0 ? viewPad : pad;
+    final rawBottom = _rawSystemBottomInset(context);
 
     if (rawBottom >= 36.0) {
       // Navigasi 3 tombol Android (biasanya 48px): beri ruang tombol sistem + margin
@@ -59,15 +68,19 @@ class DcBottomNav extends StatelessWidget {
     return rawBottom.clamp(8.0, 28.0);
   }
 
+  /// Batas bawah konten halaman di dalam MainShell agar sejajar tepat dengan
+  /// tepi bawah tombol mengambang Chatbot/CS (navbarH + edgePad = 76 + bottomPad + 16).
+  static double shellContentBottomPadding(BuildContext context) {
+    return _barHeight + getBottomPadding(context) + 16.0;
+  }
+
   /// Inset bawah aman untuk layar penuh, sticky bottom bar, maupun modal bottom sheet
   /// pada navigasi gestur maupun navigasi 3 tombol Android (edge-to-edge).
   static double systemNavInset(BuildContext context) {
     if (MediaQuery.viewInsetsOf(context).bottom > 0) {
-      return MediaQuery.paddingOf(context).bottom;
+      return _rawSystemBottomInset(context);
     }
-    final viewPad = MediaQuery.viewPaddingOf(context).bottom;
-    final pad = MediaQuery.paddingOf(context).bottom;
-    return viewPad > pad ? viewPad : pad;
+    return _rawSystemBottomInset(context);
   }
 
   @override

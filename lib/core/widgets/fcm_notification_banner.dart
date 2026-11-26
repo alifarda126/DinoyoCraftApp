@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../app_settings.dart';
 import '../app_text.dart';
 import '../models/fcm_notification_model.dart';
 import '../network/api_client.dart';
@@ -245,6 +246,7 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
   StreamSubscription? _orderSub;
   StreamSubscription? _chatSub;
   StreamSubscription? _accountSub;
+  StreamSubscription? _securitySub;
   Timer? _dismissTimer;
   FcmNotificationModel? _currentNotification;
   bool _wasLoggedIn = false;
@@ -346,6 +348,57 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
       }
     });
 
+    _securitySub = PusherService.instance.securityEventStream.listen((event) {
+      final subtype = event['subtype']?.toString().trim().toLowerCase() ?? '';
+      final rawTitle = event['title']?.toString().trim() ?? '';
+      final rawBody = event['message']?.toString().trim() ?? '';
+      final route = event['route']?.toString().trim() ??
+          (subtype.contains('device') ? '/settings?open=devices' : '/settings');
+
+      String dedupKey = 'security:$subtype';
+      if (subtype == '2fa_enabled') {
+        dedupKey = 'security:2fa:on';
+      } else if (subtype == '2fa_disabled') {
+        dedupKey = 'security:2fa:off';
+      } else if (subtype == 'device_login') {
+        final devId = event['device_id']?.toString().trim() ?? '';
+        final devName = event['device_name']?.toString().trim() ?? 'Perangkat Baru';
+        final ipAddr = event['ip_address']?.toString().trim();
+        // Jangan tampilkan peringatan di perangkat yang BARU SAJA melakukan login itu sendiri
+        if (devId.isNotEmpty &&
+            ApiClient.deviceId != null &&
+            devId == ApiClient.deviceId) {
+          return;
+        }
+        AppSettings.instance.recordOtherDeviceLogin(
+          id: devId.isNotEmpty
+              ? devId
+              : 'dev_${DateTime.now().millisecondsSinceEpoch}',
+          name: devName,
+          ipAddress: ipAddr,
+        );
+        dedupKey = 'security:device_login:$devId';
+      }
+
+      unawaited(
+        FcmService.instance.showSecuritySystemNotification(
+          title: rawTitle.isNotEmpty
+              ? rawTitle.tr
+              : 'Peringatan Keamanan Akun'.tr,
+          body: rawBody.isNotEmpty
+              ? rawBody.tr
+              : 'Terdapat pembaruan keamanan pada akun DinoyoCraft Anda.'.tr,
+          route: route,
+          dedupKey: dedupKey,
+          data: {
+            'type': 'security',
+            'subtype': subtype,
+            'route': route,
+          },
+        ),
+      );
+    });
+
     FcmService.instance.setNotificationRouteHandler((route) {
       if (!mounted) return;
       _navigateToRoute(route);
@@ -431,6 +484,7 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
     _orderSub?.cancel();
     _chatSub?.cancel();
     _accountSub?.cancel();
+    _securitySub?.cancel();
     _animController.dispose();
     super.dispose();
   }
@@ -466,12 +520,31 @@ class _FcmNotificationHostState extends State<FcmNotificationHost>
     try {
       final router = appRouter;
       final normalized = route.trim();
-      if (_shellBranches.contains(normalized)) {
+      if (normalized.isEmpty) return;
+
+      final uri = Uri.tryParse(normalized);
+      final targetPath = uri?.path ?? normalized;
+
+      if (_shellBranches.contains(targetPath)) {
         router.go(normalized);
-      } else if (normalized == '/chat') {
-        router.push('/messages');
+        return;
+      }
+
+      final targetRoute = normalized == '/chat' ? '/messages' : normalized;
+      final currentLoc =
+          router.routerDelegate.currentConfiguration.uri.path;
+
+      // Jika dibuka dari cold-start (masih di '/' atau '/launch'), pastikan '/home'
+      // menjadi dasar tumpukan navigasi sehingga tombol Back kembali ke Beranda.
+      if (currentLoc == '/' || currentLoc == '/launch') {
+        router.go('/home');
+        Future<void>.delayed(const Duration(milliseconds: 60), () {
+          try {
+            router.push(targetRoute);
+          } catch (_) {}
+        });
       } else {
-        router.push(normalized);
+        router.push(targetRoute);
       }
     } catch (e) {
       debugPrint('[FcmNotificationHost] Gagal navigasi ke $route: $e');

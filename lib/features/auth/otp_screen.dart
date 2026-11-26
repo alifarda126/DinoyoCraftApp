@@ -162,6 +162,25 @@ class _OtpScreenState extends State<OtpScreen> {
                 ? 'Autentikasi 2 Langkah via Email berhasil diaktifkan.'.tr
                 : 'Autentikasi 2 Langkah (2FA) berhasil dinonaktifkan.'.tr,
           );
+          unawaited(
+            FcmService.instance.showSecuritySystemNotification(
+              title: enabled
+                  ? 'Autentikasi 2 Langkah (2FA) Aktif'.tr
+                  : 'Autentikasi 2 Langkah (2FA) Dinonaktifkan'.tr,
+              body: enabled
+                  ? 'Keamanan akun DinoyoCraft Anda kini dilindungi verifikasi OTP Email setiap kali masuk.'
+                      .tr
+                  : 'Verifikasi 2 langkah (2FA) pada akun DinoyoCraft Anda telah dimatikan.'
+                      .tr,
+              route: '/settings',
+              dedupKey: 'security:2fa:${enabled ? 'on' : 'off'}',
+              data: {
+                'type': 'security',
+                'subtype': enabled ? '2fa_enabled' : '2fa_disabled',
+                'route': '/settings',
+              },
+            ),
+          );
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (router.routerDelegate.currentConfiguration.uri.path ==

@@ -159,7 +159,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 20,
                 48,
                 20,
-                84 + DcBottomNav.getBottomPadding(context),
+                DcBottomNav.shellContentBottomPadding(context),
               ),
               child: Center(
                 child: Column(
@@ -190,7 +190,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               20,
               8,
               20,
-              84 + DcBottomNav.getBottomPadding(context),
+              DcBottomNav.shellContentBottomPadding(context),
             ),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

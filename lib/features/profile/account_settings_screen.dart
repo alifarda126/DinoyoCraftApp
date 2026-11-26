@@ -10,9 +10,14 @@ enum AccountScreenType { profile, address, settings }
 /// Dispatcher untuk rute lama (/profile/edit, /addresses, /settings).
 /// Implementasi tiap tipe kini ada di screen masing-masing.
 class AccountSettingsScreen extends StatelessWidget {
-const   AccountSettingsScreen({super.key, required this.type});
+  const AccountSettingsScreen({
+    super.key,
+    required this.type,
+    this.initialOpenSection,
+  });
 
   final AccountScreenType type;
+  final String? initialOpenSection;
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +26,9 @@ const   AccountSettingsScreen({super.key, required this.type});
       child: switch (type) {
         AccountScreenType.profile => DataDiriScreen(),
         AccountScreenType.address => AlamatScreen(),
-        AccountScreenType.settings => PengaturanScreen(),
+        AccountScreenType.settings => PengaturanScreen(
+          initialOpenSection: initialOpenSection,
+        ),
       },
     );
   }

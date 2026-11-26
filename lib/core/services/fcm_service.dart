@@ -45,13 +45,48 @@ class FcmService {
   bool _isInitialized = false;
   String? _deviceToken;
   void Function(String route)? _notificationRouteHandler;
+  String? _pendingInitialRoute;
+  bool _checkedLaunchDetails = false;
 
   final Map<String, DateTime> _recentNotifDedup = {};
   final List<FcmNotificationModel> _notificationsHistory = [];
 
+  bool get hasPendingInitialRoute =>
+      _pendingInitialRoute != null && _pendingInitialRoute!.trim().isNotEmpty;
+
+  /// Antrekan atau jalankan navigasi saat notifikasi diketuk (mendukung foreground, background, maupun cold-start/terminated).
+  void dispatchNotificationRoute(String? rawRoute) {
+    final route = rawRoute?.trim() ?? '';
+    if (route.isEmpty) return;
+    final handler = _notificationRouteHandler;
+    if (handler != null) {
+      _pendingInitialRoute = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        handler(route);
+      });
+    } else {
+      _pendingInitialRoute = route;
+    }
+  }
+
+  /// Jalankan rute notifikasi cold-start yang tertunda setelah UI siap.
+  void flushPendingInitialRoute() {
+    final pending = _pendingInitialRoute;
+    final handler = _notificationRouteHandler;
+    if (pending != null && pending.isNotEmpty && handler != null) {
+      _pendingInitialRoute = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        handler(pending);
+      });
+    }
+  }
+
   /// Daftarkan callback navigasi saat notifikasi tray diketuk pengguna.
   void setNotificationRouteHandler(void Function(String route)? handler) {
     _notificationRouteHandler = handler;
+    if (handler != null) {
+      flushPendingInitialRoute();
+    }
   }
 
   /// Helper untuk memvalidasi apakah RemoteMessage layak ditampilkan di tray/banner.
@@ -210,6 +245,8 @@ class FcmService {
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
         debugPrint('[FCM Opened] Pengguna membuka notifikasi: ${message.data}');
         _messageOpenedController.add(message);
+        final model = FcmNotificationModel.fromRemoteMessage(message);
+        dispatchNotificationRoute(model.route ?? '/notifications');
         onNotificationClick?.call(message);
       });
 
@@ -221,6 +258,8 @@ class FcmService {
           '[FCM Initial] Dibuka dari terminated state: ${initialMessage.data}',
         );
         _messageOpenedController.add(initialMessage);
+        final model = FcmNotificationModel.fromRemoteMessage(initialMessage);
+        dispatchNotificationRoute(model.route ?? '/notifications');
         onNotificationClick?.call(initialMessage);
       }
 
@@ -261,6 +300,41 @@ class FcmService {
     await _showTrayNotification(model);
     _notificationsHistory.insert(0, model);
     _notificationModelController.add(model);
+  }
+
+  /// Menampilkan push notifikasi keamanan (tray sistem atas HP + banner in-app),
+  /// seperti saat 2FA diaktifkan/dinonaktifkan atau terdeteksi login perangkat lain/baru.
+  Future<void> showSecuritySystemNotification({
+    required String title,
+    required String body,
+    String route = '/settings',
+    String? dedupKey,
+    Map<String, dynamic> data = const {},
+  }) async {
+    final effectiveKey = dedupKey?.trim();
+    if (effectiveKey != null && effectiveKey.isNotEmpty) {
+      if (_isRecentlyHandled(effectiveKey)) return;
+      _markHandled(effectiveKey);
+    }
+
+    final model = FcmNotificationModel(
+      id: 'sec-${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      body: body,
+      category: FcmNotificationCategory.account,
+      createdAt: DateTime.now(),
+      route: route,
+      data: {
+        'type': 'security',
+        'route': route,
+        ...data,
+      },
+    );
+    await _showTrayNotification(model);
+    _notificationsHistory.insert(0, model);
+    _notificationModelController.add(model);
+    MockData.incrementUnreadNotifications();
+    unawaited(MockData.refreshUnreadCounts());
   }
 
   /// Simulasi notifikasi update status pesanan.
@@ -396,6 +470,14 @@ class FcmService {
       if (msgId.isNotEmpty) {
         return 'chat:$msgId';
       }
+    } else if (category == FcmNotificationCategory.account) {
+      final subtype = (data['subtype'] ?? '').toString().trim().toLowerCase();
+      if (subtype == '2fa_enabled') return 'security:2fa:on';
+      if (subtype == '2fa_disabled') return 'security:2fa:off';
+      if (subtype == 'device_login') {
+        final devId = (data['device_id'] ?? '').toString().trim();
+        return 'security:device_login:$devId';
+      }
     }
     return null;
   }
@@ -474,17 +556,33 @@ class FcmService {
                   'Status pesanan #$orderId diperbarui menjadi $status.')
               .tr;
 
+    final targetTab = switch (status) {
+      'pending' => 'Belum Bayar',
+      'paid' || 'processing' || 'packed' => 'Dikemas',
+      'shipped' => 'Dikirim',
+      'delivered' || 'completed' => 'Diterima',
+      _ => null,
+    };
+    final orderRoute = Uri(
+      path: '/profile',
+      queryParameters: {
+        'tab': ?targetTab,
+        if (orderId.isNotEmpty) 'trackOrderId': orderId,
+      },
+    ).toString();
+
     final model = FcmNotificationModel(
       id: 'rt_${orderId}_${status}_${DateTime.now().millisecondsSinceEpoch}',
       title: title,
       body: body,
       category: FcmNotificationCategory.transaction,
       createdAt: DateTime.now(),
-      route: '/profile',
+      route: orderRoute,
       data: {
         'type': 'order',
         'order_id': orderId,
         'status': status,
+        'route': orderRoute,
       },
     );
 
@@ -565,10 +663,25 @@ class FcmService {
         onDidReceiveNotificationResponse: (response) {
           final payload = response.payload?.trim();
           if (payload != null && payload.isNotEmpty) {
-            _notificationRouteHandler?.call(payload);
+            dispatchNotificationRoute(payload);
           }
         },
       );
+
+      if (!_checkedLaunchDetails) {
+        _checkedLaunchDetails = true;
+        try {
+          final launchDetails =
+              await _localNotifications.getNotificationAppLaunchDetails();
+          if (launchDetails?.didNotificationLaunchApp == true) {
+            final launchPayload =
+                launchDetails?.notificationResponse?.payload?.trim();
+            if (launchPayload != null && launchPayload.isNotEmpty) {
+              dispatchNotificationRoute(launchPayload);
+            }
+          }
+        } catch (_) {}
+      }
 
       const channel = AndroidNotificationChannel(
         'dinoyocraft_channel',
@@ -633,6 +746,31 @@ class FcmService {
         'platform': defaultTargetPlatform.name,
       });
       debugPrint('[FCM] Token berhasil disinkronkan ke BE: $response');
+      if (response['data'] is Map &&
+          response['data']['same_phone_account_switch'] == true) {
+        final user = LocalStorage.getUser();
+        final uid = (user?['id'] ?? user?['userId'] ?? '').toString().trim();
+        final accountLabel = (user?['username'] ??
+                user?['name'] ??
+                user?['email'] ??
+                'Akun Baru')
+            .toString()
+            .trim();
+        unawaited(
+          showSecuritySystemNotification(
+            title: 'Login Akun Baru di Perangkat Ini'.tr,
+            body:
+                '${'Akun'.tr} $accountLabel ${'baru saja masuk pada perangkat ini.'.tr}',
+            route: '/settings?open=devices',
+            dedupKey: 'security:same_phone_switch:$uid',
+            data: {
+              'type': 'security',
+              'subtype': 'same_phone_login',
+              'route': '/settings?open=devices',
+            },
+          ),
+        );
+      }
       return true;
     } catch (e) {
       debugPrint('[FCM] Sinkronisasi token ke BE tertunda (BE offline/dev): $e');

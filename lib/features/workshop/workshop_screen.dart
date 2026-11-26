@@ -102,7 +102,7 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
   @override
   Widget build(BuildContext context) {
     final topHeaderHeight = DcAppHeader.totalHeight(context);
-    final navBottomPad = DcBottomNav.getBottomPadding(context);
+    final shellBottomPad = DcBottomNav.shellContentBottomPadding(context);
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
@@ -116,7 +116,7 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
         slivers: [
           SliverPinnedDcHeader(),
           SliverPadding(
-            padding: EdgeInsets.only(bottom: 84 + navBottomPad),
+            padding: EdgeInsets.only(bottom: shellBottomPad),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 Padding(

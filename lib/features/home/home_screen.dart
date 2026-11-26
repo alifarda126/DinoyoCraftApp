@@ -309,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 20,
                 24,
                 20,
-                84 + DcBottomNav.getBottomPadding(context),
+                DcBottomNav.shellContentBottomPadding(context),
               ),
               child: Text(
                 'Tidak ada produk yang cocok.'.tr,
@@ -326,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
               20,
               0,
               20,
-              84 + DcBottomNav.getBottomPadding(context),
+              DcBottomNav.shellContentBottomPadding(context),
             ),
             sliver: SliverGrid(
               // Ratio & spacing disamakan dengan grid di halaman Produk

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../app_device_manager.dart';
 import '../storage/local_storage.dart';
 import '../services/mobile_log_reporter.dart';
 import 'server_status.dart';
@@ -78,6 +79,8 @@ class ApiClient {
   }
 
   static String? _authToken;
+  static String? deviceId;
+  static String? deviceName;
 
   /// Callback global ketika akun pengguna dinonaktifkan / dihapus Admin
   /// atau seluruh sesi dicabut sehingga perlu auto-logout seketika.
@@ -116,6 +119,12 @@ class ApiClient {
   /// Muat host terakhir yang berhasil dari penyimpanan lokal lalu mulai
   /// discovery paralel di latar belakang agar perangkat langsung tersambung.
   static Future<void> init({bool autoDiscover = true}) async {
+    unawaited(
+      AppDeviceManager.getRealCurrentDevice().then((dev) {
+        deviceId = dev.id;
+        deviceName = dev.name;
+      }).catchError((_) {}),
+    );
     if (hasProductionBaseUrl) {
       final prodHost = _normalizedConfiguredHost;
       final idx = _registerHost(prodHost);
@@ -173,6 +182,12 @@ class ApiClient {
     final token = authToken;
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
+    }
+    if (deviceId != null && deviceId!.isNotEmpty) {
+      headers['X-Device-Id'] = deviceId!;
+    }
+    if (deviceName != null && deviceName!.isNotEmpty) {
+      headers['X-Device-Name'] = deviceName!;
     }
     if (extra != null) {
       headers.addAll(extra);

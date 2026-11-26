@@ -43,6 +43,7 @@ class PusherChatMessage {
     required this.senderName,
     required this.text,
     required this.time,
+    this.senderAvatar,
     this.imagePath,
     this.type,
     this.isMine = false,
@@ -56,6 +57,7 @@ class PusherChatMessage {
   final String senderName;
   final String text;
   final String time;
+  final String? senderAvatar;
   final String? imagePath;
   final String? type;
   final bool isMine;
@@ -91,6 +93,7 @@ class PusherChatMessage {
       senderName: json['sender_name']?.toString() ?? json['userName']?.toString() ?? 'Penjual Toko',
       text: json['message']?.toString() ?? json['text']?.toString() ?? '',
       time: json['time']?.toString() ?? json['created_at']?.toString() ?? '',
+      senderAvatar: json['sender_avatar']?.toString(),
       imagePath: json['image_url']?.toString() ?? json['imagePath']?.toString(),
       type: json['type']?.toString(),
       isMine: isMine,
@@ -143,6 +146,8 @@ class PusherService {
       StreamController<Map<String, dynamic>>.broadcast();
   final StreamController<Map<String, dynamic>> _accountEventStreamController =
       StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<Map<String, dynamic>> _securityEventStreamController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   final Map<String, List<void Function(PusherChatMessage)>> _chatListeners = {};
   final Set<String> _subscribedChannels = {};
@@ -166,6 +171,10 @@ class PusherService {
   /// Stream event keamanan akun realtime (`account-deleted`, `force-logout`).
   Stream<Map<String, dynamic>> get accountEventStream =>
       _accountEventStreamController.stream;
+
+  /// Stream peringatan keamanan realtime (`security-alert`: 2FA & login perangkat baru).
+  Stream<Map<String, dynamic>> get securityEventStream =>
+      _securityEventStreamController.stream;
 
   /// Status koneksi realtime saat ini.
   PusherConnectionState get connectionState => _connectionState;
@@ -452,6 +461,12 @@ class PusherService {
     } else if (eventName == 'account-deleted' ||
         eventName == 'force-logout') {
       _accountEventStreamController.add({
+        'event': eventName,
+        'channel': event.channelName,
+        ...dataMap,
+      });
+    } else if (eventName == 'security-alert') {
+      _securityEventStreamController.add({
         'event': eventName,
         'channel': event.channelName,
         ...dataMap,

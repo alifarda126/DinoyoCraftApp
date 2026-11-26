@@ -1749,6 +1749,22 @@ abstract final class AppText {
     'Pilihan Solusi Penggantian': 'Replacement & Refund Options',
     'Pembeli dapat memilih antara: (a) Pengiriman unit keramik baru secara gratis tanpa biaya ongkir tambahan, ATAU (b) Pengembalian dana penuh (100% refund) sesuai nominal pesanan.':
         'Buyers may choose between: (a) Free replacement unit shipped at no extra shipping cost, OR (b) A full 100% refund of the order amount.',
+    'Autentikasi 2 Langkah (2FA) Aktif':
+        'Two-Factor Authentication (2FA) Enabled',
+    'Autentikasi 2 Langkah (2FA) Dinonaktifkan':
+        'Two-Factor Authentication (2FA) Disabled',
+    'Keamanan akun DinoyoCraft Anda kini dilindungi verifikasi OTP Email setiap kali masuk.':
+        'Your DinoyoCraft account is now protected with Email OTP verification on every sign-in.',
+    'Verifikasi 2 langkah (2FA) pada akun DinoyoCraft Anda telah dimatikan.':
+        'Two-factor authentication (2FA) on your DinoyoCraft account has been turned off.',
+    'Login Perangkat Baru Terdeteksi': 'New Device Sign-In Detected',
+    'Login Akun Baru di Perangkat Ini': 'New Account Sign-In on This Device',
+    'baru saja masuk pada perangkat ini.': 'just signed in on this device.',
+    'Peringatan Keamanan Akun': 'Account Security Alert',
+    'Terdapat pembaruan keamanan pada akun DinoyoCraft Anda.':
+        'There is a security update on your DinoyoCraft account.',
+    'Login terdeteksi': 'Sign-in detected',
+    'Baru saja masuk': 'Just signed in',
   };
 
   /// Cache lowercase untuk pencarian cepat case-insensitive

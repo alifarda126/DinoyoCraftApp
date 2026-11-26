@@ -14,7 +14,9 @@ import '../../core/services/app_info_service.dart';
 import '../../core/widgets/top_toast.dart';
 
 class PengaturanScreen extends StatefulWidget {
-  const PengaturanScreen({super.key});
+  const PengaturanScreen({super.key, this.initialOpenSection});
+
+  final String? initialOpenSection;
 
   @override
   State<PengaturanScreen> createState() => _PengaturanScreenState();
@@ -74,10 +76,13 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
     // sebelum melakukan sinkronisasi ukuran cache dan perangkat di background.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      Future.delayed(const Duration(milliseconds: 350), () {
-        if (mounted) {
-          _settings.syncCacheSize();
-          _settings.syncCurrentDevice();
+      Future.delayed(const Duration(milliseconds: 350), () async {
+        if (!mounted) return;
+        _settings.syncCacheSize();
+        await _settings.syncCurrentDevice();
+        if (mounted &&
+            widget.initialOpenSection?.trim().toLowerCase() == 'devices') {
+          _openConnectedDevicesModal();
         }
       });
     });

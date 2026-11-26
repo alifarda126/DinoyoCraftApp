@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_cache_manager.dart';
 import 'app_device_manager.dart';
 import 'app_theme_persistence.dart';
+import 'network/api_client.dart';
 import 'storage/local_storage.dart';
 import 'theme/app_colors.dart';
 
@@ -158,10 +159,13 @@ class AppSettings extends ChangeNotifier {
     requireOtpNextLogin = false;
   }
 
-  /// Sinkronkan info perangkat saat ini langsung dari hardware / OS nyata.
+  /// Sinkronkan info perangkat saat ini langsung dari hardware / OS nyata
+  /// serta muat daftar perangkat lain yang pernah login pada akun ini dari backend.
   Future<void> syncCurrentDevice() async {
     try {
       final real = await AppDeviceManager.getRealCurrentDevice();
+      ApiClient.deviceId = real.id;
+      ApiClient.deviceName = real.name;
       currentDevice = DeviceSession(
         id: real.id,
         name: real.name,
@@ -171,10 +175,74 @@ class AppSettings extends ChangeNotifier {
         icon: real.icon,
         isCurrent: true,
       );
+
+      if (LocalStorage.isLoggedIn) {
+        try {
+          final res = await ApiClient.get('/auth/devices');
+          if (res['success'] == true && res['data'] is List) {
+            final rows = (res['data'] as List).whereType<Map>();
+            final fetchedOthers = <DeviceSession>[];
+            for (final row in rows) {
+              final id = row['id']?.toString() ?? '';
+              final isCur = row['is_current'] == true || id == real.id;
+              if (isCur) continue;
+              final name = row['name']?.toString() ?? 'Perangkat Terhubung';
+              final ip = row['ip_address']?.toString() ?? '-';
+              final lowerName = name.toLowerCase();
+              final icon = lowerName.contains('browser') ||
+                      lowerName.contains('windows') ||
+                      lowerName.contains('mac')
+                  ? Icons.computer_rounded
+                  : Icons.phone_android_rounded;
+              fetchedOthers.add(
+                DeviceSession(
+                  id: id,
+                  name: name,
+                  location: ip != '-' ? 'IP $ip' : 'Indonesia',
+                  lastActive: 'Login terdeteksi',
+                  details: name,
+                  icon: icon,
+                  isCurrent: false,
+                ),
+              );
+            }
+            otherDevices
+              ..clear()
+              ..addAll(fetchedOthers);
+          }
+        } catch (_) {}
+      }
       notifyListeners();
     } catch (_) {
       // Abaikan pada testing environment
     }
+  }
+
+  /// Mencatat perangkat lain secara instan dari event realtime keamanan.
+  void recordOtherDeviceLogin({
+    required String id,
+    required String name,
+    String? ipAddress,
+  }) {
+    if (id.isEmpty || id == currentDevice.id) return;
+    otherDevices.removeWhere((d) => d.id == id);
+    otherDevices.insert(
+      0,
+      DeviceSession(
+        id: id,
+        name: name.isNotEmpty ? name : 'Perangkat Baru',
+        location: (ipAddress != null && ipAddress.isNotEmpty && ipAddress != '-')
+            ? 'IP $ipAddress'
+            : 'Indonesia',
+        lastActive: 'Baru saja masuk',
+        details: name,
+        icon: name.toLowerCase().contains('browser')
+            ? Icons.computer_rounded
+            : Icons.phone_android_rounded,
+        isCurrent: false,
+      ),
+    );
+    notifyListeners();
   }
 
   /// Menghapus sesi perangkat lain berdasarkan index.

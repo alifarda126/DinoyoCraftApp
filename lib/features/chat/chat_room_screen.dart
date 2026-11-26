@@ -121,6 +121,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   bool _isSyncing = false;
   bool _isPartnerOnline = false;
   String? _partnerLastSeen;
+  String? _partnerAvatarUrl;
   String? _targetRole;
   String? _resolvedTargetUserId;
   String? _activeChatChannel;
@@ -242,6 +243,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final (metaProd, metaOrder) = _parseRowMetadata(msg.metadata);
 
     setState(() {
+      if ((_partnerAvatarUrl == null || _partnerAvatarUrl!.isEmpty) &&
+          msg.senderAvatar != null &&
+          msg.senderAvatar!.trim().isNotEmpty &&
+          msg.senderAvatar!.trim() != 'null') {
+        _partnerAvatarUrl = ApiClient.resolveImageUrl(msg.senderAvatar!.trim());
+      }
       _isSellerConnected = true;
       _messages.add(
         _ChatMessage(
@@ -327,6 +334,10 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 (targetLower.isNotEmpty && sName.contains(targetLower)) ||
                 (sName.isNotEmpty && targetLower.contains(sName))) {
               targetId = item['id']?.toString();
+              final cAvatar = item['avatar_url']?.toString().trim();
+              if (cAvatar != null && cAvatar.isNotEmpty && cAvatar != 'null') {
+                _partnerAvatarUrl = ApiClient.resolveImageUrl(cAvatar);
+              }
               break;
             }
           }
@@ -409,10 +420,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           res['target_user']?['last_seen_at']?.toString();
       final partnerRole =
           res['target_user']?['role']?.toString().trim().toLowerCase();
+      final rawTargetAvatar =
+          res['target_user']?['avatar_url']?.toString().trim();
 
       setState(() {
         if (partnerRole != null && partnerRole.isNotEmpty) {
           _targetRole = partnerRole;
+        }
+        if (rawTargetAvatar != null &&
+            rawTargetAvatar.isNotEmpty &&
+            rawTargetAvatar != 'null') {
+          _partnerAvatarUrl = ApiClient.resolveImageUrl(rawTargetAvatar);
         }
         _isPartnerOnline = isOnline;
         _partnerLastSeen = lastSeen;
@@ -1805,6 +1823,35 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           widget.storeName.trim().toLowerCase(),
                       orElse: () => null,
                     );
+              final resolvedAvatar = (!isCs &&
+                      _partnerAvatarUrl != null &&
+                      _partnerAvatarUrl!.startsWith('http'))
+                  ? _partnerAvatarUrl
+                  : (!isCs &&
+                          matchingStore != null &&
+                          matchingStore.hasCustomAvatar)
+                      ? (matchingStore.avatar ?? matchingStore.image)
+                      : null;
+              final initialsLabel = matchingStore?.initials ??
+                  (headerName.trim().isNotEmpty
+                      ? headerName
+                          .trim()
+                          .split(RegExp(r'\s+'))
+                          .where((w) => w.isNotEmpty)
+                          .take(2)
+                          .map((w) => w[0].toUpperCase())
+                          .join()
+                      : 'DC');
+              final fallbackInitialsWidget = Center(
+                child: Text(
+                  initialsLabel,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              );
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -1814,10 +1861,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 1.5),
-                      gradient:
-                          (isCs ||
-                              matchingStore == null ||
-                              !matchingStore.hasCustomAvatar)
+                      gradient: (isCs || resolvedAvatar == null)
                           ? const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -1838,27 +1882,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                                 ),
                               ),
                             )
-                          : (matchingStore != null && matchingStore.hasCustomAvatar
+                          : (resolvedAvatar != null
                               ? DcCachedImage(
-                                  imageUrl:
-                                      matchingStore.avatar ?? matchingStore.image,
+                                  imageUrl: resolvedAvatar,
+                                  width: 38,
+                                  height: 38,
                                   fit: BoxFit.cover,
+                                  errorWidget: fallbackInitialsWidget,
                                 )
-                              : Center(
-                                  child: Text(
-                                    matchingStore?.initials ??
-                                        (headerName.trim().isNotEmpty
-                                            ? headerName
-                                                  .trim()[0]
-                                                  .toUpperCase()
-                                            : 'DC'),
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                )),
+                              : fallbackInitialsWidget),
                     ),
                   ),
                   Positioned(

@@ -572,6 +572,8 @@ class _AlamatScreenState extends State<AlamatScreen> {
                                 materialTapTargetSize:
                                     MaterialTapTargetSize.shrinkWrap,
                                 selected: isSelected,
+                                checkmarkColor:
+                                    AppColors.isDark ? null : Colors.white,
                                 selectedColor: AppColors.black,
                                 backgroundColor: AppColors.inputBg,
                                 labelStyle: GoogleFonts.plusJakartaSans(
