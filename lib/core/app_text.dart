@@ -157,6 +157,63 @@ abstract final class AppText {
         null) {
       return 'Make sure order #${m![1]} has been received in good condition. Once confirmed, the order is completed and funds are released to the seller.';
     }
+    String trProd(String raw) => raw.replaceAllMapped(
+          RegExp(r'\(\+(\d+)\s+produk lainnya\)'),
+          (pm) => '(+${pm[1]} more ${pm[1] == '1' ? 'item' : 'items'})',
+        );
+
+    if ((m = RegExp(
+          r'^Pembayaran untuk "(.+)" telah (?:berhasil )?dikonfirmasi\.\s*(.*)$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Payment for "${trProd(m![1]!)}" has been confirmed. The seller will process your order shortly.';
+    }
+    if ((m = RegExp(
+          r'^Pesanan "(.+)" di toko (.+) berhasil dibuat\. Silakan selesaikan pembayaran\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order "${trProd(m![1]!)}" at ${m[2]} has been placed. Please complete your payment.';
+    }
+    if ((m = RegExp(
+          r'^Pesanan "(.+)" sedang dikemas(?: dengan rapi)? oleh pengrajin\.(?:\s*Mohon tunggu hingga pesanan dikirim\.)?$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order "${trProd(m![1]!)}" is being carefully packed by the artisan.';
+    }
+    if ((m = RegExp(
+          r'^Pesanan "(.+)" telah dikirim! No\. Resi:\s*(.+)$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order "${trProd(m![1]!)}" has been shipped! Tracking No: ${m[2]}';
+    }
+    if ((m = RegExp(
+          r'^Pesanan "(.+)" telah dikirim oleh pengrajin!$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order "${trProd(m![1]!)}" has been shipped by the artisan!';
+    }
+    if ((m = RegExp(
+          r'^Pesanan "(.+)" telah diterima dan selesai\.\s*(.*)$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order "${trProd(m![1]!)}" has been received and completed. Don\'t forget to leave a review!';
+    }
+    if ((m = RegExp(r'^Pesanan "(.+)" telah dibatalkan\.$').firstMatch(s)) !=
+        null) {
+      return 'Order "${trProd(m![1]!)}" has been canceled.';
+    }
+    if ((m = RegExp(
+          r'^Pesanan "(.+)"(?:\s*\(Rp\s*[^)]+\))?\s+dibatalkan otomatis\.\s*(.*)$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Order "${trProd(m![1]!)}" was automatically canceled. Please place a new order if you are still interested.';
+    }
+    if ((m = RegExp(
+          r'^Akun Anda baru saja masuk pada perangkat (.+)\. Jika ini bukan Anda, segera ubah kata sandi di Pengaturan\.$',
+        ).firstMatch(s)) !=
+        null) {
+      return 'Your account just signed in on ${m![1]}. If this wasn\'t you, please change your password in Settings immediately.';
+    }
     if ((m = RegExp(
           r'^Pembayaran pesanan #(.+) telah (?:berhasil )?dikonfirmasi\.\s*(.*)$',
         ).firstMatch(s)) !=
@@ -1765,6 +1822,12 @@ abstract final class AppText {
         'There is a security update on your DinoyoCraft account.',
     'Login terdeteksi': 'Sign-in detected',
     'Baru saja masuk': 'Just signed in',
+    'Pembaruan Status Pesanan': 'Order Status Update',
+    'Pesanan Anda': 'Your Order',
+    'Email ini belum terdaftar sebagai akun Customer di aplikasi DinoyoCraft. Silakan daftar terlebih dahulu.':
+        'This email is not registered as a Customer account on the DinoyoCraft app. Please sign up first.',
+    'Akun Google ini belum terdaftar sebagai Customer di aplikasi DinoyoCraft. Silakan daftar terlebih dahulu.':
+        'This Google account is not registered as a Customer on the DinoyoCraft app. Please sign up first.',
   };
 
   /// Cache lowercase untuk pencarian cepat case-insensitive

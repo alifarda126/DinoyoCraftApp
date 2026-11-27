@@ -5,9 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/network/api_client.dart';
 import '../../data/mock_data.dart';
 import '../app_settings.dart';
-import '../app_text.dart';
 import '../storage/local_storage.dart';
-import 'fcm_service.dart';
 
 /// Sesi autentikasi terpusat tunggal (singleton + ChangeNotifier).
 ///
@@ -40,7 +38,6 @@ class AuthSession extends ChangeNotifier {
     String? refreshToken,
     Map<String, dynamic>? user,
   }) async {
-    final prevDeviceUserId = LocalStorage.getLastDeviceUserId();
     final newUserId = (user?['id'] ?? user?['userId'])?.toString().trim();
 
     await LocalStorage.saveAuth(
@@ -60,35 +57,6 @@ class AuthSession extends ChangeNotifier {
     MockData.userProfilePhotoBytes = null;
     unawaited(MockData.fetchCartFromBackend());
     instance.notifyListeners();
-
-    // Jika pada HP yang sama terjadi login menggunakan akun berbeda dari sesi sebelumnya,
-    // tampilkan push notifikasi keamanan di bagian atas layar.
-    if (prevDeviceUserId != null &&
-        prevDeviceUserId.isNotEmpty &&
-        newUserId != null &&
-        newUserId.isNotEmpty &&
-        prevDeviceUserId != newUserId) {
-      final accountLabel = (user?['username'] ??
-              user?['name'] ??
-              user?['email'] ??
-              'Akun Baru')
-          .toString()
-          .trim();
-      unawaited(
-        FcmService.instance.showSecuritySystemNotification(
-          title: 'Login Akun Baru di Perangkat Ini'.tr,
-          body:
-              '${'Akun'.tr} $accountLabel ${'baru saja masuk pada perangkat ini.'.tr}',
-          route: '/settings?open=devices',
-          dedupKey: 'security:same_phone_switch:$newUserId',
-          data: {
-            'type': 'security',
-            'subtype': 'same_phone_login',
-            'route': '/settings?open=devices',
-          },
-        ),
-      );
-    }
   }
 
   /// Perbarui data profil user yang tersimpan (mis. setelah GET /auth/profile).

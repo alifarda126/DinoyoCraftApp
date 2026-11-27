@@ -200,6 +200,15 @@ class FcmService {
           );
           return;
         }
+        final incomingSubtype =
+            (message.data['subtype'] ?? '').toString().trim().toLowerCase();
+        final incomingDevId =
+            (message.data['device_id'] ?? '').toString().trim();
+        if (incomingSubtype == 'device_login' &&
+            incomingDevId.isNotEmpty &&
+            incomingDevId == (ApiClient.deviceId ?? '').trim()) {
+          return;
+        }
         debugPrint(
           '[FCM Foreground] Pesan: ${message.notification?.title} - ${message.notification?.body}',
         );
@@ -527,33 +536,40 @@ class FcmService {
       'packed': 'Pesanan Sedang Dikemas',
       'shipped': 'Pesanan Sedang Dikirim',
       'delivered': 'Pesanan Diterima & Selesai',
+      'completed': 'Pesanan Diterima & Selesai',
       'cancelled': 'Pesanan Dibatalkan',
     };
     final tracking = event['tracking_number']?.toString().trim();
+    final productName =
+        (event['product_name'] ?? event['productName'] ?? '').toString().trim();
+    final productRef = productName.isNotEmpty ? '"$productName"' : 'pesanan Anda';
     final fallbackBodies = <String, String>{
-      'paid':
-          'Pembayaran pesanan #$orderId telah dikonfirmasi. Penjual akan segera memproses barang Anda.',
+      'paid': productName.isNotEmpty
+          ? 'Pembayaran untuk "$productName" telah berhasil dikonfirmasi. Penjual akan segera memproses barang Anda.'
+          : 'Pembayaran pesanan Anda telah berhasil dikonfirmasi. Penjual akan segera memproses barang Anda.',
       'processing':
-          'Pesanan #$orderId sedang dikemas oleh pengrajin. Mohon tunggu hingga pesanan dikirim.',
+          'Pesanan $productRef sedang dikemas dengan rapi oleh pengrajin.',
       'packed':
-          'Pesanan #$orderId sedang dikemas oleh pengrajin. Mohon tunggu hingga pesanan dikirim.',
+          'Pesanan $productRef sedang dikemas dengan rapi oleh pengrajin.',
       'shipped': tracking != null && tracking.isNotEmpty
-          ? 'Pesanan #$orderId telah dikirim! No. Resi: $tracking'
-          : 'Pesanan #$orderId sedang dalam perjalanan menuju alamat Anda.',
+          ? 'Pesanan $productRef telah dikirim! No. Resi: $tracking'
+          : 'Pesanan $productRef telah dikirim oleh pengrajin!',
       'delivered':
-          'Pesanan #$orderId telah diterima dan selesai. Terima kasih telah berbelanja di DinoyoCraft!',
-      'cancelled': 'Mohon maaf, pesanan #$orderId telah dibatalkan.',
+          'Pesanan $productRef telah diterima dan selesai. Jangan lupa beri ulasan terbaik!',
+      'completed':
+          'Pesanan $productRef telah diterima dan selesai. Jangan lupa beri ulasan terbaik!',
+      'cancelled': 'Pesanan $productRef telah dibatalkan.',
     };
 
     final rawTitle = event['title']?.toString().trim();
     final rawBody = (event['message'] ?? event['body'])?.toString().trim();
     final title = (rawTitle != null && rawTitle.isNotEmpty)
         ? rawTitle.tr
-        : (fallbackTitles[status] ?? 'Update Status Pesanan #$orderId').tr;
+        : (fallbackTitles[status] ?? 'Pembaruan Status Pesanan').tr;
     final body = (rawBody != null && rawBody.isNotEmpty)
         ? rawBody.tr
         : (fallbackBodies[status] ??
-                  'Status pesanan #$orderId diperbarui menjadi $status.')
+                  'Status pesanan $productRef diperbarui menjadi $status.')
               .tr;
 
     final targetTab = switch (status) {
@@ -746,31 +762,6 @@ class FcmService {
         'platform': defaultTargetPlatform.name,
       });
       debugPrint('[FCM] Token berhasil disinkronkan ke BE: $response');
-      if (response['data'] is Map &&
-          response['data']['same_phone_account_switch'] == true) {
-        final user = LocalStorage.getUser();
-        final uid = (user?['id'] ?? user?['userId'] ?? '').toString().trim();
-        final accountLabel = (user?['username'] ??
-                user?['name'] ??
-                user?['email'] ??
-                'Akun Baru')
-            .toString()
-            .trim();
-        unawaited(
-          showSecuritySystemNotification(
-            title: 'Login Akun Baru di Perangkat Ini'.tr,
-            body:
-                '${'Akun'.tr} $accountLabel ${'baru saja masuk pada perangkat ini.'.tr}',
-            route: '/settings?open=devices',
-            dedupKey: 'security:same_phone_switch:$uid',
-            data: {
-              'type': 'security',
-              'subtype': 'same_phone_login',
-              'route': '/settings?open=devices',
-            },
-          ),
-        );
-      }
       return true;
     } catch (e) {
       debugPrint('[FCM] Sinkronisasi token ke BE tertunda (BE offline/dev): $e');

@@ -807,11 +807,13 @@ class ApiException implements Exception {
     this.rawResponse,
   });
 
-  /// Mengecek apakah error disebabkan akun Google belum terdaftar
+  /// Mengecek apakah error disebabkan akun belum terdaftar sebagai Customer di aplikasi
   bool get isNotRegistered =>
-      statusCode == 404 &&
-      (rawResponse?['is_registered'] == false ||
-          message.toLowerCase().contains('belum terdaftar'));
+      rawResponse?['redirect_to_register'] == true ||
+      rawResponse?['code'] == 'NON_CUSTOMER_ROLE_NOT_ALLOWED_MOBILE' ||
+      (statusCode == 404 &&
+          (rawResponse?['is_registered'] == false ||
+              message.toLowerCase().contains('belum terdaftar')));
 
   @override
   String toString() => message;

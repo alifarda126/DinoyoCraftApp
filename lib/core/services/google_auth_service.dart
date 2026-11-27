@@ -81,6 +81,7 @@ class GoogleAuthService {
       final payload = <String, dynamic>{
         if (idToken != null && idToken.isNotEmpty) 'credential': idToken,
         'role': role,
+        'portal': 'mobile',
         'userInfo': userInfo,
         'is_register': false,
         'action': 'login',

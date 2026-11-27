@@ -213,6 +213,7 @@ class _OtpScreenState extends State<OtpScreen> {
         final response = await ApiClient.post('/auth/verify-login-otp', {
           'email': _resolvedTargetEmail,
           'otp': enteredCode,
+          'portal': 'mobile',
         });
         if (response['success'] == true) {
           final data = response['data'] as Map<String, dynamic>?;

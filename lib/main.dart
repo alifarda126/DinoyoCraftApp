@@ -50,6 +50,13 @@ Future<void> _initFirebaseAndPushServices() async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LocalStorage.init();
+  final cachedRole = LocalStorage.getUser()?['role']?.toString().trim();
+  if (LocalStorage.isLoggedIn &&
+      cachedRole != null &&
+      cachedRole.isNotEmpty &&
+      cachedRole != 'pengunjung') {
+    await LocalStorage.clearAuth();
+  }
   await ApiClient.init();
   await AppSettings.instance.loadSavedPreferences();
   unawaited(MockData.fetchPublicData());

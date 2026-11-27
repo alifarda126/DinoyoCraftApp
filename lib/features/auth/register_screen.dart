@@ -108,8 +108,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     _usernameDebounce = Timer(const Duration(milliseconds: 400), () async {
       try {
+        final currentEmail = _email.text.trim();
+        final emailQuery = currentEmail.isNotEmpty
+            ? '&email=${Uri.encodeComponent(currentEmail)}'
+            : '';
         final res = await ApiClient.get(
-          '/auth/check-username?username=${Uri.encodeComponent(trimmed)}',
+          '/auth/check-username?username=${Uri.encodeComponent(trimmed)}$emailQuery',
         );
         if (!mounted || _username.text.trim().toLowerCase() != trimmed) return;
         final available = res['available'] == true;
@@ -134,8 +138,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.isGoogleAuth ||
-        (widget.initialEmail != null && widget.initialEmail!.isNotEmpty)) {
+    if (widget.isGoogleAuth) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _applyGoogleAccount(
           name: widget.initialName ?? 'Pengguna Google',
@@ -144,6 +147,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
           avatarUrl: widget.initialAvatarUrl,
           idToken: widget.initialIdToken,
         );
+      });
+    } else if (widget.initialEmail != null && widget.initialEmail!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          final prefillEmail = widget.initialEmail!.trim();
+          _email.text = prefillEmail;
+          if (widget.initialName != null &&
+              widget.initialName!.trim().isNotEmpty) {
+            _name.text = widget.initialName!.trim();
+          }
+          final rawUser = prefillEmail
+              .split('@')
+              .first
+              .replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '');
+          if (rawUser.isNotEmpty) {
+            _username.text = rawUser;
+            _onUsernameChanged(_username.text);
+          }
+        });
       });
     }
   }

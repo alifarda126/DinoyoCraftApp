@@ -75,7 +75,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } on GoogleAccountNotRegisteredException catch (e) {
       if (!mounted) return;
       AppTopToast.info(
-        'Akun Google belum terdaftar. Mengalihkan ke pendaftaran...'.tr,
+        e.message.trim().isNotEmpty
+            ? e.message.tr
+            : 'Akun Google belum terdaftar. Mengalihkan ke pendaftaran...'.tr,
       );
       context.push(
         '/register',
@@ -115,6 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final response = await ApiClient.post('/auth/login', {
         'email': email,
         'password': password,
+        'portal': 'mobile',
       });
 
       if (response['success'] == true) {
@@ -168,6 +171,24 @@ class _LoginScreenState extends State<LoginScreen> {
           );
           return;
         }
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        if (e.isNotRegistered) {
+          final dataMap = e.data is Map ? e.data as Map : null;
+          AppTopToast.info(e.message.tr);
+          context.push(
+            '/register',
+            extra: {
+              'googleEmail': (dataMap?['email'] ?? email).toString().trim(),
+              'googleName': (dataMap?['name'] ?? '').toString().trim(),
+              'isGoogleAuth': false,
+            },
+          );
+          return;
+        }
+        AppTopToast.error(e.message.tr);
+        return;
       }
     } catch (e) {
       if (mounted) {
